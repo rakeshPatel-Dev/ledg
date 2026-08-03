@@ -4,6 +4,7 @@ import { APP_NAME, type ApiResponse, type Transaction } from "@ledg/shared";
 
 import App from "./app/App";
 import { BrowserRouter } from "react-router-dom";
+import { ClerkProvider } from "@clerk/react";
 
 const root = document.getElementById("root");
 
@@ -14,7 +15,7 @@ if (!root) {
 const transaction: Transaction = {
   id: "1",
   spaceId: "s1",
-  categoryId: null,
+  category: "Food",
   type: "expense",
   amount: 350,
   note: "Coffee",
@@ -25,12 +26,16 @@ const transaction: Transaction = {
   updatedAt: new Date().toISOString(),
 };
 
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 const response: ApiResponse<Transaction> = { success: true, data: transaction };
 
 createRoot(root).render(
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
   <BrowserRouter>
     <App />
   </BrowserRouter>
+  </ClerkProvider>
 );
 
 console.log(`Booting ${APP_NAME}`, response);
