@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
 const userSchema = new Schema(
   {
@@ -8,22 +8,6 @@ const userSchema = new Schema(
       unique: true,
       trim: true,
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    image: {
-      type: String,
-      default: null,
-    },
   },
   {
     timestamps: true,
@@ -32,4 +16,4 @@ const userSchema = new Schema(
 
 userSchema.index({ clerkId: 1 });
 
-export const UserModel = model("User", userSchema);
+export const UserModel = mongoose.models.User || model("User", userSchema);

@@ -1,4 +1,4 @@
-import { Schema, model, type Types } from "mongoose";
+import mongoose, { Schema, model, type Types } from "mongoose";
 
 import {
   PAYMENT_METHODS,
@@ -15,10 +15,10 @@ const transactionSchema = new Schema(
       required: true,
       index: true,
     },
-    categoryId: {
-      type: Schema.Types.ObjectId,
-      ref: "Category",
-      default: null,
+    category: {
+      type: String,
+      required: true,
+      trim: true,
       index: true,
     },
     type: {
@@ -62,7 +62,7 @@ transactionSchema.index({ spaceId: 1, date: -1 });
 export interface TransactionDoc {
   _id: Types.ObjectId;
   spaceId: Types.ObjectId;
-  categoryId: Types.ObjectId | null;
+  category: string;
   type: TransactionType;
   amount: number;
   note: string;
@@ -73,4 +73,4 @@ export interface TransactionDoc {
   updatedAt: Date;
 }
 
-export const TransactionModel = model("Transaction", transactionSchema);
+export const TransactionModel = mongoose.models.Transaction || model("Transaction", transactionSchema);

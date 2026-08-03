@@ -1,23 +1,15 @@
 import { z } from "zod";
 
 import {
-  CATEGORY_TYPES,
   PAYMENT_METHODS,
   SPACE_TYPES,
   TRANSACTION_TYPES,
 } from "../enums/index.js";
 
-export const userSchema = z.object({
-  email: z.string().email(),
-  name: z.string().trim().min(1).max(100),
-  image: z.string().nullable().optional(),
-});
-
-export const createUserSchema = userSchema.extend({
+export const createUserSchema = z.object({
   clerkId: z.string().trim().min(1),
 });
 
-export type UserInput = z.infer<typeof userSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 export const spaceSchema = z.object({
@@ -27,17 +19,8 @@ export const spaceSchema = z.object({
 
 export type SpaceInput = z.infer<typeof spaceSchema>;
 
-export const categorySchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  icon: z.string().nullable().optional(),
-  color: z.string().nullable().optional(),
-  type: z.enum(CATEGORY_TYPES),
-});
-
-export type CategoryInput = z.infer<typeof categorySchema>;
-
 export const transactionSchema = z.object({
-  categoryId: z.string().nullable().optional(),
+  category: z.string().trim().min(1).max(100),
   type: z.enum(TRANSACTION_TYPES),
   amount: z.number().positive(),
   note: z.string().trim().max(500).default(""),

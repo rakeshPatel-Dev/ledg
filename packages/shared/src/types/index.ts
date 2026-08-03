@@ -1,5 +1,4 @@
 import type {
-  CategoryType,
   PaymentMethod,
   SpaceType,
   TransactionType,
@@ -8,9 +7,6 @@ import type {
 export interface User {
   id: string;
   clerkId: string;
-  email: string;
-  name: string;
-  image: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,21 +20,10 @@ export interface Space {
   updatedAt: string;
 }
 
-export interface Category {
-  id: string;
-  spaceId: string;
-  name: string;
-  icon: string | null;
-  color: string | null;
-  type: CategoryType;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Transaction {
   id: string;
   spaceId: string;
-  categoryId: string | null;
+  category: string;
   type: TransactionType;
   amount: number;
   note: string;

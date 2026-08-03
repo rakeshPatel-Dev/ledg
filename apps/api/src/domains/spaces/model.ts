@@ -1,4 +1,4 @@
-import { Schema, model, type Types } from "mongoose";
+import mongoose, { Schema, model, type Types } from "mongoose";
 
 import { SPACE_TYPES, type SpaceType } from "@ledg/shared";
 
@@ -35,4 +35,4 @@ export interface SpaceDoc {
   updatedAt: Date;
 }
 
-export const SpaceModel = model("Space", spaceSchema);
+export const SpaceModel = mongoose.models.Space || model("Space", spaceSchema);
