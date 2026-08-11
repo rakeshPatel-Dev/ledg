@@ -8,7 +8,7 @@ export function connectDatabase() {
     return cached;
   }
 
-  const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/ledg/database";
+  const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/ledg";
 
   cached = mongoose
     .connect(uri, { dbName: process.env.MONGODB_DB_NAME })
