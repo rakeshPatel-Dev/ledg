@@ -19,6 +19,10 @@ export const spaceSchema = z.object({
 
 export type SpaceInput = z.infer<typeof spaceSchema>;
 
+export const spaceUpdateSchema = spaceSchema.partial();
+
+export type SpaceUpdateInput = z.infer<typeof spaceUpdateSchema>;
+
 export const transactionSchema = z.object({
   category: z.string().trim().min(1).max(100),
   type: z.enum(TRANSACTION_TYPES),
@@ -30,3 +34,25 @@ export const transactionSchema = z.object({
 });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
+
+export const transactionUpdateSchema = transactionSchema.partial();
+
+export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
+
+export const idParamsSchema = z.object({
+  id: z.string().trim().min(1),
+});
+
+export type IdParams = z.infer<typeof idParamsSchema>;
+
+export const transactionQuerySchema = z.object({
+  category: z.string().trim().optional(),
+  type: z.enum(TRANSACTION_TYPES).optional(),
+  dateFrom: z.string().datetime({ offset: true }).optional(),
+  dateTo: z.string().datetime({ offset: true }).optional(),
+  keyword: z.string().trim().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export type TransactionQuery = z.infer<typeof transactionQuerySchema>;
