@@ -104,7 +104,12 @@ Browser back button after sign-in lands on `/welcome`. This is acceptable for th
 
 ## 6. Error Handling & Edge Cases
 
-- **Clerk still loading on direct visit to `/welcome`:** render the same spinner `Protected` uses, to avoid a flash of welcome content before the redirect to `/`.
+- **Clerk still loading on direct visit to `/welcome`:** render the same centered spinner `Protected` uses, to avoid a flash of welcome content before the redirect to `/`. The exact JSX (lifted from `App.tsx`):
+  ```tsx
+  <div className="flex min-h-dvh items-center justify-center">
+    <div className="size-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+  </div>
+  ```
 - **Already signed in, visits `/welcome` directly:** handled by the `isSignedIn` check above.
 - **No network calls:** the page is pure render. No error states.
 - **Reduced motion:** no animations on this page; nothing to opt out of.
