@@ -8,12 +8,11 @@ interface PageTransitionProps {
 export function PageTransition({ children }: PageTransitionProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{
-        duration: 0.2,
-        ease: [0.16, 1, 0.3, 1],
+        duration: 0.16,
       }}
       className="w-full"
     >
@@ -38,7 +37,7 @@ export function FadeInStagger({
         visible: {
           opacity: 1,
           transition: {
-            staggerChildren: 0.05,
+            staggerChildren: 0.03,
           },
         },
       }}
@@ -59,12 +58,12 @@ export function FadeInItem({
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 8 },
+        hidden: { opacity: 0, y: 6 },
         visible: {
           opacity: 1,
           y: 0,
           transition: {
-            duration: 0.22,
+            duration: 0.16,
             ease: [0.16, 1, 0.3, 1],
           },
         },
