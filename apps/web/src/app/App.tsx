@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/react";
+import { AnimatePresence } from "framer-motion";
 
 import AppProviders from "./providers";
 import DashboardPage from "@/pages/dashboard";
@@ -10,8 +11,10 @@ import SpacesPage from "@/pages/spaces";
 import SettingsPage from "@/pages/settings";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
+import WelcomePage from "@/pages/welcome";
 import { AppShell } from "@/components/layout/app-shell";
 import { TransactionFormBridge } from "@/components/transactions/transaction-form-bridge";
+import { PageTransition } from "@/components/common/page-transition";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,16 +39,28 @@ function Protected({ children }: { children: React.ReactNode }) {
   }
 
   if (!isSignedIn) {
-    return <Navigate to="/sign-in" state={{ from: location }} replace />;
+    return <Navigate to="/welcome" state={{ from: location }} replace />;
   }
 
   return children;
 }
 
+function AnimatedOutlet() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <PageTransition key={location.pathname}>
+        <Outlet />
+      </PageTransition>
+    </AnimatePresence>
+  );
+}
+
 function AppLayout() {
   return (
     <AppShell>
-      <Outlet />
+      <AnimatedOutlet />
       <TransactionFormBridge />
     </AppShell>
   );
@@ -56,6 +71,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AppProviders>
         <Routes>
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
           <Route
@@ -71,7 +87,7 @@ export default function App() {
             <Route path="/spaces" element={<SpacesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/welcome" replace />} />
         </Routes>
       </AppProviders>
     </QueryClientProvider>

@@ -1,6 +1,7 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react";
 import { DEFAULT_CURRENCY } from "@ledg/shared";
+import { motion } from "framer-motion";
 
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
@@ -12,11 +13,11 @@ import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency, formatCompact } from "@/lib/format";
 import { useAnalytics } from "@/lib/analytics";
 import { useTransactionForm } from "@/lib/transaction-form";
+import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 
 export default function DashboardPage() {
   const analytics = useAnalytics();
-  const navigate = useNavigate();
-  const { openCreate } = useTransactionForm();
+  const { openCreate, openEdit } = useTransactionForm();
   const currency = DEFAULT_CURRENCY;
 
   const recent = analytics.transactions
@@ -27,157 +28,180 @@ export default function DashboardPage() {
   const maxCategory = analytics.byCategory[0]?.amount ?? 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <FadeInStagger className="flex flex-col gap-6">
       <Header />
 
-      <section className="-mx-5 rounded-b-4xl bg-linear-to-br from-primary via-primary to-[oklch(0.5_0.15_158)] px-5 pb-8 pt-2 text-primary-foreground">
-        <p className="text-sm font-medium text-primary-foreground/80">
-          Total balance
-        </p>
-        {analytics.loading ? (
-          <Skeleton className="mt-2 h-12 w-48 bg-primary-foreground/20" />
-        ) : (
-          <p className="mt-1 text-4xl font-extrabold tracking-tight tabular-nums">
-            {formatCurrency(analytics.totalBalance, currency)}
-          </p>
-        )}
+      <FadeInItem>
+        <section className="-mx-5 rounded-b-[2.5rem] bg-gradient-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
+              Total Balance
+            </p>
+            <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground/90 backdrop-blur-md">
+              Active
+            </span>
+          </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-3xl bg-primary-foreground/10 p-4 backdrop-blur-sm">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-primary-foreground/80">
-              <ArrowDownLeft className="size-3.5" />
-              Income
-            </div>
-            <p className="mt-1 text-lg font-bold tabular-nums">
-              {formatCompact(analytics.monthIncome, currency)}
+          {analytics.loading ? (
+            <Skeleton className="mt-2 h-12 w-48 bg-primary-foreground/20" />
+          ) : (
+            <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
+              {formatCurrency(analytics.totalBalance, currency)}
             </p>
-            <p className="text-[0.65rem] text-primary-foreground/70">
-              this month
-            </p>
+          )}
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <motion.div
+              whileHover={{ y: -2 }}
+              className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md transition-all hover:bg-primary-foreground/15"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground/85">
+                <span className="flex size-6 items-center justify-center rounded-full bg-emerald-400/25 text-emerald-200">
+                  <ArrowDownLeft className="size-3.5" />
+                </span>
+                Income
+              </div>
+              <p className="mt-2 text-lg font-extrabold tabular-nums">
+                {formatCompact(analytics.monthIncome, currency)}
+              </p>
+              <p className="text-[0.65rem] font-medium text-primary-foreground/70">
+                this month
+              </p>
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -2 }}
+              className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md transition-all hover:bg-primary-foreground/15"
+            >
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground/85">
+                <span className="flex size-6 items-center justify-center rounded-full bg-rose-400/25 text-rose-200">
+                  <ArrowUpRight className="size-3.5" />
+                </span>
+                Spent
+              </div>
+              <p className="mt-2 text-lg font-extrabold tabular-nums">
+                {formatCompact(analytics.monthSpend, currency)}
+              </p>
+              <p className="text-[0.65rem] font-medium text-primary-foreground/70">
+                this month
+              </p>
+            </motion.div>
           </div>
-          <div className="rounded-3xl bg-primary-foreground/10 p-4 backdrop-blur-sm">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-primary-foreground/80">
-              <ArrowUpRight className="size-3.5" />
-              Spent
-            </div>
-            <p className="mt-1 text-lg font-bold tabular-nums">
-              {formatCompact(analytics.monthSpend, currency)}
-            </p>
-            <p className="text-[0.65rem] text-primary-foreground/70">
-              this month
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      </FadeInItem>
 
       {!analytics.loading && analytics.transactions.length === 0 ? (
-        <Card className="border-none bg-card">
-          <EmptyState
-            title="Nothing tracked yet"
-            description="Add your first transaction to start understanding your spending."
-            action={
-              <Button onClick={() => openCreate()}>
-                Add your first transaction
-              </Button>
-            }
-          />
-        </Card>
+        <FadeInItem>
+          <Card className="border-none bg-card">
+            <EmptyState
+              title="Nothing tracked yet"
+              description="Add your first transaction to start understanding your spending."
+              action={
+                <Button onClick={() => openCreate()}>
+                  Add your first transaction
+                </Button>
+              }
+            />
+          </Card>
+        </FadeInItem>
       ) : null}
 
       {analytics.byCategory.length > 0 ? (
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Top categories
-          </h2>
-          <Card className="flex flex-col gap-4">
-            {analytics.byCategory.slice(0, 5).map(({ category, amount }) => {
-              const meta = getCategoryMeta(category);
-              const Icon = meta.icon;
-              const pct = maxCategory ? (amount / maxCategory) * 100 : 0;
-              return (
-                <div key={category} className="flex items-center gap-3">
-                  <span
-                    className="flex size-10 shrink-0 items-center justify-center rounded-2xl"
-                    style={{
-                      backgroundColor: `${meta.color}1f`,
-                      color: meta.color,
-                    }}
-                  >
-                    <Icon className="size-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">{category}</p>
-                      <p className="text-sm font-semibold tabular-nums">
-                        {formatCurrency(amount, currency)}
-                      </p>
+        <FadeInItem>
+          <section>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Top categories
+            </h2>
+
+            <Card className="flex flex-col gap-3 p-4">
+              {analytics.byCategory.slice(0, 4).map((c) => {
+                const meta = getCategoryMeta(c.category);
+                const percent =
+                  maxCategory > 0 ? Math.round((c.amount / maxCategory) * 100) : 0;
+
+                return (
+                  <div key={c.category} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      <span className="flex items-center gap-2 text-foreground">
+                        <span
+                          className="size-2.5 rounded-full"
+                          style={{ backgroundColor: meta.color }}
+                        />
+                        {meta.name}
+                      </span>
+                      <span className="tabular-nums font-semibold">
+                        {formatCurrency(c.amount, currency)}
+                      </span>
                     </div>
-                    <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.max(pct, 4)}%`,
-                          backgroundColor: meta.color,
-                        }}
+
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${percent}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: meta.color }}
                       />
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </Card>
-        </section>
+                );
+              })}
+            </Card>
+          </section>
+        </FadeInItem>
       ) : null}
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Recent activity
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate("/transactions")}
-            className="text-sm font-medium text-primary"
-          >
-            See all
-          </button>
-        </div>
-
-        {analytics.loading ? (
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-3xl" />
-            ))}
+      <FadeInItem>
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Recent activity
+            </h2>
+            <Link
+              to="/transactions"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              See all
+            </Link>
           </div>
-        ) : recent.length === 0 ? null : (
-          <div className="flex flex-col gap-2">
-            {recent.map((t) => (
-              <TransactionItem
-                key={t.id}
-                transaction={t}
-                currency={currency}
-                onClick={() => openCreate()}
-              />
-            ))}
-          </div>
-        )}
-      </section>
 
-      <section className="flex items-center gap-3 rounded-4xl bg-accent/50 p-4">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-          <TrendingUp className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Smart insights</p>
-          <p className="text-xs text-muted-foreground">
-            Your top category this month is{" "}
-            <span className="font-medium text-foreground">
-              {analytics.byCategory[0]?.category ?? "—"}
-            </span>
-            .
-          </p>
-        </div>
-      </section>
-    </div>
+          {analytics.loading ? (
+            <div className="flex flex-col gap-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-3xl" />
+              ))}
+            </div>
+          ) : recent.length === 0 ? null : (
+            <div className="flex flex-col gap-2">
+              {recent.map((t) => (
+                <TransactionItem
+                  key={t.id}
+                  transaction={t}
+                  currency={currency}
+                  onClick={() => openEdit(t, t.spaceId)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </FadeInItem>
+
+      <FadeInItem>
+        <section className="flex items-center gap-3 rounded-4xl bg-accent/50 p-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+            <TrendingUp className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground">
+              Smart Insight
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {analytics.monthSpend > 0
+                ? `You spent ${formatCompact(analytics.monthSpend, currency)} this month across ${analytics.byCategory.length} categories.`
+                : "No expenses recorded this month yet."}
+            </p>
+          </div>
+        </section>
+      </FadeInItem>
+    </FadeInStagger>
   );
 }

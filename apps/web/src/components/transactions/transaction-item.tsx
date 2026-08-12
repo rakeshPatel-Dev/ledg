@@ -1,4 +1,5 @@
 import type { Transaction } from "@ledg/shared";
+import { motion } from "framer-motion";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 import { getCategoryMeta } from "@/lib/categories";
@@ -22,10 +23,11 @@ export function TransactionItem({
   const isTransfer = transaction.type === "transfer";
 
   return (
-    <button
+    <motion.button
+      whileTap={{ scale: 0.98 }}
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-3xl bg-card px-3 py-3 text-left shadow-xs transition-colors hover:bg-muted/40"
+      className="flex w-full items-center gap-3.5 rounded-3xl border border-white/20 dark:border-white/10 bg-card/75 px-3 py-3 text-left shadow-xs backdrop-blur-md transition-all hover:bg-card/90 hover:shadow-md cursor-pointer select-none"
     >
       <span
         className="flex size-12 shrink-0 items-center justify-center rounded-2xl"
@@ -72,6 +74,6 @@ export function TransactionItem({
           })}
         </span>
       </span>
-    </button>
+    </motion.button>
   );
 }

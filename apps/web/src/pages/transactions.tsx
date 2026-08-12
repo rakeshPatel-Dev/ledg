@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { DEFAULT_CURRENCY, type TransactionType } from "@ledg/shared";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ import { useAllData } from "@/lib/queries";
 import { formatCurrency, relativeDay } from "@/lib/format";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { cn } from "@/lib/utils";
+import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 
 type TypeFilter = "all" | TransactionType;
 
@@ -35,7 +37,7 @@ function formatDayBalance(
 
 export default function TransactionsPage() {
   const { spaces, transactions, loading } = useAllData();
-  const { openCreate } = useTransactionForm();
+  const { openCreate, openEdit } = useTransactionForm();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [spaceFilter, setSpaceFilter] = useState("all");
@@ -68,115 +70,133 @@ export default function TransactionsPage() {
   }, [filtered]);
 
   return (
-    <div className="flex flex-col gap-5">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">
-            Activity
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
-          </p>
-        </div>
-        <Button aria-label="Show Filters" variant="outline" size="icon" onClick={() => setShowFilters((v) => !v)}>
-          <SlidersHorizontal className="size-4" />
-        </Button>
-      </header>
+    <FadeInStagger className="flex flex-col gap-5">
+      <FadeInItem>
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              Activity
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <Button aria-label="Show Filters" variant="outline" size="icon" onClick={() => setShowFilters((v) => !v)}>
+            <SlidersHorizontal className="size-4" />
+          </Button>
+        </header>
+      </FadeInItem>
 
-      <label className="relative block">
-        <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search notes, categories…"
-          className="pl-10"
+      <FadeInItem>
+        <label className="relative block">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search notes, categories…"
+            className="pl-10"
+          />
+        </label>
+      </FadeInItem>
+
+      <FadeInItem>
+        <Segmented
+          options={TYPE_FILTERS}
+          value={typeFilter}
+          onChange={setTypeFilter}
         />
-      </label>
+      </FadeInItem>
 
-      <Segmented
-        options={TYPE_FILTERS}
-        value={typeFilter}
-        onChange={setTypeFilter}
-      />
-
-      {showFilters && spaces.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setSpaceFilter("all")}
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-all",
-              spaceFilter === "all"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            )}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
           >
-            All spaces
-          </button>
-          {spaces.map((space) => (
-            <button
-              key={space.id}
-              type="button"
-              onClick={() => setSpaceFilter(space.id)}
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-all",
-                spaceFilter === space.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {space.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setSpaceFilter("all")}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+                  spaceFilter === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
+                )}
+              >
+                All spaces
+              </button>
+              {spaces.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSpaceFilter(s.id)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+                    spaceFilter === s.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent"
+                  )}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-16 w-full rounded-3xl" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          title="No transactions found"
-          description={
-            search || typeFilter !== "all"
-              ? "Try adjusting your search or filters."
-              : "Add your first transaction to start tracking your spending."
-          }
-          action={
-            !search && typeFilter === "all" ? (
+      ) : groups.length === 0 ? (
+        <FadeInItem>
+          <EmptyState
+            title="No transactions found"
+            description={
+              search || typeFilter !== "all" || spaceFilter !== "all"
+                ? "Try clearing filters or search to see more results."
+                : "Tap below to log your first transaction."
+            }
+            action={
               <Button onClick={() => openCreate()}>Add transaction</Button>
-            ) : undefined
-          }
-        />
+            }
+          />
+        </FadeInItem>
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           {groups.map(([day, items]) => (
-            <section key={day} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {relativeDay(day)}
-                </h3>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {formatDayBalance(items)}
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {items.map((t) => (
-                  <TransactionItem
-                    key={t.id}
-                    transaction={t}
-                    currency={DEFAULT_CURRENCY}
-                    onClick={() => undefined}
-                  />
-                ))}
-              </div>
-            </section>
+            <FadeInItem key={day}>
+              <section className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    {relativeDay(day)}
+                  </h3>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {formatDayBalance(items)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {items.map((t) => (
+                    <TransactionItem
+                      key={t.id}
+                      transaction={t}
+                      currency={DEFAULT_CURRENCY}
+                      onClick={() => openEdit(t, t.spaceId)}
+                    />
+                  ))}
+                </div>
+              </section>
+            </FadeInItem>
           ))}
         </div>
       )}
-    </div>
+    </FadeInStagger>
   );
 }
