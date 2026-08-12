@@ -1,11 +1,26 @@
+import { cn } from "@/lib/utils";
 
-
-const AppLogo = () => {
-  return (
-     <span className="flex size-16 items-center justify-center rounded-4xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-          <img loading="lazy"  alt="Ledg logo" src="/ledg-logo.svg" className="size-10" />
-        </span>
-  )
+interface AppLogoProps {
+  className?: string;
+  imgClassName?: string;
 }
 
-export default AppLogo
+const AppLogo = ({ className, imgClassName }: AppLogoProps) => {
+  return (
+    <span
+      className={cn(
+        "flex size-16 items-center justify-center rounded-4xl bg-primary text-primary-foreground shadow-lg shadow-primary/30",
+        className
+      )}
+    >
+      <img
+        loading="lazy"
+        alt="Ledg logo"
+        src="/ledg-logo.svg"
+        className={cn("size-10", imgClassName)}
+      />
+    </span>
+  );
+};
+
+export default AppLogo;

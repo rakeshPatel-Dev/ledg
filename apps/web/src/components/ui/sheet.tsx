@@ -23,11 +23,11 @@ export function Sheet({
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
-        <Drawer.Backdrop className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+        <Drawer.Backdrop className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md transition-opacity" />
         <Drawer.Popup className="fixed inset-x-0 bottom-0 z-50 outline-none">
           <div
             className={cn(
-              "flex max-h-[88dvh] flex-col rounded-t-4xl bg-card shadow-xl outline-none",
+              "flex max-h-[88dvh] flex-col rounded-t-4xl border-t border-white/30 dark:border-white/10 bg-card/85 backdrop-blur-2xl backdrop-saturate-180 shadow-2xl shadow-black/20 outline-none",
               className
             )}
           >
