@@ -21,6 +21,7 @@ export interface AnalyticsData {
   monthExpense: number;
   monthSpend: number;
   byCategory: { category: string; amount: number; count: number }[];
+  byIncomeCategory: { category: string; amount: number; count: number }[];
   bySpace: SpaceSummary[];
   loading: boolean;
   error: unknown;
@@ -61,18 +62,35 @@ export function useAnalytics(): AnalyticsData {
       string,
       { category: string; amount: number; count: number }
     >();
+    const incomeCategoryMap = new Map<
+      string,
+      { category: string; amount: number; count: number }
+    >();
     for (const t of transactions) {
-      if (t.type !== "expense") continue;
-      const entry = categoryMap.get(t.category) ?? {
-        category: t.category,
-        amount: 0,
-        count: 0,
-      };
-      entry.amount += t.amount;
-      entry.count += 1;
-      categoryMap.set(t.category, entry);
+      if (t.type === "expense") {
+        const entry = categoryMap.get(t.category) ?? {
+          category: t.category,
+          amount: 0,
+          count: 0,
+        };
+        entry.amount += t.amount;
+        entry.count += 1;
+        categoryMap.set(t.category, entry);
+      } else if (t.type === "income") {
+        const entry = incomeCategoryMap.get(t.category) ?? {
+          category: t.category,
+          amount: 0,
+          count: 0,
+        };
+        entry.amount += t.amount;
+        entry.count += 1;
+        incomeCategoryMap.set(t.category, entry);
+      }
     }
     const byCategory = [...categoryMap.values()].sort(
+      (a, b) => b.amount - a.amount
+    );
+    const byIncomeCategory = [...incomeCategoryMap.values()].sort(
       (a, b) => b.amount - a.amount
     );
 
@@ -105,6 +123,7 @@ export function useAnalytics(): AnalyticsData {
       monthExpense,
       monthSpend: monthExpense,
       byCategory,
+      byIncomeCategory,
       bySpace,
       loading,
       error,

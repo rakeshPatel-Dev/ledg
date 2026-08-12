@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownLeft, ArrowUpRight, TrendingUp, CreditCard, Landmark, Wallet as WalletIcon, Smartphone } from "lucide-react";
 import { DEFAULT_CURRENCY, PAYMENT_LABELS } from "@ledg/shared";
@@ -9,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TransactionItem } from "@/components/transactions/transaction-item";
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency, formatCompact } from "@/lib/format";
 import { useAnalytics } from "@/lib/analytics";
@@ -16,24 +18,33 @@ import { useTransactionForm } from "@/lib/transaction-form";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 import { cn } from "@/lib/utils";
 
+type CategoryTab = "expense" | "income";
+
+const CATEGORY_TABS: { value: CategoryTab; label: string }[] = [
+  { value: "expense", label: "Expense" },
+  { value: "income", label: "Income" },
+];
+
 export default function DashboardPage() {
   const analytics = useAnalytics();
   const { openCreate, openEdit } = useTransactionForm();
   const currency = DEFAULT_CURRENCY;
+  const [tab, setTab] = useState<CategoryTab>("expense");
 
   const recent = analytics.transactions
     .slice()
     .sort((a, b) => +new Date(b.date) - +new Date(a.date))
     .slice(0, 5);
 
-  const maxCategory = analytics.byCategory[0]?.amount ?? 0;
+  const activeCategories =
+    tab === "expense" ? analytics.byCategory : analytics.byIncomeCategory;
+  const maxCategory = activeCategories[0]?.amount ?? 0;
 
-  // Calculate payment method totals
+  // Calculate payment method totals for current tab
   const paymentMethods = analytics.transactions.reduce((acc, t) => {
+    if (t.type !== tab) return acc;
     const method = t.paymentMethod || "Cash";
-    if (t.type === "expense") {
-      acc[method] = (acc[method] || 0) + t.amount;
-    }
+    acc[method] = (acc[method] || 0) + t.amount;
     return acc;
   }, {} as Record<string, number>);
 
@@ -41,6 +52,11 @@ export default function DashboardPage() {
   const sortedPaymentMethods = Object.entries(paymentMethods)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
+
+  const activePaymentTotal = sortedPaymentMethods.reduce(
+    (sum, [, amount]) => sum + amount,
+    0
+  );
 
   // Get icon for payment method
   const getPaymentIcon = (method: string) => {
@@ -150,50 +166,141 @@ export default function DashboardPage() {
         </FadeInItem>
       ) : null}
 
-      {analytics.byCategory.length > 0 ? (
+      {analytics.byCategory.length > 0 || analytics.byIncomeCategory.length > 0 ? (
         <FadeInItem>
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Top categories
-            </h2>
+            <Segmented
+              options={CATEGORY_TABS}
+              value={tab}
+              onChange={setTab}
+              className="mb-3"
+            />
 
-            <Card className="flex flex-col gap-3 p-4">
-              {analytics.byCategory.slice(0, 4).map((c) => {
-                const meta = getCategoryMeta(c.category);
-                const percent =
-                  maxCategory > 0 ? Math.round((c.amount / maxCategory) * 100) : 0;
+            {activeCategories.length > 0 ? (
+              <Card className="flex flex-col gap-3 p-4">
+                {activeCategories.slice(0, 4).map((c) => {
+                  const meta = getCategoryMeta(c.category);
+                  const percent =
+                    maxCategory > 0 ? Math.round((c.amount / maxCategory) * 100) : 0;
 
-                return (
-                  <div key={c.category} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-medium">
-                      <span className="flex items-center gap-2 text-foreground">
-                        <span
-                          className="size-2.5 rounded-full"
+                  return (
+                    <div key={c.category} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-medium">
+                        <span className="flex items-center gap-2 text-foreground">
+                          <span
+                            className="size-2.5 rounded-full"
+                            style={{ backgroundColor: meta.color }}
+                          />
+                          {meta.name}
+                        </span>
+                        <span className="tabular-nums font-semibold">
+                          {formatCurrency(c.amount, currency)}
+                        </span>
+                      </div>
+
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percent}%` }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className="h-full rounded-full"
                           style={{ backgroundColor: meta.color }}
                         />
-                        {meta.name}
-                      </span>
-                      <span className="tabular-nums font-semibold">
-                        {formatCurrency(c.amount, currency)}
-                      </span>
+                      </div>
                     </div>
-
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percent}%` }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: meta.color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </Card>
+                  );
+                })}
+              </Card>
+            ) : (
+              <Card className="border-none bg-card">
+                <EmptyState
+                  title={tab === "income" ? "No income tracked" : "No expenses tracked"}
+                  description={
+                    tab === "income"
+                      ? "Add your first income to see it broken down here."
+                      : "Add your first expense to see it broken down here."
+                  }
+                  action={
+                    <Button onClick={() => openCreate()} variant="outline">
+                      Add {tab}
+                    </Button>
+                  }
+                />
+              </Card>
+            )}
           </section>
         </FadeInItem>
       ) : null}
+
+      {/* Payment Methods Section */}
+      {!analytics.loading && sortedPaymentMethods.length > 0 && (
+        <FadeInItem>
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <CreditCard className="size-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Payment Methods
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {sortedPaymentMethods.map(([method, amount]) => {
+                const Icon = getPaymentIcon(method);
+                const colorClass = getPaymentColor(method);
+                const percentage = activePaymentTotal > 0
+                  ? Math.round((amount / activePaymentTotal) * 100)
+                  : 0;
+                const displayName = PAYMENT_LABELS[method.toLowerCase() as keyof typeof PAYMENT_LABELS] || method;
+
+                return (
+                  <motion.div
+                    key={method}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
+                    <Card className={cn(
+                      "flex flex-col gap-2 rounded-4xl p-4 transition-shadow hover:shadow-md",
+                      "border-border/50"
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "flex size-9 items-center justify-center rounded-2xl",
+                            colorClass
+                          )}>
+                            <Icon className="size-4.5" />
+                          </span>
+                          <span className="text-sm font-medium truncate">
+                            {displayName}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {percentage}%
+                        </span>
+                      </div>
+
+                      <div>
+                        <p className="text-base font-bold tabular-nums">
+                          {formatCurrency(amount, currency)}
+                        </p>
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className="h-full rounded-full bg-primary"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+        </FadeInItem>
+      )}
 
       <FadeInItem>
         <section>
@@ -247,76 +354,6 @@ export default function DashboardPage() {
           </div>
         </section>
       </FadeInItem>
-
-      {/* Payment Methods Section */}
-      {!analytics.loading && sortedPaymentMethods.length > 0 && (
-        <FadeInItem>
-          <section>
-            <div className="mb-3 flex items-center gap-2">
-              <CreditCard className="size-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Payment Methods
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {sortedPaymentMethods.map(([method, amount]) => {
-                const Icon = getPaymentIcon(method);
-                const colorClass = getPaymentColor(method);
-                const percentage = analytics.monthSpend > 0 
-                  ? Math.round((amount / analytics.monthSpend) * 100)
-                  : 0;
-                const displayName = PAYMENT_LABELS[method.toLowerCase() as keyof typeof PAYMENT_LABELS] || method;
-
-                return (
-                  <motion.div
-                    key={method}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    <Card className={cn(
-                      "flex flex-col gap-2 rounded-4xl p-4 transition-shadow hover:shadow-md",
-                      "border-border/50"
-                    )}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "flex size-9 items-center justify-center rounded-2xl",
-                            colorClass
-                          )}>
-                            <Icon className="size-4.5" />
-                          </span>
-                          <span className="text-sm font-medium truncate">
-                            {displayName}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-semibold text-muted-foreground">
-                          {percentage}%
-                        </span>
-                      </div>
-                      
-                      <div>
-                        <p className="text-base font-bold tabular-nums">
-                          {formatCurrency(amount, currency)}
-                        </p>
-                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${percentage}%` }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className="h-full rounded-full bg-primary"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </section>
-        </FadeInItem>
-      )}
     </FadeInStagger>
   );
 }

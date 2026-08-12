@@ -10,6 +10,18 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
   <title>Ledg - Smart Spend</title>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem("ledg-theme");
+        var dark =
+          theme === "dark" ||
+          ((!theme || theme === "system") &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
 <body>

@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/react";
-import { AnimatePresence } from "framer-motion";
 
 import AppProviders from "./providers";
 import DashboardPage from "@/pages/dashboard";
@@ -50,11 +49,9 @@ function AnimatedOutlet() {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <PageTransition key={location.pathname}>
-        <Outlet />
-      </PageTransition>
-    </AnimatePresence>
+    <PageTransition key={location.pathname}>
+      <Outlet />
+    </PageTransition>
   );
 }
 

@@ -11,7 +11,6 @@ import {
   GraduationCap,
   Banknote,
   Briefcase,
-  ArrowLeftRight,
   Coins,
   type LucideIcon,
 } from "lucide-react";
@@ -38,7 +37,6 @@ export const CATEGORIES: CategoryMeta[] = [
   { name: "Education", icon: GraduationCap, color: "#A9A900", defaultsTo: "expense" },
   { name: "Salary", icon: Banknote, color: "#2B8A3E", defaultsTo: "income" },
   { name: "Business", icon: Briefcase, color: "#3B5BDB", defaultsTo: "income" },
-  { name: "Transfer", icon: ArrowLeftRight, color: "#495057", defaultsTo: "transfer" },
   { name: "Other", icon: Coins, color: "#868E96", defaultsTo: "expense" },
 ];
 

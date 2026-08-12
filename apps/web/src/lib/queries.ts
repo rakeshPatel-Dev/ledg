@@ -87,8 +87,6 @@ function invalidateTransactionQueries(
   queryClient.invalidateQueries({
     queryKey: ["spaces", spaceId, "transactions"],
   });
-  queryClient.invalidateQueries({ queryKey: ["analytics"] });
-  queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
 }
 
 export function useCreateTransaction() {
