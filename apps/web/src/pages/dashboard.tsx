@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react";
-import { DEFAULT_CURRENCY } from "@ledg/shared";
+import { ArrowDownLeft, ArrowUpRight, TrendingUp, CreditCard, Landmark, Wallet as WalletIcon, Smartphone } from "lucide-react";
+import { DEFAULT_CURRENCY, PAYMENT_LABELS } from "@ledg/shared";
 import { motion } from "framer-motion";
 
 import { Header } from "@/components/layout/header";
@@ -14,6 +14,7 @@ import { formatCurrency, formatCompact } from "@/lib/format";
 import { useAnalytics } from "@/lib/analytics";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const analytics = useAnalytics();
@@ -27,12 +28,56 @@ export default function DashboardPage() {
 
   const maxCategory = analytics.byCategory[0]?.amount ?? 0;
 
+  // Calculate payment method totals
+  const paymentMethods = analytics.transactions.reduce((acc, t) => {
+    const method = t.paymentMethod || "Cash";
+    if (t.type === "expense") {
+      acc[method] = (acc[method] || 0) + t.amount;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Sort payment methods by amount
+  const sortedPaymentMethods = Object.entries(paymentMethods)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
+
+  // Get icon for payment method
+  const getPaymentIcon = (method: string) => {
+    const methodLower = method.toLowerCase();
+    if (methodLower.includes("card") || methodLower.includes("credit")) {
+      return CreditCard;
+    }
+    if (methodLower.includes("bank") || methodLower.includes("transfer")) {
+      return Landmark;
+    }
+    if (methodLower.includes("upi") || methodLower.includes("phone") || methodLower.includes("mobile")) {
+      return Smartphone;
+    }
+    return WalletIcon;
+  };
+
+  // Get color for payment method
+  const getPaymentColor = (method: string) => {
+    const methodLower = method.toLowerCase();
+    if (methodLower.includes("card") || methodLower.includes("credit")) {
+      return "bg-blue-500/10 text-blue-500";
+    }
+    if (methodLower.includes("bank") || methodLower.includes("transfer")) {
+      return "bg-purple-500/10 text-purple-500";
+    }
+    if (methodLower.includes("upi") || methodLower.includes("phone") || methodLower.includes("mobile")) {
+      return "bg-emerald-500/10 text-emerald-500";
+    }
+    return "bg-amber-500/10 text-amber-500";
+  };
+
   return (
     <FadeInStagger className="flex flex-col gap-6">
       <Header />
 
       <FadeInItem>
-        <section className="-mx-5 rounded-b-[2.5rem] bg-gradient-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20">
+        <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Total Balance
@@ -202,6 +247,76 @@ export default function DashboardPage() {
           </div>
         </section>
       </FadeInItem>
+
+      {/* Payment Methods Section */}
+      {!analytics.loading && sortedPaymentMethods.length > 0 && (
+        <FadeInItem>
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <CreditCard className="size-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Payment Methods
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {sortedPaymentMethods.map(([method, amount]) => {
+                const Icon = getPaymentIcon(method);
+                const colorClass = getPaymentColor(method);
+                const percentage = analytics.monthSpend > 0 
+                  ? Math.round((amount / analytics.monthSpend) * 100)
+                  : 0;
+                const displayName = PAYMENT_LABELS[method.toLowerCase() as keyof typeof PAYMENT_LABELS] || method;
+
+                return (
+                  <motion.div
+                    key={method}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
+                    <Card className={cn(
+                      "flex flex-col gap-2 rounded-4xl p-4 transition-shadow hover:shadow-md",
+                      "border-border/50"
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "flex size-9 items-center justify-center rounded-2xl",
+                            colorClass
+                          )}>
+                            <Icon className="size-4.5" />
+                          </span>
+                          <span className="text-sm font-medium truncate">
+                            {displayName}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {percentage}%
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <p className="text-base font-bold tabular-nums">
+                          {formatCurrency(amount, currency)}
+                        </p>
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className="h-full rounded-full bg-primary"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+        </FadeInItem>
+      )}
     </FadeInStagger>
   );
 }

@@ -11,3 +11,10 @@ export const PAYMENT_METHODS = [
   "other",
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  card: "Card",
+  bank_transfer: "Bank Transfer",
+  other: "Other",
+};
