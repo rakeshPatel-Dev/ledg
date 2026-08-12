@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Wallet,
@@ -7,6 +8,7 @@ import {
   Users,
   Pencil,
   Trash2,
+  Minus,
 } from "lucide-react";
 import {
   SPACE_TYPES,
@@ -39,12 +41,27 @@ const TYPE_ICONS: Record<SpaceType, typeof Wallet> = {
   business: Building2,
 };
 
+const TYPE_BG: Record<SpaceType, string> = {
+  personal: "bg-emerald/10",
+  family: "bg-rose/10",
+  trip: "bg-sky/10",
+  business: "bg-amber/10",
+};
+
+const TYPE_TEXT: Record<SpaceType, string> = {
+  personal: "text-emerald",
+  family: "text-rose",
+  trip: "text-sky",
+  business: "text-amber",
+};
+
 const TYPE_OPTIONS = SPACE_TYPES.map((t) => ({
   value: t,
   label: t.charAt(0).toUpperCase() + t.slice(1),
 }));
 
 export default function SpacesPage() {
+  const navigate = useNavigate();
   const { data: spaces, isLoading } = useSpaces();
   const analytics = useAnalytics();
   const createSpace = useCreateSpace();
@@ -64,11 +81,16 @@ export default function SpacesPage() {
     setSheetOpen(true);
   };
 
-  const openEdit = (space: Space) => {
+  const openEdit = (e: React.MouseEvent, space: Space) => {
+    e.stopPropagation();
     setEditing(space);
     setName(space.name);
     setType(space.type);
     setSheetOpen(true);
+  };
+
+  const handleSpaceClick = (space: Space) => {
+    navigate(`/spaces/${space.id}`);
   };
 
   const submit = async () => {
@@ -105,6 +127,9 @@ export default function SpacesPage() {
   const summaryFor = (id: string) =>
     analytics.bySpace.find((s) => s.space.id === id);
 
+  const getBalanceColor = (balance: number) =>
+    balance >= 0 ? "text-emerald" : "text-destructive";
+
   return (
     <div className="flex flex-col gap-5">
       <header className="flex items-center justify-between">
@@ -136,16 +161,30 @@ export default function SpacesPage() {
         <div className="grid gap-3">
           {spaces.map((space) => {
             const Icon = TYPE_ICONS[space.type];
+            const typeBg = TYPE_BG[space.type];
+            const typeText = TYPE_TEXT[space.type];
             const summary = summaryFor(space.id);
+            const balance = summary?.balance ?? 0;
+            const income = summary?.income ?? 0;
+            const expense = summary?.expense ?? 0;
+            const balanceColor = getBalanceColor(balance);
+
             return (
               <Card
                 key={space.id}
-                className="flex items-center gap-4 rounded-4xl p-5 transition-all hover:bg-card/90"
+                onClick={() => handleSpaceClick(space)}
+                className={cn(
+                  "flex items-center gap-4 rounded-4xl p-5 transition-all",
+                  "hover:bg-accent/30 hover:shadow-lg hover:-translate-y-0.5",
+                  "cursor-pointer active:scale-[0.99]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                )}
               >
                 <span
                   className={cn(
                     "flex size-12 shrink-0 items-center justify-center rounded-2xl",
-                    "bg-primary/10 text-primary"
+                    typeBg,
+                    typeText
                   )}
                 >
                   <Icon className="size-5" />
@@ -153,22 +192,40 @@ export default function SpacesPage() {
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-foreground">{space.name}</p>
-                  <p className="text-xs capitalize text-muted-foreground">
-                    {space.type}
-                    {summary?.transactionCount
-                      ? ` · ${summary.transactionCount} transactions`
-                      : ""}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={cn("text-xs capitalize font-medium", typeText)}>
+                      {space.type}
+                    </span>
+                    {summary?.transactionCount && (
+                      <>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">
+                          {summary.transactionCount} transaction{summary.transactionCount !== 1 ? "s" : ""}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <p className="text-base font-bold tabular-nums">
-                    {formatCurrency(summary?.balance ?? 0)}
-                  </p>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <p className={cn("text-base font-bold tabular-nums", balanceColor)}>
+                      {formatCurrency(balance)}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <span className="text-emerald font-medium">
+                        <Minus className="size-3" /> {formatCurrency(income)}
+                      </span>
+                      <span className="text-destructive font-medium">
+                        <Minus className="size-3" /> {formatCurrency(expense)}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="flex gap-1">
                     <button
                       type="button"
-                      onClick={() => openEdit(space)}
+                      onClick={(e) => openEdit(e, space)}
                       aria-label={`Edit ${space.name}`}
                       className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95"
                     >
@@ -176,7 +233,10 @@ export default function SpacesPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDeletingSpace(space)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingSpace(space);
+                      }}
                       aria-label={`Delete ${space.name}`}
                       className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95"
                     >
