@@ -158,8 +158,6 @@ export default function SpacesPage() {
             const typeBadge = SPACE_TYPE_BADGE[space.type];
             const summary = summaryFor(space.id);
             const balance = summary?.balance ?? 0;
-            const income = summary?.income ?? 0;
-            const expense = summary?.expense ?? 0;
             const balanceColor = getBalanceColor(balance);
 
             return (
@@ -188,10 +186,10 @@ export default function SpacesPage() {
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate font-semibold text-foreground text-base">
-                          {space.name}
-                        </p>
+                      <p className="truncate font-semibold text-foreground text-base">
+                        {space.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
@@ -200,9 +198,8 @@ export default function SpacesPage() {
                         >
                           {space.type}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                        <span>
+                        <span className="text-xs text-muted-foreground/60">·</span>
+                        <span className="text-xs text-muted-foreground">
                           {summary?.transactionCount ?? 0} transaction
                           {(summary?.transactionCount ?? 0) !== 1 ? "s" : ""}
                         </span>
@@ -210,27 +207,14 @@ export default function SpacesPage() {
                     </div>
 
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <div className="flex flex-col items-end">
-                        <p
-                          className={cn(
-                            "text-base font-bold tabular-nums",
-                            balanceColor
-                          )}
-                        >
-                          {formatCurrency(balance)}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-[11px] font-semibold tabular-nums mt-0.5">
-                          <span className="text-emerald-600 dark:text-emerald-400">
-                            +{formatCurrency(income)}
-                          </span>
-                          <span className="text-muted-foreground/60 font-normal">
-                            /
-                          </span>
-                          <span className="text-rose-600 dark:text-rose-400">
-                            -{formatCurrency(expense)}
-                          </span>
-                        </div>
-                      </div>
+                      <p
+                        className={cn(
+                          "text-base font-bold tabular-nums",
+                          balanceColor
+                        )}
+                      >
+                        {formatCurrency(balance)}
+                      </p>
 
                       <div className="flex gap-1">
                         <button
