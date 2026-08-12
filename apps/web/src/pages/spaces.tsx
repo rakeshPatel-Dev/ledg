@@ -53,6 +53,7 @@ export default function SpacesPage() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Space | null>(null);
+  const [deletingSpace, setDeletingSpace] = useState<Space | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState<SpaceType>("personal");
 
@@ -90,11 +91,12 @@ export default function SpacesPage() {
     }
   };
 
-  const handleDelete = async (space: Space) => {
-    if (!window.confirm(`Delete "${space.name}"? This can't be undone.`)) return;
+  const handleDelete = async () => {
+    if (!deletingSpace) return;
     try {
-      await deleteSpace.mutateAsync(space.id);
-      toast.success("Space deleted");
+      await deleteSpace.mutateAsync(deletingSpace.id);
+      toast.success(`Deleted "${deletingSpace.name}"`);
+      setDeletingSpace(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
@@ -112,7 +114,7 @@ export default function SpacesPage() {
             Organise money by purpose
           </p>
         </div>
-        <Button onClick={openCreate} size="icon" aria-label="Create space">
+        <Button onClick={openCreate} size="icon" aria-label="Create space" className="rounded-full shadow-sm">
           <Plus className="size-5" />
         </Button>
       </header>
@@ -128,7 +130,7 @@ export default function SpacesPage() {
           icon={<Wallet className="size-7" />}
           title="No spaces yet"
           description="Create a space like Personal, Trip or Business to start tracking money there."
-          action={<Button onClick={openCreate}>Create your first space</Button>}
+          action={<Button onClick={openCreate} className="rounded-full">Create your first space</Button>}
         />
       ) : (
         <div className="grid gap-3">
@@ -138,7 +140,7 @@ export default function SpacesPage() {
             return (
               <Card
                 key={space.id}
-                className="flex items-center gap-4 rounded-4xl p-5"
+                className="flex items-center gap-4 rounded-4xl p-5 transition-all hover:bg-card/90"
               >
                 <span
                   className={cn(
@@ -150,7 +152,7 @@ export default function SpacesPage() {
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{space.name}</p>
+                  <p className="truncate font-semibold text-foreground">{space.name}</p>
                   <p className="text-xs capitalize text-muted-foreground">
                     {space.type}
                     {summary?.transactionCount
@@ -168,15 +170,15 @@ export default function SpacesPage() {
                       type="button"
                       onClick={() => openEdit(space)}
                       aria-label={`Edit ${space.name}`}
-                      className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground"
+                      className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95"
                     >
                       <Pencil className="size-3.5" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(space)}
+                      onClick={() => setDeletingSpace(space)}
                       aria-label={`Delete ${space.name}`}
-                      className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20"
+                      className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95"
                     >
                       <Trash2 className="size-3.5" />
                     </button>
@@ -188,15 +190,16 @@ export default function SpacesPage() {
         </div>
       )}
 
+      {/* Edit / Create Sheet */}
       <Sheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title={editing ? "Edit space" : "New space"}
         description="Give this space a name and purpose."
       >
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 pt-2">
           <div className="space-y-1.5">
-            <p className="text-sm font-medium">Name</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</p>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -207,7 +210,7 @@ export default function SpacesPage() {
           </div>
 
           <div className="space-y-1.5">
-            <p className="text-sm font-medium">Type</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</p>
             <Segmented
               options={TYPE_OPTIONS}
               value={type}
@@ -217,11 +220,39 @@ export default function SpacesPage() {
 
           <Button
             size="lg"
-            className="mt-1 w-full"
+            className="mt-2 w-full rounded-full text-base font-semibold"
             onClick={submit}
             disabled={createSpace.isPending || updateSpace.isPending}
           >
             {editing ? "Save changes" : "Create space"}
+          </Button>
+        </div>
+      </Sheet>
+
+      {/* Delete Confirmation Sheet */}
+      <Sheet
+        open={!!deletingSpace}
+        onOpenChange={(open) => !open && setDeletingSpace(null)}
+        title="Delete Space"
+        description={`Are you sure you want to delete "${deletingSpace?.name}"? All associated transactions will remain, but this space bucket will be removed.`}
+      >
+        <div className="flex flex-col gap-3 pt-3">
+          <Button
+            variant="destructive-solid"
+            size="lg"
+            className="w-full rounded-full text-base font-semibold"
+            onClick={handleDelete}
+            disabled={deleteSpace.isPending}
+          >
+            Delete Space
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full rounded-full text-base font-semibold"
+            onClick={() => setDeletingSpace(null)}
+          >
+            Cancel
           </Button>
         </div>
       </Sheet>

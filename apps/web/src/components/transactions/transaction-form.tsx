@@ -8,7 +8,6 @@ import {
 } from "@ledg/shared";
 import { toast } from "sonner";
 import {
-  Calendar,
   HandCoins,
   Wallet,
 } from "lucide-react";
@@ -17,6 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
 import { Segmented } from "@/components/ui/segmented";
+import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import {
@@ -60,6 +68,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
 
   const safeSpaces = spaces.length > 0 ? spaces : [];
   const defaultSpaceId =
+    editing?.spaceId ??
     formState.preselectedSpaceId ??
     safeSpaces.find((s) => s.type === "personal")?.id ??
     safeSpaces[0]?.id ??
@@ -69,8 +78,6 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
   useEffect(() => {
     if (!isOpen) return;
 
-    setSpace("");
-
     if (editing) {
       setType(editing.type);
       setCategory(editing.category);
@@ -78,7 +85,9 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
       setNote(editing.note ?? "");
       setDate(editing.date.slice(0, 10));
       setPaymentMethod(editing.paymentMethod ?? "cash");
+      setSpace(editing.spaceId || formState.preselectedSpaceId || "");
     } else {
+      setSpace(formState.preselectedSpaceId || "");
       const defaults = defaultInput(spaces);
       setType(defaults.type);
       setCategory(defaults.category);
@@ -125,7 +134,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
     try {
       if (editing) {
         await updateMutation.mutateAsync({
-          spaceId: activeSpaceId,
+          spaceId: editing.spaceId || activeSpaceId,
           id: editing.id,
           data: payload,
         });
@@ -169,7 +178,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
           </label>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-muted-foreground">
-              {currency === "USD" ? "$" : "₹"}
+              {currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "Rs."}
             </span>
             <input
               id="amount"
@@ -195,7 +204,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
                 )}
                 className="rounded-full bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-xs transition-colors hover:text-foreground"
               >
-                +{currency === "USD" ? "$" : "₹"}
+                +{currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "Rs."}
                 {quick}
               </button>
             ))}
@@ -214,20 +223,21 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
                 <button
                   key={meta.name}
                   type="button"
+                  title={meta.name}
                   onClick={() => setCategory(meta.name)}
                   className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-3xl px-2 py-3 text-center transition-all",
+                    "flex min-w-0 w-full flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all overflow-hidden border border-white/10",
                     active
-                      ? "bg-accent/80 text-foreground shadow-sm"
-                      : "bg-card text-muted-foreground hover:text-foreground"
+                      ? "bg-accent/80 text-foreground shadow-sm border-white/25"
+                      : "bg-card/75 text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Icon
-                    className="size-6"
+                    className="size-5 shrink-0"
                     style={{ color: meta.color }}
                     strokeWidth={active ? 2.4 : 2}
                   />
-                  <span className="text-[0.7rem] font-medium leading-tight">
+                  <span className="w-full truncate text-[0.65rem] font-medium leading-none tracking-tight text-center block">
                     {meta.name}
                   </span>
                 </button>
@@ -250,48 +260,49 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label htmlFor="date" className="text-sm font-medium">
+          <div className="space-y-1.5 min-w-0">
+            <label className="text-sm font-medium">
               Date
             </label>
-            <label className="relative block">
-              <Calendar className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="pl-10"
-              />
-            </label>
+            <DatePicker
+              value={date}
+              onChange={(val) => setDate(val)}
+            />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="space" className="text-sm font-medium">
+          <div className="space-y-1.5 min-w-0">
+            <label className="text-sm font-medium">
               Space
             </label>
-            <label className="relative block">
-              <Wallet className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <select
-                id="space"
-                value={activeSpaceId}
-                onChange={(e) => {
-                  if (e.target.value === "__new__") {
-                    closeForm();
-                    navigate("/spaces");
-                    return;
-                  }
-                  setSpace(e.target.value);
-                }}
-                className="h-12 w-full appearance-none rounded-2xl border border-input bg-card pl-10 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
+            <Select
+              value={activeSpaceId}
+              onValueChange={(val) => {
+                if (!val) return;
+                if (val === "__new__") {
+                  closeForm();
+                  navigate("/spaces");
+                  return;
+                }
+                setSpace(val);
+              }}
+            >
+              <SelectTrigger className="relative pl-10">
+                <Wallet className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <SelectValue placeholder="Select space">
+                  {safeSpaces.find((s) => s.id === activeSpaceId)?.name}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
                 {safeSpaces.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <SelectItem key={s.id} value={s.id}>
                     {s.name}
-                  </option>
+                  </SelectItem>
                 ))}
-                <option value="__new__">+ New space…</option>
-              </select>
-            </label>
+                <SelectSeparator />
+                <SelectItem value="__new__" className="font-medium text-primary">
+                  + New space…
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
