@@ -1,16 +1,7 @@
 {
   "version": 2,
-  "installCommand": "npm i -g pnpm@11.18.0 && cd ../.. && pnpm install --frozen-lockfile",
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.ts"
-    }
-  ]
-}
+  "installCommand": "corepack enable && corepack prepare pnpm@11.18.0 --activate && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "framework": "nodejs"
+}   
