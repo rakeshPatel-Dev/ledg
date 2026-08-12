@@ -18,6 +18,7 @@ createRoot(root).render(
     publishableKey={PUBLISHABLE_KEY}
     signInUrl="/sign-in"
     signUpUrl="/sign-up"
+    afterSignOutUrl="/welcome"
     signInFallbackRedirectUrl="/"
     signUpFallbackRedirectUrl="/"
   >

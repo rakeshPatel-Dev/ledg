@@ -17,19 +17,23 @@ function ApiBridge({ children }: { children: ReactNode }) {
   return children;
 }
 
+import { ThemeProvider } from "@/lib/theme-provider";
+
 export default function AppProviders({ children }: { children: ReactNode }) {
   return (
-    <ApiBridge>
-      <TransactionFormProvider>{children}</TransactionFormProvider>
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          style: {
-            borderRadius: "1rem",
-            fontWeight: 500,
-          },
-        }}
-      />
-    </ApiBridge>
+    <ThemeProvider defaultTheme="system">
+      <ApiBridge>
+        <TransactionFormProvider>{children}</TransactionFormProvider>
+        <Toaster
+          position="bottom-center"
+          toastOptions={{
+            style: {
+              borderRadius: "1rem",
+              fontWeight: 500,
+            },
+          }}
+        />
+      </ApiBridge>
+    </ThemeProvider>
   );
 }

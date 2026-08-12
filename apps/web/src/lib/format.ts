@@ -1,13 +1,26 @@
-export function formatCurrency(amount: number, currency = "INR"): string {
-  return new Intl.NumberFormat("en-IN", {
+export function formatCurrency(amount: number, currency = "NPR"): string {
+  if (currency === "NPR") {
+    const formattedNum = new Intl.NumberFormat("en-NP", {
+      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    }).format(amount);
+    return `Rs. ${formattedNum}`;
+  }
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
 }
 
-export function formatCompact(amount: number, currency = "INR"): string {
-  return new Intl.NumberFormat("en-IN", {
+export function formatCompact(amount: number, currency = "NPR"): string {
+  if (currency === "NPR") {
+    const formattedNum = new Intl.NumberFormat("en-NP", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(amount);
+    return `Rs. ${formattedNum}`;
+  }
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     notation: "compact",
@@ -16,7 +29,7 @@ export function formatCompact(amount: number, currency = "INR"): string {
 }
 
 export function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString("en-IN", {
+  return new Date(date).toLocaleDateString("en-NP", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -24,7 +37,7 @@ export function formatDate(date: string | Date): string {
 }
 
 export function formatTime(date: string | Date): string {
-  return new Date(date).toLocaleTimeString("en-IN", {
+  return new Date(date).toLocaleTimeString("en-NP", {
     hour: "numeric",
     minute: "2-digit",
   });
