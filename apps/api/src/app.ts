@@ -6,6 +6,7 @@ import {
   errorHandler,
   notFoundHandler,
 } from "./common/middlewares/error-handler.js";
+import { connectDatabase } from "./database/index.js";
 
 // CORS_ORIGIN accepts a comma-separated list of allowed origins.
 // Example: "https://ledg-web.vercel.app,https://www.ledg.app"
@@ -34,6 +35,16 @@ app.use(
 );
 
 app.use(express.json());
+
+// Reuse the Mongo connection across serverless invocations.
+app.use(async (_req, _res, next) => {
+  try {
+    await connectDatabase();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

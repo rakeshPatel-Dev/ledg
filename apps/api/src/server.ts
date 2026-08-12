@@ -5,12 +5,13 @@ import { APP_NAME } from "@ledg/shared";
 import app from "./app.js";
 import { connectDatabase, disconnectDatabase } from "./database/index.js";
 
-const port = Number(process.env.PORT ?? 3000);
+export default app;
 
-async function startServer() {
+async function startLocalServer() {
   await connectDatabase();
   console.log("Database connected successfully");
 
+  const port = Number(process.env.PORT ?? 3000);
   const server = app.listen(port, () => {
     console.log(`${APP_NAME} API listening on port ${port}`);
   });
@@ -38,7 +39,9 @@ async function startServer() {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 }
 
-startServer().catch((error) => {
-  console.error("Failed to start server", error);
-  process.exit(1);
-});
+if (!process.env.VERCEL) {
+  startLocalServer().catch((error) => {
+    console.error("Failed to start server", error);
+    process.exit(1);
+  });
+}
