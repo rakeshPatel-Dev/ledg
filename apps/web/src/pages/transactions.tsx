@@ -10,7 +10,7 @@ import { TransactionItem } from "@/components/transactions/transaction-item";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { useAllData } from "@/lib/queries";
-import { formatCurrency, relativeDay } from "@/lib/format";
+import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
@@ -61,7 +61,7 @@ export default function TransactionsPage() {
   const groups = useMemo(() => {
     const map = new Map<string, typeof filtered>();
     for (const t of filtered) {
-      const key = new Date(t.date).toISOString().slice(0, 10);
+      const key = localDateKey(t.date);
       const list = map.get(key) ?? [];
       list.push(t);
       map.set(key, list);

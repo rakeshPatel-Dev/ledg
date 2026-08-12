@@ -27,7 +27,7 @@ import {
   useUpdateSpace,
   useDeleteSpace,
 } from "@/lib/queries";
-import { formatCurrency, relativeDay } from "@/lib/format";
+import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 import {
@@ -112,7 +112,7 @@ export default function SpaceDetailPage() {
   const groups = useMemo(() => {
     const map = new Map<string, typeof filteredTransactions>();
     for (const t of filteredTransactions) {
-      const key = new Date(t.date).toISOString().slice(0, 10);
+      const key = localDateKey(t.date);
       const list = map.get(key) ?? [];
       list.push(t);
       map.set(key, list);
@@ -228,74 +228,6 @@ export default function SpaceDetailPage() {
         </div>
       </FadeInItem>
 
-      {/* Main Space Hero Banner */}
-      <FadeInItem>
-        <Card className="flex flex-col gap-5 rounded-4xl p-6 relative overflow-hidden border border-border/50 bg-card/80 backdrop-blur-md shadow-xs">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <span
-                className={`flex size-14 items-center justify-center rounded-2xl ${typeBg} ${typeText}`}
-              >
-                <Icon className="size-7" />
-              </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-extrabold tracking-tight text-foreground">
-                    {space.name}
-                  </h1>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${typeBadge}`}
-                  >
-                    {space.type}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {analytics.count} transaction{analytics.count !== 1 ? "s" : ""} logged
-                </p>
-              </div>
-            </div>
-
-            <Button
-              size="sm"
-              onClick={() => openCreate(space.id)}
-              className="rounded-full font-medium gap-1.5 shadow-xs"
-            >
-              <Plus className="size-4" /> Add
-            </Button>
-          </div>
-
-          {/* Balance & Analytics breakdown */}
-          <div className="grid grid-cols-3 gap-3 rounded-2xl bg-muted/40 p-4 border border-border/40">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Balance
-              </p>
-              <p className={`text-lg font-black tabular-nums mt-0.5 ${balanceColor}`}>
-                {formatCurrency(analytics.balance)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="size-3 text-emerald-500" /> Income
-              </p>
-              <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
-                +{formatCurrency(analytics.income)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <TrendingDown className="size-3 text-rose-500" /> Expenses
-              </p>
-              <p className="text-sm font-bold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
-                -{formatCurrency(analytics.expense)}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </FadeInItem>
-
       {/* Search & Filter */}
       <FadeInItem className="flex flex-col gap-3">
         <div className="relative">
@@ -307,13 +239,90 @@ export default function SpaceDetailPage() {
             className="pl-10"
           />
         </div>
+      </FadeInItem>
 
-        <Segmented
+      {/* Main Space Hero Banner */}
+      <FadeInItem>
+        <Card className="flex flex-col gap-4 rounded-4xl p-5 relative overflow-hidden border border-border/50 bg-card/80 backdrop-blur-md shadow-xs">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <span
+                  className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${typeBg} ${typeText}`}
+                >
+                  <Icon className="size-6" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h1 className="text-lg font-extrabold tracking-tight text-foreground truncate">
+                      {space.name}
+                    </h1>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${typeBadge} shrink-0`}
+                    >
+                      {space.type}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {analytics.count} transaction{analytics.count !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                size="lg"
+                onClick={() => {
+                  openCreate(space.id);
+                }}
+                className="rounded-full h-12 w-12 shrink-0 shadow-sm"
+              >
+                <Plus className="size-6" />
+              </Button>
+            </div>
+
+            {/* Balance & Analytics breakdown - Mobile Grid */}
+            <div className="flex flex-col gap-2 rounded-2xl bg-muted/40 p-3 border border-border/40">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Balance
+                </p>
+                <p className={`text-base font-black tabular-nums mt-0.5 ${balanceColor}`}>
+                  {formatCurrency(analytics.balance)}
+                </p>
+              </div>
+
+              <div className="my-0.5 h-px bg-border/40" />
+
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-0.5">
+                  <TrendingUp className="size-3 text-emerald-500" /> Income
+                </p>
+                <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  +{formatCurrency(analytics.income)}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-0.5">
+                  <TrendingDown className="size-3 text-rose-500" /> Expenses
+                </p>
+                <p className="text-sm font-bold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
+                  -{formatCurrency(analytics.expense)}
+                </p>
+              </div>
+            </div>
+          </Card>
+      </FadeInItem>
+
+      <FadeInItem className="">
+  
+      <Segmented
           options={TYPE_FILTERS}
           value={typeFilter}
           onChange={setTypeFilter}
-        />
-      </FadeInItem>
+          />
+          </FadeInItem>
+
+      
 
       {/* Transactions List */}
       {filteredTransactions.length === 0 ? (

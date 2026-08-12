@@ -20,7 +20,6 @@ export function TransactionItem({
   const meta = getCategoryMeta(transaction.category);
   const Icon = meta.icon;
   const isIncome = transaction.type === "income";
-  const isTransfer = transaction.type === "transfer";
 
   return (
     <motion.button
@@ -52,14 +51,10 @@ export function TransactionItem({
         <span
           className={cn(
             "text-sm font-bold tabular-nums",
-            isIncome
-              ? "text-success"
-              : isTransfer
-                ? "text-muted-foreground"
-                : "text-destructive"
+            isIncome ? "text-success" : "text-destructive"
           )}
         >
-          {isIncome ? "+" : isTransfer ? "" : "−"}
+          {isIncome ? "+" : "−"}
           {formatCurrency(transaction.amount, currency)}
         </span>
         <span className="flex items-center gap-1 text-[0.65rem] uppercase tracking-wide text-muted-foreground">

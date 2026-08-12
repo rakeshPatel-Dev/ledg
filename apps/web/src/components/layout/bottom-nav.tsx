@@ -22,22 +22,53 @@ export function BottomNav() {
     { to: "/analytics", label: "Insights", icon: ChartNoAxesCombined, end: false },
   ];
 
+  // Haptic feedback for mobile
+  const vibrate = (pattern: number | number[]) => {
+    if (navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+  };
+
+  const handleAddClick = () => {
+    vibrate(10);
+    openCreate();
+  };
+
   return (
-    <nav className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-      <div className="relative flex w-full max-w-md items-center justify-around rounded-full border border-white/30 dark:border-white/10 bg-card/75 p-1.5 shadow-2xl backdrop-blur-2xl backdrop-saturate-180">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4  bg-linear-to-t from-background/60  via-background/20 to-transparent">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="relative flex w-full max-w-md items-center px-1.5 py-0.5  justify-around rounded-full border border-border/50 bg-card/40  shadow-2xl backdrop-blur-2xl backdrop-saturate-180"
+      >
         {navItems.map((item) => {
           if (item.type === "button") {
             return (
               <div key="add-button" className="flex flex-1 justify-center">
                 <motion.button
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   type="button"
-                  onClick={() => openCreate()}
+                  onClick={handleAddClick}
                   aria-label="Add transaction"
-                  className="flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/35 transition-colors"
+                  className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-colors hover:bg-primary/90"
                 >
-                  <Plus className="size-6 stroke-[2.5px]" />
+                  <Plus className="size-7 stroke-[2.5px]" />
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-primary/20"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.6, 0, 0.6],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      ease: "easeInOut",
+                    }}
+                  />
                 </motion.button>
               </div>
             );
@@ -52,7 +83,7 @@ export function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  "relative flex flex-1 flex-col items-center gap-1 py-1 text-[0.65rem] font-semibold transition-colors select-none",
+                  "relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[0.6rem] font-semibold transition-colors select-none rounded-full touch-manipulation",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -65,17 +96,34 @@ export function BottomNav() {
                     <motion.div
                       layoutId="activeBottomNavPill"
                       className="absolute inset-0 rounded-full bg-primary/10 -z-10"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 380, 
+                        damping: 30,
+                        mass: 0.8
+                      }}
                     />
                   )}
-                  <Icon className={cn("size-5 transition-transform", isActive && "stroke-[2.5px] scale-105")} />
-                  <span>{item.label}</span>
+                  <motion.div
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="flex flex-col items-center"
+                  >
+                    <Icon 
+                      className={cn(
+                        "size-5 transition-all duration-200",
+                        isActive && "stroke-[2.5px] scale-105"
+                      )} 
+                    />
+                    <span className="mt-0.5">{item.label}</span>
+                  </motion.div>
+                  
                 </>
               )}
             </NavLink>
           );
         })}
-      </div>
+      </motion.div>
     </nav>
   );
 }

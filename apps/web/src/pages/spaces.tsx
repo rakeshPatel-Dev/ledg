@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Wallet, Pencil, Trash2 } from "lucide-react";
+import { Plus, Wallet, Pencil, Trash2, Search, X } from "lucide-react";
 import { SPACE_TYPES, type Space, type SpaceType } from "@ledg/shared";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -48,6 +48,17 @@ export default function SpacesPage() {
   const [deletingSpace, setDeletingSpace] = useState<Space | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState<SpaceType>("personal");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter spaces based on search query
+  const filteredSpaces = useMemo(() => {
+    if (!spaces) return [];
+    if (!searchQuery.trim()) return spaces;
+    
+    return spaces.filter(space =>
+      space.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [spaces, searchQuery]);
 
   const openCreate = () => {
     setEditing(null);
@@ -130,28 +141,63 @@ export default function SpacesPage() {
         </header>
       </FadeInItem>
 
+      {/* Search Bar */}
+      <FadeInItem>
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search spaces..."
+            className="pl-10 pr-10 rounded-full bg-muted/50 border-0 focus-visible:ring-1"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+      </FadeInItem>
+
       {isLoading ? (
         <div className="grid gap-3">
           {[0, 1].map((i) => (
             <Skeleton key={i} className="h-28 w-full rounded-4xl" />
           ))}
         </div>
-      ) : !spaces || spaces.length === 0 ? (
+      ) : !filteredSpaces || filteredSpaces.length === 0 ? (
         <FadeInItem>
           <EmptyState
             icon={<Wallet className="size-7" />}
-            title="No spaces yet"
-            description="Create a space like Personal, Trip or Business to start tracking money there."
+            title={searchQuery ? "No results found" : "No spaces yet"}
+            description={
+              searchQuery
+                ? `No spaces match "${searchQuery}"`
+                : "Create a space like Personal, Trip or Business to start tracking money there."
+            }
             action={
-              <Button onClick={openCreate} className="rounded-full">
-                Create your first space
-              </Button>
+              !searchQuery ? (
+                <Button onClick={openCreate} className="rounded-full">
+                  Create your first space
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => setSearchQuery("")} 
+                  variant="outline"
+                  className="rounded-full"
+                >
+                  Clear search
+                </Button>
+              )
             }
           />
         </FadeInItem>
       ) : (
         <div className="grid gap-3">
-          {spaces.map((space) => {
+          {filteredSpaces.map((space) => {
             const Icon = SPACE_TYPE_ICONS[space.type] ?? Wallet;
             const typeBg = SPACE_TYPE_BG[space.type];
             const typeText = SPACE_TYPE_TEXT[space.type];
@@ -170,14 +216,14 @@ export default function SpacesPage() {
                   <Card
                     onClick={() => handleSpaceClick(space)}
                     className={cn(
-                      "flex items-center gap-4 rounded-4xl p-5 transition-shadow shadow-xs hover:shadow-md",
+                      "flex items-center gap-2 rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
                       "cursor-pointer hover:border-primary/20",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     )}
                   >
                     <span
                       className={cn(
-                        "flex size-12 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                        "flex size-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
                         typeBg,
                         typeText
                       )}
@@ -186,10 +232,10 @@ export default function SpacesPage() {
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-foreground text-base">
+                      <p className="truncate font-bold text-foreground text-sm">
                         {space.name}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1 mt-1">
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
@@ -200,8 +246,7 @@ export default function SpacesPage() {
                         </span>
                         <span className="text-xs text-muted-foreground/60">·</span>
                         <span className="text-xs text-muted-foreground">
-                          {summary?.transactionCount ?? 0} transaction
-                          {(summary?.transactionCount ?? 0) !== 1 ? "s" : ""}
+                          {summary?.transactionCount ?? 0} {(summary?.transactionCount ?? 0) !== 1 ? "trxns" : "trxn"}
                         </span>
                       </div>
                     </div>
