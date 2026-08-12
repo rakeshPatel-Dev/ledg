@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 
 import { SpaceModel, type SpaceDoc } from "./model.js";
+import { TransactionModel } from "../transactions/model.js";
 
 export async function createSpace(
   ownerId: Types.ObjectId,
@@ -73,4 +74,9 @@ export async function ensureDefaultSpace(
 
 function toSpaceDto(doc: Record<string, unknown>): SpaceDoc {
   return { ...doc, id: String(doc._id) } as unknown as SpaceDoc;
+}
+
+export async function hasTransactions(spaceId: string): Promise<boolean> {
+  const count = await TransactionModel.countDocuments({ spaceId });
+  return count > 0;
 }

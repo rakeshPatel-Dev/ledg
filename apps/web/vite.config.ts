@@ -10,6 +10,9 @@ export default defineConfig({
       "@": import.meta.dirname + "/src",
     },
   },
+  // Dev proxy: forwards /api/* → local API server so CORS isn't needed in dev.
+  // In production, VITE_API_URL is set as an env var pointing at the deployed API,
+  // and the proxy is not used (Vite only runs during `vite dev`).
   server: {
     port: 5173,
     proxy: {
