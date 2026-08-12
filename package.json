@@ -5,10 +5,11 @@
   "main": "index.js",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=22",
+    "node": ">=18",
     "pnpm": ">=11"
   },
   "scripts": {
+    "preinstall": "corepack prepare pnpm@11.18.0 --activate",
     "dev": "pnpm --parallel -r dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
