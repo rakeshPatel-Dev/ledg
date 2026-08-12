@@ -8,6 +8,7 @@ import DashboardPage from "@/pages/dashboard";
 import TransactionsPage from "@/pages/transactions";
 import AnalyticsPage from "@/pages/analytics";
 import SpacesPage from "@/pages/spaces";
+import SpaceDetailPage from "@/pages/space-detail";
 import SettingsPage from "@/pages/settings";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/spaces" element={<SpacesPage />} />
+            <Route path="/spaces/:id" element={<SpaceDetailPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/welcome" replace />} />
