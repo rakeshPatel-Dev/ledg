@@ -1,6 +1,6 @@
-# PRD: Personal Expense Tracker
+# PRD: Personal Finance Tracker (Income + Expense)
 
-**Version:** 2.0 (MVP)
+**Version:** 3.0 (MVP)
 **Status:** Draft
 **Owner:** Rakesh Patel
 **Last Updated:** August 2026
@@ -9,13 +9,15 @@
 
 # 1. Overview
 
-Personal Expense Tracker is a modern web application that enables users to record, organize, and analyze their personal finances with minimal friction.
+Ledg is a modern web application that enables users to record, organize, and analyze their personal finances with minimal friction.
+
+The product is **not** an expense-only tracker. It tracks **both income and expenses** as first-class citizens. The dashboard and analytics treat income, expense, and savings equally so users understand their full cash position, not just what they spend.
 
 Instead of overwhelming users with complex forms and accounting terminology, the application focuses on one simple objective:
 
 > **Logging a transaction should take less than five seconds.**
 
-The MVP is intentionally lightweight, prioritizing speed, simplicity, and consistency. Advanced capabilities such as AI-powered financial coaching, voice-based expense entry, offline synchronization, and shared expense spaces are planned for future releases.
+The MVP is intentionally lightweight, prioritizing speed, simplicity, and consistency. A transaction is any money movement: expense or income. Advanced capabilities such as AI-powered financial coaching, voice-based entry, and offline synchronization are planned for future releases. Shared spaces are planned for a later phase (see Shared Spaces below).
 
 ---
 
@@ -50,13 +52,16 @@ The application should eventually evolve into an intelligent financial assistant
 
 ## MVP Goals
 
-- Record transactions in under 5 seconds
+- Record a transaction (expense or income) in under 5 seconds
+- Track both income and expenses on an equal footing
+- Net balance visibility across accounts and spaces
 - Clean and intuitive interface
 - Mobile-friendly experience
 - Instant dashboard updates
 - Powerful search and filtering
 - Multiple account support
 - Custom categories
+- Shared spaces with members
 - CSV export
 - Progressive Web App (PWA)
 
@@ -64,11 +69,11 @@ The application should eventually evolve into an intelligent financial assistant
 
 ## Future Goals
 
+- Shared Spaces
 - Voice-based transaction entry
 - AI-generated financial summaries
 - AI spending analysis
 - AI financial recommendations
-- Shared expense spaces
 - Offline-first synchronization
 - Budget planning
 - Receipt OCR
@@ -91,12 +96,14 @@ Examples
 
 ---
 
-## Secondary Users (Future)
+## Secondary Users
 
 - Couples
 - Families
 - Roommates
 - Small teams
+
+These users are supported via Shared Spaces (Phase 3 feature).
 
 ---
 
@@ -109,8 +116,8 @@ The following features are intentionally excluded from the MVP.
 - Receipt OCR
 - SMS Parsing
 - Offline-first Sync
-- Shared Spaces
 - Multi-currency
+- Shared Spaces
 - Budget Planning
 - Recurring Transactions
 - Bank Integrations
@@ -137,7 +144,6 @@ As a user,
 
 - I want to add income.
 - I want to add expenses.
-- I want to transfer money between accounts.
 - I want to edit transactions.
 - I want to delete transactions.
 - I want to search transactions.
@@ -212,6 +218,29 @@ I want to export my financial data as CSV.
 
 ---
 
+## Shared Spaces
+
+As a user,
+
+- I want to invite people to a specific space.
+- I want to share transactions with members of that space.
+- I want to see who is a member of a space.
+- I want to manage member roles and remove members.
+- I want to see pending invites and accept or decline them.
+- I want to leave a space I was invited to.
+
+---
+
+## Income
+
+As a user,
+
+- I want to add income as easily as expenses.
+- I want to see income sources broken down by category.
+- I want to see my savings (income - expense) clearly.
+
+---
+
 # 8. Functional Requirements
 
 ## Authentication
@@ -259,7 +288,6 @@ Supported Types
 
 - Expense
 - Income
-- Transfer
 
 ---
 
@@ -272,6 +300,11 @@ Each account contains
 - Currency
 - Balance
 - Color
+
+Support
+
+- Multiple accounts per space
+- Archive unused accounts
 
 ---
 
@@ -313,6 +346,25 @@ Support
 ## Export
 
 Export all transactions to CSV.
+
+---
+
+## Shared Spaces
+
+Each space supports
+
+- Multiple members with roles
+- Invite by email
+- Pending invite management
+- Shared transactions across members
+- Leave / remove member
+
+Roles
+
+- Owner
+- Admin
+- Member
+- Viewer
 
 ---
 
@@ -415,14 +467,7 @@ Future versions will support
 
 ---
 
-## Shared Spaces
-
-Support
-
-- Family accounts
-- Couples
-- Trip expenses
-- Business expenses
+> **Shared Spaces is planned for Phase 3.** See "Shared Spaces (Members & Sharing)" below for the full specification.
 
 ---
 
@@ -541,7 +586,7 @@ Focus on shipping the smallest usable product first.
 ## Phase 3
 
 - Offline-first
-- Shared Spaces
+- Shared Spaces (members + invites)
 - Budget Planning
 - Notifications
 - Receipt OCR
@@ -549,7 +594,179 @@ Focus on shipping the smallest usable product first.
 
 ---
 
-# 14. Product Philosophy
+# 14. What's Missing (Gap Analysis)
+
+The product tracks **income and expenses**, not just expenses. The following gaps exist between the current MVP and the stated product scope. Each gap marks work that is still required.
+
+## Income Is Not A First-Class Citizen
+
+- The app is branded and documented as an "expense tracker".
+- Income analytics (income sources, monthly income trend, income vs expense comparison) are thin.
+- The transaction form exposes all transaction types, but income defaults and income-only categories are limited.
+- **Fix:** Explicit income module, income source breakdown, and equal treatment of income/expense in every chart and card.
+
+## No Accounts Module
+
+- Transactions have a `paymentMethod` field only — there is no `Accounts` collection, account balances, or account management.
+- **Fix:** Add `Accounts` collection, account CRUD, and per-account balance.
+
+## Categories Are Static
+
+- Categories are hardcoded in `lib/categories.ts` (frontend only) — not stored per space, not editable, not customizable.
+- No Categories collection in the backend despite being planned in the DB design.
+- **Fix:** Add `Categories` collection (per space), category CRUD, default categories seeded per space, and color/icon per category.
+
+## CSV Export Missing
+
+- MVP goal "CSV Export" is not implemented on the API or frontend.
+- **Fix:** Backend export endpoint + frontend export button with date-range filter.
+
+## PWA Incomplete
+
+- A web manifest exists but there is no service worker, offline shell, or install prompt flow.
+- **Fix:** Service worker registration, caching strategy, and PWA install support.
+
+## Search Is Client-Side Only
+
+- The backend exposes filter/query params, but the frontend only does in-memory filtering.
+- No command palette (Ctrl+K), no debounced server search, no search across all spaces.
+- **Fix:** Server-side search endpoint consumption, global search UI.
+
+## Dashboard / Analytics Gaps
+
+- No spending trend chart (daily/weekly/monthly).
+- No income vs expense monthly comparison chart.
+- No period selector (this month / 3 months / year / all time).
+- No month-over-month percentage changes.
+- Savings rate exists but is not linked to any savings goal or trend.
+- **Fix:** Implement ANALYTICS_ROADMAP Phase 1 items.
+
+## Accounts Currency Setting Missing
+
+- Currency is hardcoded to NPR; settings shows "Auto" with a disabled control.
+- **Fix:** User-selectable default currency stored in settings, applied across formatting.
+
+## User Model Is Minimal
+
+- `UserModel` stores only `clerkId`. No name, email, image — which blocks shared-space member display and invite-by-email.
+- **Fix:** Store email/name/image on the user record (from Clerk) for member avatars and invitations.
+
+## Shared Spaces Not Yet Implemented
+
+- Spaces are currently single-owner only. See the Shared Spaces spec below for the full design and implementation checklist.
+
+---
+
+# 15. Shared Spaces (Members & Sharing)
+
+## Goal
+
+Let a space owner invite other users into a specific space so they can view and manage the same transactions together. Transactions remain scoped to a space; every member of a space sees the same data.
+
+## Use Cases
+
+- Couples managing a joint household
+- Family members sharing expenses
+- Roommates splitting rent and bills
+- Trip groups tracking shared costs
+- Small teams / businesses sharing business spend
+
+## Roles
+
+| Role | Can view | Can add/edit transactions | Can manage members | Can delete space |
+|------|----------|---------------------------|---------------------|------------------|
+| Owner | Yes | Yes | Yes | Yes |
+| Admin | Yes | Yes | Yes | No |
+| Member | Yes | Yes | No | No |
+| Viewer | Yes | No | No | No |
+
+## Data Model
+
+Add a `members` array to the Space collection (or a separate `SpaceMember` collection for cleaner queries):
+
+```ts
+{
+    spaceId
+
+    userId
+
+    role       // owner | admin | member | viewer
+
+    status     // invited | active
+
+    invitedBy
+
+    invitedAt
+
+    acceptedAt
+}
+```
+
+A `SpaceMember` collection is preferred so that:
+
+- "Spaces I belong to" is a single query on `userId`.
+- Invite status is tracked without mutating the space document.
+
+## Invitation Flow
+
+1. Owner/Admin opens Space → Members → Invite.
+2. Enters the invitee's email.
+3. Backend creates a pending invite; sends email with an accept link (or the invitee sees it in-app on next login).
+4. Invitee accepts → becomes a `member` with status `active`.
+5. Invitee's space list now includes the shared space; transactions are shared instantly.
+
+Re-inviting a user who already has a pending invite updates the invite instead of duplicating it. Duplicate active memberships are rejected.
+
+## API
+
+```text
+GET    /spaces                       # returns spaces where user is owner OR member
+POST   /spaces                       # creates space (creator becomes owner)
+PUT    /spaces/:id                   # edit (owner/admin)
+DELETE /spaces/:id                   # delete (owner only)
+
+GET    /spaces/:id/members           # list members
+POST   /spaces/:id/invite            # invite by email { email, role? }
+DELETE /spaces/:id/members/:userId   # remove member (owner/admin)
+PATCH  /spaces/:id/members/:userId   # change role (owner/admin)
+
+GET    /invites                      # pending invites for current user
+POST   /invites/:id/accept           # accept invite
+POST   /invites/:id/decline          # decline invite
+
+POST   /spaces/:id/leave             # member leaves space
+```
+
+## Authorization
+
+- Space list: `ownerId == userId` OR `userId` is an active member.
+- Transaction CRUD: require membership in the space (any active role). Transaction writes additionally require `role != viewer`.
+- Invites/member management: require `owner` or `admin`.
+- Delete space: require `owner`.
+
+## Frontend
+
+- Space detail page: "Members" section listing avatars, names, roles.
+- "Invite" button opening an email input + role selector sheet.
+- Invitee sees pending invites in Settings or a dedicated Invites screen.
+- Space cards show a member-count/avatar stack.
+- Non-owner members get no "Delete space" action; viewers get read-only transaction UI.
+
+## Implementation Checklist
+
+- [ ] Add `SpaceMember` model + indexes (`userId`, `spaceId`, `status`)
+- [ ] Add invite service (create, list pending, accept, decline)
+- [ ] Update space repository queries to include memberships
+- [ ] Add member management endpoints + validators
+- [ ] Add email sending (e.g., Resend) or in-app invite notifications
+- [ ] Store user email/name/image from Clerk on the User record
+- [ ] Frontend: members UI, invite sheet, invites screen
+- [ ] Frontend: role-aware rendering (owner/admin/member/viewer)
+- [ ] Update analytics/dashboard to aggregate only spaces the user belongs to
+
+---
+
+# 16. Product Philosophy
 
 The application is guided by one simple principle:
 
