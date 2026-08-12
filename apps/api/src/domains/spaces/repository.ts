@@ -34,7 +34,7 @@ export async function updateSpace(
   data: Record<string, unknown>
 ): Promise<SpaceDoc | null> {
   const doc = await SpaceModel.findOneAndUpdate({ _id: id, ownerId }, data, {
-    new: true,
+    returnDocument: "after",
     runValidators: true,
   }).lean();
   return doc ? toSpaceDto(doc) : null;
@@ -69,7 +69,7 @@ export async function ensureDefaultSpace(
     name: "Personal",
     type: "personal",
   });
-  return created.toObject();
+  return toSpaceDto(created.toObject());
 }
 
 function toSpaceDto(doc: Record<string, unknown>): SpaceDoc {

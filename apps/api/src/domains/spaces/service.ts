@@ -53,7 +53,6 @@ export async function updateUserSpace(
 
 export async function deleteUserSpace(clerkId: string, spaceId: string) {
   const ownerId = await findOrCreateUser(clerkId);
-  const deleted = await spaceRepository.deleteSpace(spaceId, ownerId);
 
   // check if there are any transactions associated with this space
   const hasTransactions = await spaceRepository.hasTransactions(spaceId);
@@ -61,6 +60,8 @@ export async function deleteUserSpace(clerkId: string, spaceId: string) {
   if (hasTransactions) {
     throw new ConflictError("Cannot delete space with transactions");
   }
+
+  const deleted = await spaceRepository.deleteSpace(spaceId, ownerId);
 
   if (!deleted) {
     throw new NotFoundError("Space");

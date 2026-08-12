@@ -89,7 +89,7 @@ export async function updateTransaction(
     { _id: id, spaceId },
     data,
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }
   ).lean();

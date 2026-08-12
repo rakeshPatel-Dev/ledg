@@ -1,7 +1,7 @@
 export const SPACE_TYPES = ["personal", "family", "trip", "business"] as const;
 export type SpaceType = (typeof SPACE_TYPES)[number];
 
-export const TRANSACTION_TYPES = ["expense", "income", "transfer"] as const;
+export const TRANSACTION_TYPES = ["expense", "income"] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
 export const PAYMENT_METHODS = [
@@ -15,6 +15,6 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cash: "Cash",
   card: "Card",
-  bank_transfer: "Bank Transfer",
+  bank_transfer: "Bank",
   other: "Other",
 };
