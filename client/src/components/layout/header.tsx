@@ -45,7 +45,6 @@ export function Header() {
         className="relative flex size-11 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
       >
         <Bell className="size-5" />
-        <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary animate-pulse" />
       </button>
     </header>
   );

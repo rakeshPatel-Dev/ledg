@@ -12,6 +12,14 @@ export interface Announcement {
 // replayed (tracked via ledg-announcements-last-seen in localStorage).
 export const ANNOUNCEMENTS: Announcement[] = [
   {
+    id: "notification-bell-cleanup",
+    title: "Cleaner Notifications Bell",
+    message:
+      "Removed the unread dot from the notifications icon — the bell now stays quiet until you tap it.",
+    version: "v1.2.1",
+    date: "2026-08-15",
+  },
+  {
     id: "motion-control",
     title: "New: Motion Control",
     message:
