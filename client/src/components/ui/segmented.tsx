@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ export interface SegmentOption<T extends string> {
 interface SegmentedProps<T extends string> {
   options: SegmentOption<T>[];
   value: T;
-  onChange: (value: T) => void;
+  onChange: Dispatch<SetStateAction<T>>;
   className?: string;
 }
 

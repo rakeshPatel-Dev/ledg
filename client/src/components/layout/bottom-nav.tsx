@@ -7,19 +7,24 @@ import {
   FolderOpen,
   Plus,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useTransactionForm } from "@/lib/transaction-form";
 
+type NavItem =
+  | { type: "link"; to: string; label: string; icon: LucideIcon; end: boolean }
+  | { type: "button" };
+
 export function BottomNav() {
   const { openCreate } = useTransactionForm();
 
-  const navItems = [
-    { to: "/", label: "Home", icon: House, end: true },
-    { to: "/transactions", label: "Activity", icon: Wallet, end: false },
-    { type: "button" as const },
-    { to: "/spaces", label: "Spaces", icon: FolderOpen, end: false },
-    { to: "/analytics", label: "Insights", icon: ChartNoAxesCombined, end: false },
+  const navItems: NavItem[] = [
+    { type: "link", to: "/", label: "Home", icon: House, end: true },
+    { type: "link", to: "/transactions", label: "Activity", icon: Wallet, end: false },
+    { type: "button" },
+    { type: "link", to: "/spaces", label: "Spaces", icon: FolderOpen, end: false },
+    { type: "link", to: "/analytics", label: "Insights", icon: ChartNoAxesCombined, end: false },
   ];
 
   // Haptic feedback for mobile
@@ -74,12 +79,12 @@ export function BottomNav() {
             );
           }
 
-          const Icon = item.icon!;
+          const Icon = item.icon;
 
           return (
             <NavLink
               key={item.to}
-              to={item.to!}
+              to={item.to}
               end={item.end}
               className={({ isActive }) =>
                 cn(
