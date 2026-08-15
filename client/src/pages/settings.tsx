@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
-import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
+import { RequestFeatureForm } from "@/components/features/request-feature-form";
 import { useTheme } from "@/lib/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
 
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
+  const [requestSheetOpen, setRequestSheetOpen] = useState(false);
 
   const name = user?.firstName
     ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
@@ -113,6 +115,59 @@ export default function SettingsPage() {
         </Card>
       </div>
 
+      {/* Feedback & Requests Section */}
+      <div className="flex flex-col gap-2">
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Feedback & Requests
+        </h2>
+        <Card className="rounded-4xl p-1.5">
+          <button
+            type="button"
+            onClick={() => setRequestSheetOpen(true)}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Sparkles className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Request a Feature</span>
+              <span className="block text-xs font-medium text-muted-foreground">
+                Suggest an idea or report an issue
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+        </Card>
+      </div>
+
+      {/* Legal Section */}
+      <div className="flex flex-col gap-2">
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Legal
+        </h2>
+        <Card className="rounded-4xl p-1.5">
+          {[
+            { to: "/privacy", label: "Privacy Policy", icon: ShieldCheck },
+            { to: "/terms", label: "Terms of Service", icon: FileText },
+            { to: "/data-deletion", label: "Delete My Data", icon: Trash2 },
+          ].map((item, i) => (
+            <div key={item.to}>
+              {i > 0 && <div className="mx-4 my-1 h-px bg-border/60" />}
+              <Link
+                to={item.to}
+                className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <item.icon className="size-5" />
+                </span>
+                <span className="flex-1 text-sm font-semibold">{item.label}</span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </Link>
+            </div>
+          ))}
+        </Card>
+      </div>
+
       {/* Sign Out Action */}
       <Button
         variant="outline"
@@ -126,6 +181,16 @@ export default function SettingsPage() {
         <LogOut className="size-4 mr-2" />
         Sign out
       </Button>
+
+      {/* Request Feature Sheet */}
+      <Sheet
+        open={requestSheetOpen}
+        onOpenChange={setRequestSheetOpen}
+        title="Request a Feature"
+        description="Suggest an idea or report an issue. We read every request."
+      >
+        <RequestFeatureForm />
+      </Sheet>
 
       {/* Theme Picker Sheet */}
       <Sheet
