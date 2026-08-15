@@ -1,5 +1,7 @@
 {
   "name": "@ledg/eslint-config",
   "version": "0.1.0",
-  "private": true
+  "private": true,
+  "main": "index.js",
+  "type": "module"
 }

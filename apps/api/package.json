@@ -8,11 +8,12 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit"
+    
   },
   "dependencies": {
     "@clerk/backend": "^3.15.0",
     "@clerk/express": "^2.1.52",
-    "@ledg/shared": "workspace:^",
+    "@ledg/shared": "*",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -20,7 +21,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@ledg/tsconfig": "workspace:^",
+    "@ledg/tsconfig": "*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.2",

@@ -3,16 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=18",
-    "pnpm": ">=11"
+    "node": ">=18"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "preinstall": "corepack prepare pnpm@11.18.0 --activate",
-    "dev": "pnpm --parallel -r dev",
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck"
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "keywords": [],
   "author": "",

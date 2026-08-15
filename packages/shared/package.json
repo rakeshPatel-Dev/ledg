@@ -12,6 +12,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@ledg/tsconfig": "workspace:^"
+    "@ledg/tsconfig": "*"
   }
 }
