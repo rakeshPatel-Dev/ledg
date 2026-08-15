@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install -g npm@10 && npm install --legacy-peer-deps",
+  "installCommand": "npm install -g npm@10 && npm ci --legacy-peer-deps",
   "buildCommand": "npm run build --workspace=@ledg/api"
 }
