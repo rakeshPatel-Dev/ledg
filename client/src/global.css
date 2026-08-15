@@ -297,5 +297,16 @@
   scrollbar-width: none;
 }
 
+/* Reduced motion: flatten CSS transitions/animations app-wide when the
+   Motion setting (ledg-motion) is Reduced or System-respecting */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 
 

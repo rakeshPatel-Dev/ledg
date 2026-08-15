@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
-import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles } from "lucide-react";
+import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { RequestFeatureForm } from "@/components/features/request-feature-form";
 import { useTheme } from "@/lib/theme-provider";
+import { useMotion } from "@/lib/animation-provider";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -16,9 +17,11 @@ export default function SettingsPage() {
   const { signOut, openUserProfile } = useClerk();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { motion, setMotion } = useMotion();
 
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [requestSheetOpen, setRequestSheetOpen] = useState(false);
+  const [motionSheetOpen, setMotionSheetOpen] = useState(false);
 
   const name = user?.firstName
     ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
@@ -35,6 +38,12 @@ export default function SettingsPage() {
   const themeLabels = {
     light: "Light Mode",
     dark: "Dark Mode",
+    system: "System Default",
+  };
+
+  const motionLabels = {
+    full: "Full Motion",
+    reduced: "Reduced Motion",
     system: "System Default",
   };
 
@@ -111,6 +120,25 @@ export default function SettingsPage() {
               </span>
             </span>
             <span className="text-[0.65rem] font-semibold text-muted-foreground">Auto</span>
+          </button>
+
+          <div className="mx-4 my-1 h-px bg-border/60" />
+
+          <button
+            type="button"
+            onClick={() => setMotionSheetOpen(true)}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Activity className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Motion</span>
+              <span className="block text-xs font-medium text-muted-foreground capitalize">
+                {motionLabels[motion]}
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
           </button>
         </Card>
       </div>
@@ -223,6 +251,46 @@ export default function SettingsPage() {
                   <Icon className="size-5" />
                 </span>
                 <span className="flex-1 text-sm">{themeLabels[t]}</span>
+                {active && <span className="size-2 rounded-full bg-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      </Sheet>
+
+      {/* Motion Picker Sheet */}
+      <Sheet
+        open={motionSheetOpen}
+        onOpenChange={setMotionSheetOpen}
+        title="Choose Motion"
+        description="Control how animated the app feels."
+      >
+        <div className="grid gap-3 pt-2">
+          {(["full", "reduced", "system"] as const).map((m) => {
+            const Icon = m === "full" ? Activity : m === "reduced" ? Waves : Monitor;
+            const active = motion === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMotion(m);
+                  setMotionSheetOpen(false);
+                }}
+                className={cn(
+                  "flex items-center gap-4 rounded-3xl p-4 text-left font-semibold transition-all border",
+                  active
+                    ? "border-primary bg-primary/10 text-primary shadow-xs"
+                    : "border-border/60 bg-card text-foreground hover:bg-muted/50"
+                )}
+              >
+                <span className={cn(
+                  "flex size-10 shrink-0 items-center justify-center rounded-2xl",
+                  active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                )}>
+                  <Icon className="size-5" />
+                </span>
+                <span className="flex-1 text-sm">{motionLabels[m]}</span>
                 {active && <span className="size-2 rounded-full bg-primary" />}
               </button>
             );
