@@ -1,9 +1,0 @@
-{
-  "name": "ledg-api",
-  "framework": "node",
-  "rootDirectory": "apps/api",
-  "installCommand": "npm install",
-  "buildCommand": "npm run build --workspace=@ledg/api",
-  "devCommand": "npm run dev --workspace=@ledg/api",
-  "includeFilesOutsideRootDirectory": true
-}
