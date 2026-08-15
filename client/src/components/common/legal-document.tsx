@@ -26,7 +26,6 @@ import {
 import AppLogo from "@/components/common/AppLogo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 import { cn } from "@/lib/utils";
 import type { LegalDocumentData, LegalSection } from "@/types/legal";
@@ -34,8 +33,6 @@ import type { LegalDocumentData, LegalSection } from "@/types/legal";
 interface LegalDocumentProps {
   data: LegalDocumentData;
 }
-
-type DocType = "deletion" | "privacy" | "terms";
 
 const SECTION_ICON_MAP: Record<string, typeof CheckCircle2> = {
   "how-to-delete": Mail,
@@ -70,37 +67,6 @@ const SECTION_ICON_MAP: Record<string, typeof CheckCircle2> = {
 };
 
 const DEFAULT_ICON = FileText;
-
-const DOC_THEME: Record<
-  DocType,
-  {
-    badge: string;
-    banner: string;
-    label: string;
-  }
-> = {
-  deletion: {
-    badge: "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400",
-    banner: "bg-rose-50/50 ring-rose-200/50 dark:bg-rose-950/20 dark:ring-rose-800/30",
-    label: "Data Deletion",
-  },
-  privacy: {
-    badge: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
-    banner: "bg-blue-50/50 ring-blue-200/50 dark:bg-blue-950/20 dark:ring-blue-800/30",
-    label: "Privacy",
-  },
-  terms: {
-    badge: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
-    banner: "bg-emerald-50/50 ring-emerald-200/50 dark:bg-emerald-950/20 dark:ring-emerald-800/30",
-    label: "Terms",
-  },
-};
-
-function getDocType(data: LegalDocumentData): DocType {
-  if (data.deletionSubject) return "deletion";
-  if (data.title.toLowerCase().includes("privacy")) return "privacy";
-  return "terms";
-}
 
 const SectionIcon = ({ id }: { id: string }) => {
   const Icon = SECTION_ICON_MAP[id] ?? DEFAULT_ICON;
@@ -203,27 +169,12 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 const DocumentHeader = ({
   title,
   updatedAt,
-  description,
-  docType,
 }: {
   title: string;
   updatedAt: string;
-  description: string;
-  docType: DocType;
 }) => {
-  const theme = DOC_THEME[docType];
-
   return (
-    <header className="space-y-4">
-      <Badge
-        variant="outline"
-        className={cn(
-          "rounded-full border-0 px-3.5 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wider",
-          theme.badge
-        )}
-      >
-        {theme.label}
-      </Badge>
+    <header className="space-y-4 flex items-center flex-col gap-2 text-center">
 
       <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-foreground">
         {title}
@@ -232,10 +183,6 @@ const DocumentHeader = ({
       <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
         <Calendar className="size-3.5" />
         <span>Updated {updatedAt}</span>
-      </div>
-
-      <div className={cn("rounded-4xl p-5", theme.banner)}>
-        <p className="text-sm leading-relaxed text-foreground/80">{description}</p>
       </div>
     </header>
   );
@@ -289,7 +236,6 @@ const DeletionRequestCard = ({
 
 export const LegalDocument = ({ data }: LegalDocumentProps) => {
   const navigate = useNavigate();
-  const docType = getDocType(data);
   const showDeletionCard = Boolean(data.contactEmail && data.deletionSubject);
 
   return (
@@ -305,8 +251,6 @@ export const LegalDocument = ({ data }: LegalDocumentProps) => {
           <DocumentHeader
             title={data.title}
             updatedAt={data.updatedAt}
-            description={data.description}
-            docType={docType}
           />
         </FadeInItem>
 
