@@ -186,8 +186,6 @@ export default function SettingsPage() {
       <Sheet
         open={requestSheetOpen}
         onOpenChange={setRequestSheetOpen}
-        title="Request a Feature"
-        description="Suggest an idea or report an issue. We read every request."
       >
         <RequestFeatureForm />
       </Sheet>
