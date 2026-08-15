@@ -1,0 +1,16 @@
+{
+  "name": "ledg-web",
+  "framework": "vite",
+  "rootDirectory": "apps/web",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace=@ledg/web",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev --workspace=@ledg/web",
+  "includeFilesOutsideRootDirectory": true,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
