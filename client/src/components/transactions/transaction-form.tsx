@@ -4,12 +4,14 @@ import type { PaymentMethod, Space, TransactionInput } from "@ledg/shared";
 import {
   PAYMENT_METHODS,
   TRANSACTION_TYPES,
+  transactionSchema,
   type TransactionType,
 } from "@ledg/shared";
 import { toast } from "sonner";
 import {
   HandCoins,
   Wallet,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -116,10 +118,6 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
       toast.error("Create a space first");
       return;
     }
-    if (!category) {
-      toast.error("Pick a category");
-      return;
-    }
 
     const payload: TransactionInput = {
       type,
@@ -131,17 +129,35 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
       paymentMethod,
     };
 
+    const parsed = transactionSchema.safeParse(payload);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue.path.join(".");
+      const fieldLabel: Record<string, string> = {
+        category: "Category",
+        type: "Type",
+        amount: "Amount",
+        note: "Note",
+        date: "Date",
+        tags: "Tags",
+        paymentMethod: "Payment method",
+      };
+      const label = path ? fieldLabel[path] ?? path : "";
+      toast.error(label ? `${label}: ${issue.message}` : issue.message);
+      return;
+    }
+
     try {
       if (editing) {
         await updateMutation.mutateAsync({
           spaceId: editing.spaceId || activeSpaceId,
           id: editing.id,
-          data: payload,
+          data: parsed.data,
         });
       } else {
         await createMutation.mutateAsync({
           spaceId: activeSpaceId,
-          data: payload,
+          data: parsed.data,
         });
       }
       toast.success(editing ? "Transaction updated" : "Transaction added");
@@ -334,7 +350,16 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
           className="mt-1 w-full text-base"
           disabled={createMutation.isPending || updateMutation.isPending}
         >
-          {editing ? "Save changes" : "Add transaction"}
+          {createMutation.isPending || updateMutation.isPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              {editing ? "Saving…" : "Adding…"}
+            </>
+          ) : editing ? (
+            "Save changes"
+          ) : (
+            "Add transaction"
+          )}
         </Button>
       </div>
     </Sheet>

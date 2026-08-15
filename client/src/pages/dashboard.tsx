@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownLeft, ArrowUpRight, TrendingUp, CreditCard, Landmark, Wallet as WalletIcon, Smartphone } from "lucide-react";
-import { DEFAULT_CURRENCY, PAYMENT_LABELS } from "@ledg/shared";
+import { DEFAULT_CURRENCY, PAYMENT_LABELS, type Transaction } from "@ledg/shared";
 import { motion } from "framer-motion";
 
 import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { TransactionItem } from "@/components/transactions/transaction-item";
+import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
+import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { getCategoryMeta } from "@/lib/categories";
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const { openCreate, openEdit } = useTransactionForm();
   const currency = DEFAULT_CURRENCY;
   const [tab, setTab] = useState<CategoryTab>("expense");
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
   const recent = analytics.transactions
     .slice()
@@ -325,11 +327,12 @@ export default function DashboardPage() {
           ) : recent.length === 0 ? null : (
             <div className="flex flex-col gap-2">
               {recent.map((t) => (
-                <TransactionItem
+                <SwipeableTransactionItem
                   key={t.id}
                   transaction={t}
                   currency={currency}
                   onClick={() => openEdit(t, t.spaceId)}
+                  onRequestDelete={() => setDeleteTarget(t)}
                 />
               ))}
             </div>
@@ -354,6 +357,13 @@ export default function DashboardPage() {
           </div>
         </section>
       </FadeInItem>
+
+      <DeleteTransactionSheet
+        transaction={deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      />
     </FadeInStagger>
   );
 }

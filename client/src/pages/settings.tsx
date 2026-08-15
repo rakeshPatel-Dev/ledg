@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
-import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves } from "lucide-react";
+import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves, Loader2 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [requestSheetOpen, setRequestSheetOpen] = useState(false);
   const [motionSheetOpen, setMotionSheetOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const name = user?.firstName
     ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
@@ -201,13 +202,28 @@ export default function SettingsPage() {
         variant="outline"
         size="lg"
         className="w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive active:scale-[0.98]"
+        disabled={signingOut}
         onClick={async () => {
-          await signOut();
-          navigate("/welcome");
+          setSigningOut(true);
+          try {
+            await signOut();
+            navigate("/welcome");
+          } finally {
+            setSigningOut(false);
+          }
         }}
       >
-        <LogOut className="size-4 mr-2" />
-        Sign out
+        {signingOut ? (
+          <>
+            <Loader2 className="size-4 mr-2 animate-spin" />
+            Signing out…
+          </>
+        ) : (
+          <>
+            <LogOut className="size-4 mr-2" />
+            Sign out
+          </>
+        )}
       </Button>
 
       {/* Request Feature Sheet */}

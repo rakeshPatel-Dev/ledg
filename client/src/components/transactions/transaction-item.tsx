@@ -23,7 +23,7 @@ export function TransactionItem({
 
   return (
     <motion.button
-      whileTap={{ scale: 0.98 }}
+    whileTap={{scale:0.98}}
       type="button"
       onClick={onClick}
       className="flex w-full items-center gap-3.5 rounded-3xl border border-white/20 dark:border-white/10 bg-card/75 px-3 py-3 text-left shadow-xs backdrop-blur-md transition-all hover:bg-card/90 hover:shadow-md cursor-pointer select-none"

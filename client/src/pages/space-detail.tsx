@@ -9,10 +9,10 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
+  Loader2,
 } from "lucide-react";
-import type { TransactionType } from "@ledg/shared";
+import type { Transaction, TransactionType } from "@ledg/shared";
 import { toast } from "sonner";
-
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
-import { TransactionItem } from "@/components/transactions/transaction-item";
+import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
+import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import {
   useSpaces,
   useAllData,
@@ -37,7 +38,7 @@ import {
   SPACE_TYPE_BADGE,
   getBalanceColor,
 } from "@/lib/space-colors";
-import { SPACE_TYPES, type SpaceType } from "@ledg/shared";
+import { SPACE_TYPES, spaceSchema, type SpaceType } from "@ledg/shared";
 
 type TypeFilter = "all" | TransactionType;
 
@@ -67,6 +68,7 @@ export default function SpaceDetailPage() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState<SpaceType>("personal");
 
@@ -134,10 +136,20 @@ export default function SpaceDetailPage() {
       toast.error("Space name is required");
       return;
     }
+
+    const parsed = spaceSchema.safeParse({ name: trimmed, type: editType });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue.path.join(".");
+      const label = path === "name" ? "Space name" : path;
+      toast.error(label ? `${label}: ${issue.message}` : issue.message);
+      return;
+    }
+
     try {
       await updateSpace.mutateAsync({
         id: space.id,
-        data: { name: trimmed, type: editType },
+        data: parsed.data,
       });
       toast.success("Space updated");
       setSheetOpen(false);
@@ -351,10 +363,11 @@ export default function SpaceDetailPage() {
                 </h3>
                 <div className="flex flex-col gap-2">
                   {items.map((t) => (
-                    <TransactionItem
+                    <SwipeableTransactionItem
                       key={t.id}
                       transaction={t}
                       onClick={() => openTransactionEdit(t, space.id)}
+                      onRequestDelete={() => setDeleteTarget(t)}
                     />
                   ))}
                 </div>
@@ -400,7 +413,14 @@ export default function SpaceDetailPage() {
             onClick={handleUpdateSpace}
             disabled={updateSpace.isPending}
           >
-            Save changes
+            {updateSpace.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              "Save changes"
+            )}
           </Button>
         </div>
       </Sheet>
@@ -410,7 +430,7 @@ export default function SpaceDetailPage() {
         open={deleting}
         onOpenChange={setDeleting}
         title="Delete Space"
-        description={`Are you sure you want to delete "${space.name}"?`}
+        description={`This will permanently delete "${space.name}" and all ${analytics.count} transaction${analytics.count === 1 ? "" : "s"} in it.`}
       >
         <div className="flex flex-col gap-3 pt-3">
           <Button
@@ -420,7 +440,14 @@ export default function SpaceDetailPage() {
             onClick={handleDeleteSpace}
             disabled={deleteSpace.isPending}
           >
-            Delete Space
+            {deleteSpace.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              "Delete Space"
+            )}
           </Button>
           <Button
             variant="outline"
@@ -432,6 +459,14 @@ export default function SpaceDetailPage() {
           </Button>
         </div>
       </Sheet>
+
+      {/* Delete Transaction Sheet */}
+      <DeleteTransactionSheet
+        transaction={deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      />
     </FadeInStagger>
   );
 }

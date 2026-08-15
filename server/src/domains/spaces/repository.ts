@@ -80,3 +80,7 @@ export async function hasTransactions(spaceId: string): Promise<boolean> {
   const count = await TransactionModel.countDocuments({ spaceId });
   return count > 0;
 }
+
+export async function deleteTransactionsBySpace(spaceId: string): Promise<void> {
+  await TransactionModel.deleteMany({ spaceId });
+}

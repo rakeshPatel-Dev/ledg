@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { DEFAULT_CURRENCY, type TransactionType } from "@ledg/shared";
+import { DEFAULT_CURRENCY, type TransactionType, type Transaction } from "@ledg/shared";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { TransactionItem } from "@/components/transactions/transaction-item";
+import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
+import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { useAllData } from "@/lib/queries";
@@ -42,6 +43,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [spaceFilter, setSpaceFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -184,11 +186,12 @@ export default function TransactionsPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   {items.map((t) => (
-                    <TransactionItem
+                    <SwipeableTransactionItem
                       key={t.id}
                       transaction={t}
                       currency={DEFAULT_CURRENCY}
                       onClick={() => openEdit(t, t.spaceId)}
+                      onRequestDelete={() => setDeleteTarget(t)}
                     />
                   ))}
                 </div>
@@ -197,6 +200,13 @@ export default function TransactionsPage() {
           ))}
         </div>
       )}
+
+      <DeleteTransactionSheet
+        transaction={deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      />
     </FadeInStagger>
   );
 }

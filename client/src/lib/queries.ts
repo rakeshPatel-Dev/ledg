@@ -3,8 +3,10 @@ import {
   useQueries,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from "@tanstack/react-query";
 import type {
+  PaginatedResult,
   Space,
   SpaceInput,
   SpaceUpdateInput,
@@ -31,6 +33,70 @@ type TransactionListQuery = Omit<
   pageSize?: number;
 };
 
+const transactionListKey = (spaceId: string) =>
+  ["spaces", spaceId, "transactions"] as const;
+
+type TransactionList = PaginatedResult<Transaction>;
+
+function tempId() {
+  return `temp-${crypto.randomUUID()}`;
+}
+
+function updateTransactionLists(
+  client: QueryClient,
+  spaceId: string,
+  update: (items: Transaction[], total: number) => {
+    items: Transaction[];
+    total: number;
+  }
+) {
+  client.setQueriesData<TransactionList>(
+    { queryKey: transactionListKey(spaceId) },
+    (old) => {
+      if (!old) return old;
+      const { items, total } = update(old.items, old.total);
+      return { ...old, items, total };
+    }
+  );
+}
+
+function snapshotTransactionLists(client: QueryClient, spaceId: string) {
+  return client.getQueriesData<TransactionList>({
+    queryKey: transactionListKey(spaceId),
+  });
+}
+
+function replaceInTransactionLists(
+  client: QueryClient,
+  spaceId: string,
+  id: string,
+  replacement: Transaction
+) {
+  client.setQueriesData<TransactionList>(
+    { queryKey: transactionListKey(spaceId) },
+    (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        items: old.items.map((t) => (t.id === id ? replacement : t)),
+      };
+    }
+  );
+}
+
+function restoreTransactionLists(
+  client: QueryClient,
+  previous: ReturnType<typeof snapshotTransactionLists>
+) {
+  for (const [key, data] of previous) {
+    if (data !== undefined) {
+      client.setQueryData<TransactionList>(key, data);
+    } else {
+      client.removeQueries({ queryKey: key, exact: true });
+    }
+  }
+}
+
 export function useSpaces() {
   return useQuery({
     queryKey: queryKeys.spaces,
@@ -42,8 +108,37 @@ export function useCreateSpace() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: SpaceInput) => getApi().spaces.create(data),
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces });
+      const previous = queryClient.getQueryData<Space[]>(queryKeys.spaces);
+
+      const now = new Date().toISOString();
+      const optimistic: Space = {
+        id: tempId(),
+        ownerId: "",
+        name: data.name,
+        type: data.type,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) => [
+        ...(old ?? []),
+        optimistic,
+      ]);
+
+      return { previous, tempId: optimistic.id };
+    },
+    onSuccess: (real, _variables, context) => {
+      queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
+        (old ?? []).map((s) => (s.id === context.tempId ? real : s))
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
+    },
+    onError: (_error, _variables, context) => {
+      if (context.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.spaces, context.previous);
+      }
     },
   });
 }
@@ -53,8 +148,27 @@ export function useUpdateSpace() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: SpaceUpdateInput }) =>
       getApi().spaces.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces });
+      const previous = queryClient.getQueryData<Space[]>(queryKeys.spaces);
+
+      queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
+        (old ?? []).map((s) =>
+          s.id === id
+            ? { ...s, ...data, updatedAt: new Date().toISOString() }
+            : s
+        )
+      );
+
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
+    },
+    onError: (_error, _variables, context) => {
+      if (context.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.spaces, context.previous);
+      }
     },
   });
 }
@@ -63,8 +177,34 @@ export function useDeleteSpace() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => getApi().spaces.remove(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.spaces });
+      await queryClient.cancelQueries({ queryKey: transactionListKey(id) });
+
+      const previousSpaces = queryClient.getQueryData<Space[]>(
+        queryKeys.spaces
+      );
+      const previousTransactions = snapshotTransactionLists(
+        queryClient,
+        id
+      );
+
+      queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
+        (old ?? []).filter((s) => s.id !== id)
+      );
+      queryClient.removeQueries({ queryKey: transactionListKey(id) });
+
+      return { previousSpaces, previousTransactions };
+    },
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: transactionListKey(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
+    },
+    onError: (_error, _id, context) => {
+      if (context.previousSpaces !== undefined) {
+        queryClient.setQueryData(queryKeys.spaces, context.previousSpaces);
+      }
+      restoreTransactionLists(queryClient, context.previousTransactions);
     },
   });
 }
@@ -94,8 +234,49 @@ export function useCreateTransaction() {
   return useMutation({
     mutationFn: ({ spaceId, data }: { spaceId: string; data: TransactionInput }) =>
       getApi().transactions.create(spaceId, data),
-    onSuccess: (_data, variables) => {
+    onMutate: async ({ spaceId, data }) => {
+      await queryClient.cancelQueries({
+        queryKey: transactionListKey(spaceId),
+      });
+      const previous = snapshotTransactionLists(queryClient, spaceId);
+
+      const optimisticId = tempId();
+      const now = new Date().toISOString();
+      const optimistic: Transaction = {
+        id: optimisticId,
+        spaceId,
+        category: data.category,
+        type: data.type,
+        amount: data.amount,
+        note: data.note ?? "",
+        date:
+          typeof data.date === "string"
+            ? data.date
+            : data.date.toISOString(),
+        tags: data.tags ?? [],
+        paymentMethod: data.paymentMethod ?? null,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      updateTransactionLists(queryClient, spaceId, (items, total) => ({
+        items: [optimistic, ...items],
+        total: total + 1,
+      }));
+
+      return { previous, tempId: optimisticId };
+    },
+    onSuccess: (real, variables, context) => {
+      replaceInTransactionLists(
+        queryClient,
+        variables.spaceId,
+        context.tempId,
+        real
+      );
       invalidateTransactionQueries(queryClient, variables.spaceId);
+    },
+    onError: (_error, _variables, context) => {
+      restoreTransactionLists(queryClient, context.previous);
     },
   });
 }
@@ -112,8 +293,38 @@ export function useUpdateTransaction() {
       id: string;
       data: TransactionUpdateInput;
     }) => getApi().transactions.update(spaceId, id, data),
+    onMutate: async ({ spaceId, id, data }) => {
+      await queryClient.cancelQueries({
+        queryKey: transactionListKey(spaceId),
+      });
+      const previous = snapshotTransactionLists(queryClient, spaceId);
+
+      updateTransactionLists(queryClient, spaceId, (items, total) => ({
+        items: items.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                ...data,
+                date:
+                  typeof data.date === "string"
+                    ? data.date
+                    : data.date
+                      ? data.date.toISOString()
+                      : t.date,
+                updatedAt: new Date().toISOString(),
+              }
+            : t
+        ),
+        total,
+      }));
+
+      return { previous };
+    },
     onSuccess: (_data, variables) => {
       invalidateTransactionQueries(queryClient, variables.spaceId);
+    },
+    onError: (_error, _variables, context) => {
+      restoreTransactionLists(queryClient, context.previous);
     },
   });
 }
@@ -122,8 +333,24 @@ export function useDeleteTransaction(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => getApi().transactions.remove(spaceId, id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({
+        queryKey: transactionListKey(spaceId),
+      });
+      const previous = snapshotTransactionLists(queryClient, spaceId);
+
+      updateTransactionLists(queryClient, spaceId, (items, total) => ({
+        items: items.filter((t) => t.id !== id),
+        total: Math.max(0, total - 1),
+      }));
+
+      return { previous };
+    },
     onSuccess: () => {
       invalidateTransactionQueries(queryClient, spaceId);
+    },
+    onError: (_error, _id, context) => {
+      restoreTransactionLists(queryClient, context.previous);
     },
   });
 }

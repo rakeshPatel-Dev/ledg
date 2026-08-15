@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Wallet, Pencil, Trash2, Search, X } from "lucide-react";
-import { SPACE_TYPES, type Space, type SpaceType } from "@ledg/shared";
+import { Plus, Wallet, Pencil, Trash2, Search, X, Loader2 } from "lucide-react";
+import { SPACE_TYPES, spaceSchema, type Space, type SpaceType } from "@ledg/shared";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -85,15 +85,25 @@ export default function SpacesPage() {
       toast.error("Space name is required");
       return;
     }
+
+    const parsed = spaceSchema.safeParse({ name: trimmed, type });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue.path.join(".");
+      const label = path === "name" ? "Space name" : path;
+      toast.error(label ? `${label}: ${issue.message}` : issue.message);
+      return;
+    }
+
     try {
       if (editing) {
         await updateSpace.mutateAsync({
           id: editing.id,
-          data: { name: trimmed, type },
+          data: parsed.data,
         });
         toast.success("Space updated");
       } else {
-        await createSpace.mutateAsync({ name: trimmed, type });
+        await createSpace.mutateAsync(parsed.data);
         toast.success("Space created");
       }
       setSheetOpen(false);
@@ -245,8 +255,8 @@ export default function SpacesPage() {
                           {space.type}
                         </span>
                         <span className="text-xs text-muted-foreground/60">·</span>
-                        <span className="text-xs text-muted-foreground">
-                          {summary?.transactionCount ?? 0} {(summary?.transactionCount ?? 0) !== 1 ? "trxns" : "trxn"}
+                        <span className="text-xs truncate w-25 text-muted-foreground">
+                          {summary?.transactionCount ?? 0} {(summary?.transactionCount ?? 0) !== 1 ? "transactions" : "transaction"}
                         </span>
                       </div>
                     </div>
@@ -329,7 +339,16 @@ export default function SpacesPage() {
             onClick={submit}
             disabled={createSpace.isPending || updateSpace.isPending}
           >
-            {editing ? "Save changes" : "Create space"}
+            {createSpace.isPending || updateSpace.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                {editing ? "Saving…" : "Creating…"}
+              </>
+            ) : editing ? (
+              "Save changes"
+            ) : (
+              "Create space"
+            )}
           </Button>
         </div>
       </Sheet>
@@ -339,7 +358,9 @@ export default function SpacesPage() {
         open={!!deletingSpace}
         onOpenChange={(open) => !open && setDeletingSpace(null)}
         title="Delete Space"
-        description={`Are you sure you want to delete "${deletingSpace?.name}"? All associated transactions will remain, but this space bucket will be removed.`}
+        description={deletingSpace
+          ? `This will permanently delete "${deletingSpace.name}" and all ${summaryFor(deletingSpace.id)?.transactionCount ?? 0} transaction${(summaryFor(deletingSpace.id)?.transactionCount ?? 0) === 1 ? "" : "s"} in it.`
+          : undefined}
       >
         <div className="flex flex-col gap-3 pt-3">
           <Button
@@ -349,7 +370,14 @@ export default function SpacesPage() {
             onClick={handleDelete}
             disabled={deleteSpace.isPending}
           >
-            Delete Space
+            {deleteSpace.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Deleting…
+              </>
+            ) : (
+              "Delete Space"
+            )}
           </Button>
           <Button
             variant="outline"
