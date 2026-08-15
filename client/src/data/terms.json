@@ -1,0 +1,151 @@
+{
+  "title": "Terms of Service",
+  "updatedAt": "August 15, 2026",
+  "description": "These Terms explain the rules for using Ledg, a personal finance app that helps you record, organize, and understand your income and expenses.",
+  "contactEmail": "devrakesh.tech@gmail.com",
+  "sections": [
+    {
+      "id": "acceptance",
+      "heading": "1. Acceptance of These Terms",
+      "body": [
+        "By creating an account or using Ledg, you agree to these Terms. If you do not agree with them, please do not use the Service.",
+        "If you are using Ledg on behalf of someone else or an organization, you confirm that you have the authority to accept these Terms on their behalf."
+      ]
+    },
+    {
+      "id": "description-of-service",
+      "heading": "2. About Ledg",
+      "body": [
+        "Ledg is a personal finance application designed to help you keep track of your income, expenses, and spending habits.",
+        "Features may include transaction tracking, categories, spaces, summaries, analytics, voice-based entry, and AI-powered insights. Features may change or be added as Ledg develops."
+      ]
+    },
+    {
+      "id": "accounts",
+      "heading": "3. Your Account",
+      "body": [
+        "You need an authenticated account to use Ledg. Authentication is provided through Clerk, which may allow you to sign in using supported social login providers such as Facebook or Google.",
+        "You are responsible for keeping access to your account secure and for activity carried out through your account.",
+        "If you believe someone has accessed your account without your permission, please contact us as soon as possible."
+      ]
+    },
+    {
+      "id": "user-data",
+      "heading": "4. Your Data",
+      "body": [
+        "You keep ownership of the financial information and other content you enter into Ledg.",
+        "You give Ledg permission to store, process, and display that information only as needed to provide and operate the Service.",
+        "Our Privacy Policy explains in more detail how we collect, use, store, and protect your information."
+      ]
+    },
+    {
+      "id": "acceptable-use",
+      "heading": "5. Acceptable Use",
+      "body": [
+        "Ledg is intended for normal personal use. You agree not to misuse, damage, or attempt to gain unauthorized access to the Service."
+      ],
+      "bullets": [
+        "Attempt to access another user's account or data",
+        "Attempt to bypass authentication or security controls",
+        "Attack, overload, or disrupt the Service or its infrastructure",
+        "Upload malicious code or harmful content",
+        "Use the Service to violate applicable laws",
+        "Reverse engineer or modify the Service where prohibited by law",
+        "Interfere with another person's use of Ledg"
+      ]
+    },
+    {
+      "id": "ai-features",
+      "heading": "6. AI-Powered Features",
+      "body": [
+        "Ledg may provide AI-powered features such as voice transaction entry, transaction categorization, spending summaries, behavioral insights, and other assistance.",
+        "AI-generated results are based on the information available to the system and may sometimes be incomplete, incorrect, or misleading. You should review important information before relying on it.",
+        "AI features are designed to assist with organizing and understanding your finances. They are not a replacement for professional financial advice."
+      ]
+    },
+    {
+      "id": "financial-disclaimer",
+      "heading": "7. Financial Disclaimer",
+      "body": [
+        "Ledg is a personal finance tracking and organization tool. It is not a bank, financial institution, investment advisor, accountant, tax advisor, lawyer, or other professional financial service.",
+        "Information, summaries, calculations, and AI-generated insights provided by Ledg are for general informational purposes only. You are responsible for making your own financial decisions and should seek qualified professional advice when appropriate."
+      ]
+    },
+    {
+      "id": "accuracy-of-user-data",
+      "heading": "8. Your Responsibility for Your Data",
+      "body": [
+        "You are responsible for the accuracy of the transactions and other information you enter into Ledg.",
+        "If you use voice or AI-powered entry, you are also responsible for reviewing the resulting transaction before relying on it, especially when the information is important."
+      ]
+    },
+    {
+      "id": "availability",
+      "heading": "9. Service Availability",
+      "body": [
+        "We aim to keep Ledg reliable and available, but we cannot guarantee that the Service will always be available or error-free.",
+        "The Service may occasionally be unavailable because of maintenance, technical problems, network issues, or problems affecting third-party services that Ledg depends on."
+      ]
+    },
+    {
+      "id": "third-party-services",
+      "heading": "10. Third-Party Services",
+      "body": [
+        "Ledg relies on third-party services to provide parts of the application. These services may have their own terms and privacy policies."
+      ],
+      "bullets": [
+        "Clerk: authentication and account management",
+        "MongoDB Atlas: application data storage",
+        "Vercel: application hosting",
+        "AI service providers: AI-powered features when used"
+      ]
+    },
+    {
+      "id": "termination",
+      "heading": "11. Ending Your Use of Ledg",
+      "body": [
+        "You can stop using Ledg at any time. You can also request deletion of your account and application data using our Data Deletion instructions.",
+        "We may suspend or terminate access if you seriously or repeatedly violate these Terms, attempt to abuse the Service, or if we are required to do so by law.",
+        "If access to your account is terminated, your data will be handled according to our Privacy Policy and Data Deletion instructions."
+      ]
+    },
+    {
+      "id": "disclaimer-of-warranties",
+      "heading": "12. Disclaimer of Warranties",
+      "body": [
+        "Ledg is provided on an \"as is\" and \"as available\" basis. To the extent permitted by applicable law, we do not guarantee that the Service will always be available, accurate, secure, or free from errors."
+      ]
+    },
+    {
+      "id": "limitation-of-liability",
+      "heading": "13. Limitation of Liability",
+      "body": [
+        "To the maximum extent permitted by applicable law, Ledg and its operators will not be responsible for indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.",
+        "This includes losses that may result from relying on transaction data, calculations, AI-generated information, service interruptions, or loss of access to the Service."
+      ]
+    },
+    {
+      "id": "changes",
+      "heading": "14. Changes to These Terms",
+      "body": [
+        "As Ledg evolves, we may update these Terms to reflect changes to the Service or applicable requirements.",
+        "When we make changes, we will update the date at the top of this page. If you continue using Ledg after the updated Terms take effect, you agree to the updated Terms."
+      ]
+    },
+    {
+      "id": "governing-law",
+      "heading": "15. Governing Law",
+      "body": [
+        "These Terms are subject to the laws applicable to Ledg and its operator. Any specific governing-law or dispute-resolution provisions may be added as Ledg becomes a public or commercial service."
+      ]
+    },
+    {
+      "id": "contact",
+      "heading": "16. Contact",
+      "body": [
+        "If you have questions about these Terms, you can contact us at:"
+      ],
+      "contactEmail": "devrakesh.tech@gmail.com"
+    }
+  ]
+}

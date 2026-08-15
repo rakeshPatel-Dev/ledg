@@ -1,0 +1,122 @@
+{
+  "title": "Privacy Policy",
+  "updatedAt": "August 15, 2026",
+  "description": "Ledg is a personal finance app that helps you keep track of your income, expenses, and spending habits. This Privacy Policy explains what information Ledg uses, why we need it, and how you can manage or delete your data.",
+  "contactEmail": "devrakesh.tech@gmail.com",
+  "sections": [
+    {
+      "id": "introduction",
+      "heading": "1. Introduction",
+      "body": [
+        "Ledg is built to make personal finance tracking simple. You can use it to record your income and expenses, organize transactions, and understand where your money goes.",
+        "This Privacy Policy explains what information we collect or receive when you use Ledg, how we use it, and the choices available to you."
+      ]
+    },
+    {
+      "id": "information-we-collect",
+      "heading": "2. Information We Collect",
+      "body": [
+        "Account information",
+        "When you sign in to Ledg using a service such as Facebook or Google through Clerk, we may receive basic account information that the authentication provider makes available to us. This can include your name, email address, profile picture, and an identifier associated with your account.",
+        "Financial information",
+        "When you use Ledg, you may choose to enter information about your finances. This can include income, expenses, amounts, categories, notes, payment methods, transaction dates, and tags.",
+        "Technical information",
+        "We may also receive limited technical information that helps us keep Ledg working properly and securely. This can include information such as your IP address, browser and device details, basic usage information, log data, cookies, and authentication or session information."
+      ]
+    },
+    {
+      "id": "how-we-use-information",
+      "heading": "3. How We Use Your Information",
+      "body": [
+        "We use your information to provide the features you use in Ledg. This includes signing you in, saving and displaying your transactions, calculating spending summaries, providing analytics, keeping the service secure, fixing problems, and responding to support requests.",
+        "Some future features may use artificial intelligence to help you record transactions, summarize your spending, or understand your financial habits. When you use an AI feature, the information needed to provide that feature may be processed by the AI service we use."
+      ]
+    },
+    {
+      "id": "social-authentication",
+      "heading": "4. Social Login",
+      "body": [
+        "Ledg uses Clerk to provide authentication. Clerk allows you to sign in using supported social login providers, such as Facebook or Google, if you choose to use them.",
+        "When you sign in through a social login provider, Clerk handles the authentication process and provides Ledg with the account information needed to create and manage your Ledg account.",
+        "Depending on the provider and the permissions you grant, this may include information such as your name, email address, profile picture, and an account identifier.",
+        "Ledg does not receive or store your social login password."
+      ]
+    },
+    {
+      "id": "how-we-share-information",
+      "heading": "5. How We Share Your Information",
+      "body": [
+        "We do not sell or rent your personal information.",
+        "We use a small number of third-party services to run Ledg. These services only receive the information they need to provide their part of the service."
+      ],
+      "bullets": [
+        "Clerk: authentication and account management",
+        "MongoDB Atlas: secure storage of application data",
+        "Vercel: application hosting",
+        "AI service providers: processing required for AI features when you choose to use them"
+      ]
+    },
+    {
+      "id": "data-retention",
+      "heading": "6. How Long We Keep Your Data",
+      "body": [
+        "We keep your account and transaction information while you use Ledg so that the service can continue to provide your transaction history and other features.",
+        "If you ask us to delete your account, we will delete your application data as described in our Data Deletion instructions. Some limited information may need to be retained for legal, security, fraud prevention, or backup purposes for a reasonable period."
+      ]
+    },
+    {
+      "id": "data-security",
+      "heading": "7. How We Protect Your Data",
+      "body": [
+        "We take reasonable steps to protect your information from unauthorized access, loss, misuse, alteration, or disclosure. This includes using HTTPS, authentication, access controls, protected environment variables, and security features provided by our infrastructure providers.",
+        "No online service can guarantee complete security. While we work to protect your information, we cannot promise that every method of transmission or storage will always be completely secure."
+      ]
+    },
+    {
+      "id": "your-rights",
+      "heading": "8. Your Choices and Rights",
+      "body": [
+        "Depending on where you live, you may have rights over your personal information. These may include the right to access, correct, export, or delete your information.",
+        "You can request deletion of your Ledg account and application data at any time. Instructions for doing this are available on our Data Deletion page.",
+        "If you have a question about your information or want to make a request, you can contact us using the email address at the end of this policy."
+      ]
+    },
+    {
+      "id": "third-party-services",
+      "heading": "9. Third-Party Services",
+      "body": [
+        "Ledg uses third-party services to provide parts of the application. These services have their own privacy policies and terms."
+      ],
+      "bullets": [
+        "Clerk: authentication and account management",
+        "MongoDB Atlas: application data storage",
+        "Vercel: application hosting",
+        "AI service providers: AI-powered features when used"
+      ]
+    },
+    {
+      "id": "childrens-privacy",
+      "heading": "10. Children's Privacy",
+      "body": [
+        "Ledg is not intended for children under 13, and we do not knowingly collect personal information from children under 13.",
+        "If you believe that a child has provided personal information to Ledg, please contact us so we can review the situation and take appropriate action."
+      ]
+    },
+    {
+      "id": "changes",
+      "heading": "11. Changes to This Privacy Policy",
+      "body": [
+        "As Ledg grows, we may update this Privacy Policy to reflect changes to the service, technology, or applicable requirements.",
+        "When we make changes, we will update the date at the top of this page. If we make an important change, we will take reasonable steps to bring it to your attention."
+      ]
+    },
+    {
+      "id": "contact",
+      "heading": "12. Contact",
+      "body": [
+        "If you have questions about this Privacy Policy, your personal information, or how your data is handled, you can contact us at:"
+      ],
+      "contactEmail": "devrakesh.tech@gmail.com"
+    }
+  ]
+}

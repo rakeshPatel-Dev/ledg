@@ -81,6 +81,20 @@ export default function WelcomePage() {
         <Button variant="outline" size="lg" className="h-13 w-full rounded-full text-base font-semibold" render={<Link to="/sign-in" />}>
           I already have an account (Login)
         </Button>
+
+        <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pb-2 text-xs font-medium text-muted-foreground">
+          <Link to="/privacy" className="transition-colors hover:text-foreground">
+            Privacy Policy
+          </Link>
+          <span className="text-border">·</span>
+          <Link to="/terms" className="transition-colors hover:text-foreground">
+            Terms of Service
+          </Link>
+          <span className="text-border">·</span>
+          <Link to="/data-deletion" className="transition-colors hover:text-foreground">
+            Delete My Data
+          </Link>
+        </nav>
       </footer>
     </div>
   );
