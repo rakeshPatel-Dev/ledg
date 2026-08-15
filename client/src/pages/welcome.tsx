@@ -90,10 +90,6 @@ export default function WelcomePage() {
           <Link to="/terms" className="transition-colors hover:text-foreground">
             Terms of Service
           </Link>
-          <span className="text-border">·</span>
-          <Link to="/data-deletion" className="transition-colors hover:text-foreground">
-            Delete My Data
-          </Link>
         </nav>
       </footer>
     </div>
