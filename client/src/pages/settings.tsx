@@ -141,7 +141,7 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-extrabold tracking-tight">You</h1>
 
       {/* User Profile Card */}
-      <Card className="flex items-center justify-between gap-4 rounded-4xl p-5">
+      <Card className="flex items-center justify-between gap-4 border-0 rounded-4xl p-5">
         <div className="flex items-center gap-4 min-w-0">
           <Avatar className="size-16 ring-2 ring-primary/20">
             <AvatarImage src={user?.image ?? ""} alt={name} />
@@ -157,7 +157,6 @@ export default function SettingsPage() {
             </span>
           </div>
         </div>
-        <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
       </Card>
 
       {/* Account Section */}
