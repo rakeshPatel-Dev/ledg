@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@clerk/react";
 
 import AppProviders from "./providers";
+import { useAuth } from "@/lib/auth-provider";
 import { AppShell } from "@/components/layout/app-shell";
 import { TransactionFormBridge } from "@/components/transactions/transaction-form-bridge";
 import { PageTransition } from "@/components/common/page-transition";

@@ -6,7 +6,12 @@ import type {
 
 export interface User {
   id: string;
-  clerkId: string;
+  betterAuthId: string;
+  email: string;
+  name: string;
+  fullName: string;
+  image: string | null;
+  emailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }

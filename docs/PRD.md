@@ -648,8 +648,8 @@ The product tracks **income and expenses**, not just expenses. The following gap
 
 ## User Model Is Minimal
 
-- `UserModel` stores only `clerkId`. No name, email, image — which blocks shared-space member display and invite-by-email.
-- **Fix:** Store email/name/image on the user record (from Clerk) for member avatars and invitations.
+- `UserModel` previously stored only `clerkId`. No name, email, image — which blocks shared-space member display and invite-by-email.
+- **Fix:** Store email/name/image on the user record (from BetterAuth) for member avatars and invitations. (Done — the model now stores `betterAuthId`, email, name, fullName, image, emailVerified.)
 
 ## Shared Spaces Not Yet Implemented
 

@@ -16,7 +16,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("clerk")) return "clerk";
+            if (id.includes("better-auth") || id.includes("better-call") || id.includes("@better-fetch") || id.includes("nanostores")) {
+              return "auth";
+            }
             if (id.includes("framer-motion") || id.includes("motion-dom") || id.includes("motion-utils")) {
               return "motion";
             }

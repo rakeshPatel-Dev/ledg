@@ -26,7 +26,7 @@
       "bullets": [
         "Verify the request and identify the associated Ledg account",
         "Delete the Ledg application data associated with your account",
-        "Handle associated authentication data through Clerk where applicable",
+        "Handle associated authentication data for your account where applicable",
         "Notify you when the deletion process is completed"
       ]
     },

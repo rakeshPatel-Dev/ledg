@@ -17,7 +17,7 @@
       "heading": "2. Information We Collect",
       "body": [
         "Account information",
-        "When you sign in to Ledg using a service such as Facebook or Google through Clerk, we may receive basic account information that the authentication provider makes available to us. This can include your name, email address, profile picture, and an identifier associated with your account.",
+        "When you sign in to Ledg with your email address and a password, or by using Google, we may receive basic account information. This can include your name, email address, profile picture, and an identifier associated with your account.",
         "Financial information",
         "When you use Ledg, you may choose to enter information about your finances. This can include income, expenses, amounts, categories, notes, payment methods, transaction dates, and tags.",
         "Technical information",
@@ -33,11 +33,11 @@
       ]
     },
     {
-      "id": "social-authentication",
-      "heading": "4. Social Login",
+      "id": "-authentication-and-social-login",
+      "heading": "4. Authentication and Social Login",
       "body": [
-        "Ledg uses Clerk to provide authentication. Clerk allows you to sign in using supported social login providers, such as Facebook or Google, if you choose to use them.",
-        "When you sign in through a social login provider, Clerk handles the authentication process and provides Ledg with the account information needed to create and manage your Ledg account.",
+        "Ledg provides its own authentication system. You can sign in with your email address and a password, or by using Google, if you choose to do so.",
+        "When you sign in with Google, the provider handles the authentication process and provides Ledg with the account information needed to create and manage your Ledg account.",
         "Depending on the provider and the permissions you grant, this may include information such as your name, email address, profile picture, and an account identifier.",
         "Ledg does not receive or store your social login password."
       ]
@@ -50,7 +50,7 @@
         "We use a small number of third-party services to run Ledg. These services only receive the information they need to provide their part of the service."
       ],
       "bullets": [
-        "Clerk: authentication and account management",
+        "Ledg's own authentication system: account creation, sign-in, and session management",
         "MongoDB Atlas: secure storage of application data",
         "Vercel: application hosting",
         "AI service providers: processing required for AI features when you choose to use them"
@@ -88,7 +88,7 @@
         "Ledg uses third-party services to provide parts of the application. These services have their own privacy policies and terms."
       ],
       "bullets": [
-        "Clerk: authentication and account management",
+        "Ledg's own authentication system: account creation, sign-in, and session management",
         "MongoDB Atlas: application data storage",
         "Vercel: application hosting",
         "AI service providers: AI-powered features when used"

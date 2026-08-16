@@ -1,9 +1,9 @@
 import { Link, Navigate } from "react-router-dom";
-import { useAuth } from "@clerk/react";
 import { Zap, ShieldCheck, PieChart } from "lucide-react";
 
 import AppLogo from "@/components/common/AppLogo";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-provider";
 
 export default function WelcomePage() {
   const { isLoaded, isSignedIn } = useAuth();

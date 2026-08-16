@@ -1,14 +1,14 @@
-import { useUser } from "@clerk/react";
 import { Bell, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/auth-provider";
 
 export function Header() {
-  const { user } = useUser();
+  const { user } = useAuth();
 
-  const firstName = user?.firstName ?? user?.username ?? "there";
+  const firstName = user?.name?.split(" ")[0] ?? "there";
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -20,7 +20,7 @@ export function Header() {
         className="group flex items-center gap-3 text-left transition-all active:scale-98"
       >
         <Avatar className="size-11 ring-2 ring-primary/30 transition-all group-hover:ring-primary shadow-xs">
-          <AvatarImage src={user?.imageUrl} alt={firstName} />
+          <AvatarImage src={user?.image ?? ""} alt={firstName} />
           <AvatarFallback className="font-semibold bg-card/80 backdrop-blur-md">
             {firstName.slice(0, 2).toUpperCase()}
           </AvatarFallback>

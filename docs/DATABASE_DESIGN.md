@@ -23,13 +23,17 @@ Although the MVP is single-user, every record belongs to a Space to avoid future
 {
     _id
 
-    clerkId
+    betterAuthId
 
     email
 
     name
 
+    fullName
+
     image
+
+    emailVerified
 
     createdAt
 
@@ -179,7 +183,7 @@ spaceId
 
 Users
 
-clerkId
+betterAuthId
 
 ---
 

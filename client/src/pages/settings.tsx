@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useUser, useClerk } from "@clerk/react";
 import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves, Loader2 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -10,11 +9,11 @@ import { Sheet } from "@/components/ui/sheet";
 import { RequestFeatureForm } from "@/components/features/request-feature-form";
 import { useTheme } from "@/lib/theme-provider";
 import { useMotion } from "@/lib/animation-provider";
+import { useAuth } from "@/lib/auth-provider";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
-  const { user } = useUser();
-  const { signOut, openUserProfile } = useClerk();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { motion, setMotion } = useMotion();
@@ -24,9 +23,7 @@ export default function SettingsPage() {
   const [motionSheetOpen, setMotionSheetOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const name = user?.firstName
-    ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
-    : user?.username ?? "Ledg user";
+  const name = user?.name || "Ledg user";
 
   const initials = name
     .split(" ")
@@ -53,22 +50,19 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-extrabold tracking-tight">You</h1>
 
       {/* User Profile Card */}
-      <Card
-        onClick={() => openUserProfile?.()}
-        className="flex cursor-pointer items-center justify-between gap-4 rounded-4xl p-5 transition-all hover:bg-card/80 active:scale-[0.99]"
-      >
+      <Card className="flex items-center justify-between gap-4 rounded-4xl p-5">
         <div className="flex items-center gap-4 min-w-0">
           <Avatar className="size-16 ring-2 ring-primary/20">
-            <AvatarImage src={user?.imageUrl} alt={name} />
+            <AvatarImage src={user?.image ?? ""} alt={name} />
             <AvatarFallback className="text-lg font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <p className="truncate text-lg font-bold tracking-tight">{name}</p>
             <p className="truncate text-xs font-medium text-muted-foreground">
-              {user?.primaryEmailAddress?.emailAddress}
+              {user?.email}
             </p>
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary">
-              <UserCheck className="size-3" /> Managed with Clerk
+              <UserCheck className="size-3" /> Signed in
             </span>
           </div>
         </div>

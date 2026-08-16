@@ -1,23 +1,9 @@
-import { useEffect, type ReactNode } from "react";
-import { useAuth } from "@clerk/react";
+import { type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { MotionConfig } from "framer-motion";
 
-import { initApi } from "@/lib/api";
 import { TransactionFormProvider } from "@/lib/transaction-form";
 import { MotionProvider, useMotion } from "@/lib/animation-provider";
-
-function ApiBridge({ children }: { children: ReactNode }) {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      initApi(() => getToken());
-    }
-  }, [isLoaded, isSignedIn, getToken]);
-
-  return children;
-}
 
 import { ThemeProvider } from "@/lib/theme-provider";
 
@@ -33,18 +19,17 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider defaultTheme="system">
       <MotionProvider defaultMotion="full">
         <MotionBridge>
-          <ApiBridge>
-            <TransactionFormProvider>{children}</TransactionFormProvider>
-            <Toaster
-              position="bottom-center"
-              toastOptions={{
-                style: {
-                  borderRadius: "1rem",
-                  fontWeight: 500,
-                },
-              }}
-            />
-          </ApiBridge>
+          <TransactionFormProvider>{children}</TransactionFormProvider>
+          <Toaster
+            position="bottom-center"
+            offset={{ bottom: 96 }}
+            toastOptions={{
+              style: {
+                borderRadius: "1rem",
+                fontWeight: 500,
+              },
+            }}
+          />
         </MotionBridge>
       </MotionProvider>
     </ThemeProvider>

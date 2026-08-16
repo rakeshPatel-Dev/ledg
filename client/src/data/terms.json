@@ -24,7 +24,7 @@
       "id": "accounts",
       "heading": "3. Your Account",
       "body": [
-        "You need an authenticated account to use Ledg. Authentication is provided through Clerk, which may allow you to sign in using supported social login providers such as Facebook or Google.",
+        "You need an authenticated account to use Ledg. You can create an account using your email address and a password, or by signing in with Google.",
         "You are responsible for keeping access to your account secure and for activity carried out through your account.",
         "If you believe someone has accessed your account without your permission, please contact us as soon as possible."
       ]
@@ -94,7 +94,7 @@
         "Ledg relies on third-party services to provide parts of the application. These services may have their own terms and privacy policies."
       ],
       "bullets": [
-        "Clerk: authentication and account management",
+        "Ledg's own authentication system: account creation, sign-in, and session management",
         "MongoDB Atlas: application data storage",
         "Vercel: application hosting",
         "AI service providers: AI-powered features when used"

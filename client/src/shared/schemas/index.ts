@@ -7,7 +7,7 @@ import {
 } from "../enums/index.js";
 
 export const createUserSchema = z.object({
-  clerkId: z.string().trim().min(1),
+  betterAuthId: z.string().trim().min(1),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

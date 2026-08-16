@@ -29,8 +29,6 @@ export class ApiError extends Error {
   }
 }
 
-type TokenProvider = () => Promise<string | null>;
-
 // ─── Analytics Types ──────────────────────────────────────────────────────────
 
 export type AnalyticsPeriod = "today" | "month" | "3months" | "year" | "all" | "custom";
@@ -56,17 +54,6 @@ export interface AnalyticsSummary {
   insights: string[];
 }
 
-export interface TrendPoint {
-  date: string;
-  income: number;
-  expense: number;
-}
-
-export interface AnalyticsTrends {
-  granularity: "daily" | "monthly";
-  data: TrendPoint[];
-}
-
 export interface RecurringGroup {
   key: string;
   category: string;
@@ -77,16 +64,16 @@ export interface RecurringGroup {
   lastDate: string;
 }
 
-export function createApi(tokenProvider: TokenProvider) {
+export function createApi() {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
-    const token = await tokenProvider();
     const headers = new Headers(init?.headers);
     headers.set("Content-Type", "application/json");
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
 
-    const response = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    const response = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers,
+    });
 
     const body = (await response.json().catch(() => null)) as
       | ApiResponse<T>
@@ -179,19 +166,6 @@ export function createApi(tokenProvider: TokenProvider) {
           `/spaces/${spaceId}/analytics/summary?${params.toString()}`
         );
       },
-      trends: (
-        spaceId: string,
-        period: AnalyticsPeriod = "month",
-        dateFrom?: string,
-        dateTo?: string
-      ) => {
-        const params = new URLSearchParams({ period });
-        if (dateFrom) params.set("dateFrom", dateFrom);
-        if (dateTo) params.set("dateTo", dateTo);
-        return request<AnalyticsTrends>(
-          `/spaces/${spaceId}/analytics/trends?${params.toString()}`
-        );
-      },
       recurring: (spaceId: string, minCount = 2) =>
         request<RecurringGroup[]>(
           `/spaces/${spaceId}/analytics/recurring?minCount=${minCount}`
@@ -203,16 +177,10 @@ export function createApi(tokenProvider: TokenProvider) {
 export type Api = ReturnType<typeof createApi>;
 
 let apiInstance: Api | null = null;
-let currentTokenProvider: TokenProvider | null = null;
 
 export function getApi(): Api {
-  if (!currentTokenProvider || !apiInstance) {
-    throw new Error("API not initialised. Call initApi first.");
+  if (!apiInstance) {
+    apiInstance = createApi();
   }
   return apiInstance;
-}
-
-export function initApi(tokenProvider: TokenProvider) {
-  currentTokenProvider = tokenProvider;
-  apiInstance = createApi(tokenProvider);
 }
