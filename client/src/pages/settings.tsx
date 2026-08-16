@@ -306,9 +306,18 @@ export default function SettingsPage() {
         </h2>
         <Card className="rounded-4xl p-1.5">
           {[
-            { to: "/privacy", label: "Privacy Policy", icon: ShieldCheck },
-            { to: "/terms", label: "Terms of Service", icon: FileText },
-            { to: "/data-deletion", label: "Delete My Data", icon: Trash2 },
+            {
+              to: "/privacy",
+              label: "Privacy Policy",
+              description: "Learn how we handle the data",
+              icon: ShieldCheck,
+            },
+            {
+              to: "/terms",
+              label: "Terms of Service",
+              description: "Understand your rights and obligations",
+              icon: FileText,
+            },
           ].map((item, i) => (
             <div key={item.to}>
               {i > 0 && <div className="mx-4 my-1 h-px bg-border/60" />}
@@ -319,7 +328,12 @@ export default function SettingsPage() {
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <item.icon className="size-5" />
                 </span>
-                <span className="flex-1 text-sm font-semibold">{item.label}</span>
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold">{item.label}</span>
+                  <span className="block text-xs font-medium text-muted-foreground">
+                    {item.description}
+                  </span>
+                </span>
                 <ChevronRight className="size-4 text-muted-foreground" />
               </Link>
             </div>
