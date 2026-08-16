@@ -55,6 +55,16 @@ export async function resolveUserIdFromAuth(
   return upsertUserFromAuth(authUser);
 }
 
+export async function updateUserEmail(
+  betterAuthId: string,
+  email: string
+): Promise<void> {
+  await UserModel.updateOne(
+    { betterAuthId },
+    { $set: { email, emailVerified: false } }
+  );
+}
+
 export async function deleteUserWithData(betterAuthId: string): Promise<void> {
   const user = await UserModel.findOne({ betterAuthId }).select("_id").lean();
   if (!user) return;
