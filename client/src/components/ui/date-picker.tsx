@@ -12,6 +12,8 @@ export interface DatePickerProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  side?: "top" | "bottom";
+  align?: "start" | "center" | "end";
 }
 
 export function DatePicker({
@@ -20,6 +22,8 @@ export function DatePicker({
   className,
   placeholder = "Pick a date",
   disabled,
+  side = "top",
+  align = "start",
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -53,7 +57,7 @@ export function DatePicker({
         <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="truncate text-xs sm:text-sm font-medium">{displayDate}</span>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
+      <PopoverContent align={align} side={side} className="w-auto p-0">
         <Calendar
           mode="single"
           selected={selectedDate}
