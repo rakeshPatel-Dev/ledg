@@ -16,13 +16,27 @@ import type {
   TransactionUpdateInput,
 } from "@ledg/shared";
 
-import { getApi } from "./api";
+import { getApi, type AnalyticsPeriod } from "./api";
 
 export const queryKeys = {
   spaces: ["spaces"] as const,
   space: (id: string) => ["spaces", id] as const,
   transactions: (spaceId: string, query: TransactionListQuery = {}) =>
     ["spaces", spaceId, "transactions", query] as const,
+  analyticsSummary: (
+    spaceId: string,
+    period: AnalyticsPeriod,
+    dateFrom?: string,
+    dateTo?: string
+  ) => ["spaces", spaceId, "analytics", "summary", period, dateFrom, dateTo] as const,
+  analyticsTrends: (
+    spaceId: string,
+    period: AnalyticsPeriod,
+    dateFrom?: string,
+    dateTo?: string
+  ) => ["spaces", spaceId, "analytics", "trends", period, dateFrom, dateTo] as const,
+  analyticsRecurring: (spaceId: string) =>
+    ["spaces", spaceId, "analytics", "recurring"] as const,
 };
 
 type TransactionListQuery = Omit<
@@ -97,10 +111,13 @@ function restoreTransactionLists(
   }
 }
 
+// ─── Spaces ───────────────────────────────────────────────────────────────────
+
 export function useSpaces() {
   return useQuery({
     queryKey: queryKeys.spaces,
     queryFn: () => getApi().spaces.list(),
+    staleTime: 60_000,
   });
 }
 
@@ -184,10 +201,7 @@ export function useDeleteSpace() {
       const previousSpaces = queryClient.getQueryData<Space[]>(
         queryKeys.spaces
       );
-      const previousTransactions = snapshotTransactionLists(
-        queryClient,
-        id
-      );
+      const previousTransactions = snapshotTransactionLists(queryClient, id);
 
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
         (old ?? []).filter((s) => s.id !== id)
@@ -209,6 +223,8 @@ export function useDeleteSpace() {
   });
 }
 
+// ─── Transactions ─────────────────────────────────────────────────────────────
+
 export function useTransactions(
   spaceId: string,
   query: TransactionListQuery = {}
@@ -217,6 +233,7 @@ export function useTransactions(
     queryKey: queryKeys.transactions(spaceId, query),
     queryFn: () => getApi().transactions.list(spaceId, query),
     enabled: !!spaceId,
+    staleTime: 60_000,
   });
 }
 
@@ -274,6 +291,9 @@ export function useCreateTransaction() {
         real
       );
       invalidateTransactionQueries(queryClient, variables.spaceId);
+      queryClient.invalidateQueries({
+        queryKey: ["spaces", variables.spaceId, "analytics"],
+      });
     },
     onError: (_error, _variables, context) => {
       restoreTransactionLists(queryClient, context.previous);
@@ -322,6 +342,9 @@ export function useUpdateTransaction() {
     },
     onSuccess: (_data, variables) => {
       invalidateTransactionQueries(queryClient, variables.spaceId);
+      queryClient.invalidateQueries({
+        queryKey: ["spaces", variables.spaceId, "analytics"],
+      });
     },
     onError: (_error, _variables, context) => {
       restoreTransactionLists(queryClient, context.previous);
@@ -348,12 +371,17 @@ export function useDeleteTransaction(spaceId: string) {
     },
     onSuccess: () => {
       invalidateTransactionQueries(queryClient, spaceId);
+      queryClient.invalidateQueries({
+        queryKey: ["spaces", spaceId, "analytics"],
+      });
     },
     onError: (_error, _id, context) => {
       restoreTransactionLists(queryClient, context.previous);
     },
   });
 }
+
+// ─── Aggregated Data (for hooks that need all raw transactions client-side) ───
 
 export interface AggregatedData {
   spaces: Space[];
@@ -370,6 +398,7 @@ export function useAllData(): AggregatedData {
     queries: spaceIds.map((id) => ({
       queryKey: queryKeys.transactions(id, { pageSize: 100 }),
       queryFn: () => getApi().transactions.list(id, { pageSize: 100 }),
+      staleTime: 60_000,
     })),
   });
 
@@ -386,24 +415,43 @@ export function useAllData(): AggregatedData {
   };
 }
 
-export function useAnalytics() {
-  const spacesQuery = useSpaces();
-  const spaceIds = (spacesQuery.data ?? []).map((s) => s.id);
+// ─── Server-computed Analytics Hooks ─────────────────────────────────────────
 
-  const transactionQueries = useQueries({
-    queries: spaceIds.map((id) => ({
-      queryKey: queryKeys.transactions(id, { pageSize: 100 }),
-      queryFn: () => getApi().transactions.list(id, { pageSize: 100 }),
-    })),
+export function useAnalyticsSummary(
+  spaceId: string,
+  period: AnalyticsPeriod = "month",
+  dateFrom?: string,
+  dateTo?: string
+) {
+  return useQuery({
+    queryKey: queryKeys.analyticsSummary(spaceId, period, dateFrom, dateTo),
+    queryFn: () => getApi().analytics.summary(spaceId, period, dateFrom, dateTo),
+    enabled: !!spaceId,
+    staleTime: 60_000,
   });
+}
 
-  return {
-    spaces: spacesQuery.data ?? [],
-    transactions: transactionQueries.flatMap((q) => q.data?.items ?? []),
-    loading:
-      spacesQuery.isLoading || transactionQueries.some((q) => q.isLoading),
-    error: spacesQuery.error ?? transactionQueries.find((q) => q.error)?.error,
-  };
+export function useAnalyticsTrends(
+  spaceId: string,
+  period: AnalyticsPeriod = "month",
+  dateFrom?: string,
+  dateTo?: string
+) {
+  return useQuery({
+    queryKey: queryKeys.analyticsTrends(spaceId, period, dateFrom, dateTo),
+    queryFn: () => getApi().analytics.trends(spaceId, period, dateFrom, dateTo),
+    enabled: !!spaceId,
+    staleTime: 60_000,
+  });
+}
+
+export function useAnalyticsRecurring(spaceId: string) {
+  return useQuery({
+    queryKey: queryKeys.analyticsRecurring(spaceId),
+    queryFn: () => getApi().analytics.recurring(spaceId),
+    enabled: !!spaceId,
+    staleTime: 60_000,
+  });
 }
 
 export type { Space, SpaceInput, SpaceUpdateInput, Transaction };

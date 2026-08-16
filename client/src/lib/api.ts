@@ -31,6 +31,52 @@ export class ApiError extends Error {
 
 type TokenProvider = () => Promise<string | null>;
 
+// ─── Analytics Types ──────────────────────────────────────────────────────────
+
+export type AnalyticsPeriod = "today" | "month" | "3months" | "year" | "all" | "custom";
+
+export interface AnalyticsSummary {
+  period: AnalyticsPeriod;
+  current: {
+    totalIncome: number;
+    totalExpense: number;
+    balance: number;
+    transactionCount: number;
+  };
+  previous: {
+    totalIncome: number;
+    totalExpense: number;
+  };
+  deltas: {
+    expense: number | null;
+    income: number | null;
+  };
+  byExpenseCategory: { category: string; amount: number; count: number }[];
+  byIncomeCategory: { category: string; amount: number; count: number }[];
+  insights: string[];
+}
+
+export interface TrendPoint {
+  date: string;
+  income: number;
+  expense: number;
+}
+
+export interface AnalyticsTrends {
+  granularity: "daily" | "monthly";
+  data: TrendPoint[];
+}
+
+export interface RecurringGroup {
+  key: string;
+  category: string;
+  note: string;
+  amount: number;
+  count: number;
+  totalSpent: number;
+  lastDate: string;
+}
+
 export function createApi(tokenProvider: TokenProvider) {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const token = await tokenProvider();
@@ -118,6 +164,38 @@ export function createApi(tokenProvider: TokenProvider) {
             method: "DELETE",
           }
         ).then((r) => r.id),
+    },
+    analytics: {
+      summary: (
+        spaceId: string,
+        period: AnalyticsPeriod = "month",
+        dateFrom?: string,
+        dateTo?: string
+      ) => {
+        const params = new URLSearchParams({ period });
+        if (dateFrom) params.set("dateFrom", dateFrom);
+        if (dateTo) params.set("dateTo", dateTo);
+        return request<AnalyticsSummary>(
+          `/spaces/${spaceId}/analytics/summary?${params.toString()}`
+        );
+      },
+      trends: (
+        spaceId: string,
+        period: AnalyticsPeriod = "month",
+        dateFrom?: string,
+        dateTo?: string
+      ) => {
+        const params = new URLSearchParams({ period });
+        if (dateFrom) params.set("dateFrom", dateFrom);
+        if (dateTo) params.set("dateTo", dateTo);
+        return request<AnalyticsTrends>(
+          `/spaces/${spaceId}/analytics/trends?${params.toString()}`
+        );
+      },
+      recurring: (spaceId: string, minCount = 2) =>
+        request<RecurringGroup[]>(
+          `/spaces/${spaceId}/analytics/recurring?minCount=${minCount}`
+        ),
     },
   };
 }
