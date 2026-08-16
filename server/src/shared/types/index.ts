@@ -16,6 +16,8 @@ export interface Space {
   ownerId: string;
   name: string;
   type: SpaceType;
+  budget?: Record<string, number>;
+  savingsGoal?: number | null;
   createdAt: string;
   updatedAt: string;
 }
