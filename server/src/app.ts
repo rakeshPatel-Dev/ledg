@@ -1,11 +1,11 @@
 import "./config/env.js";
 import { validateEnv } from "./config/env.js";
 
+import { createRequire } from "node:module";
+import type { RequestHandler } from "express";
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
 import { pinoHttp } from "pino-http";
-import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 
 import apiRoutes from "./routes.js";
@@ -18,6 +18,16 @@ import {
 import { connectDatabase } from "./database/index.js";
 
 validateEnv();
+
+// helmet and express-rate-limit are dual ESM/CJS packages whose type
+// declarations resolve to different files depending on the module
+// resolution mode; default-importing them can bind the module namespace
+// instead of the middleware factory (TS2349). Loading the CJS entry via
+// createRequire is unambiguous and stable across build environments.
+const require = createRequire(import.meta.url);
+type MiddlewareFactory = (options?: Record<string, unknown>) => RequestHandler;
+const helmet = require("helmet") as MiddlewareFactory;
+const rateLimit = require("express-rate-limit") as MiddlewareFactory;
 
 const isProd = process.env.NODE_ENV === "production";
 
