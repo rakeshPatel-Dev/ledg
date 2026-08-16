@@ -60,6 +60,16 @@ async function createAuth() {
           }
         : {},
 
+    user: {
+      deleteUser: {
+        enabled: true,
+      },
+    },
+
+    session: {
+      freshAge: 0,
+    },
+
     trustedOrigins: getTrustedOrigins(),
 
     databaseHooks: {
