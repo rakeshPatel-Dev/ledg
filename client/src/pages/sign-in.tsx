@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import AppLogo from "@/components/common/AppLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/lib/auth-provider";
 
@@ -121,9 +122,8 @@ export default function SignInPage() {
             >
               Password
             </label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               required
               autoComplete="current-password"
               placeholder="••••••••"

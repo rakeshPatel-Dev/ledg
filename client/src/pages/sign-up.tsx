@@ -5,6 +5,11 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import AppLogo from "@/components/common/AppLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import {
+  PasswordStrength,
+  passwordRuleError,
+} from "@/components/ui/password-strength";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/lib/auth-provider";
 
@@ -34,6 +39,11 @@ export default function SignUpPage() {
     setLoading(true);
     setError("");
     try {
+      const ruleError = passwordRuleError(password);
+      if (ruleError) {
+        setError(ruleError);
+        return;
+      }
       const { error: signUpError } = await authClient.signUp.email({
         name,
         email,
@@ -136,9 +146,8 @@ export default function SignUpPage() {
             >
               Password
             </label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               required
               minLength={8}
               autoComplete="new-password"
@@ -146,6 +155,7 @@ export default function SignUpPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <PasswordStrength password={password} />
           </div>
 
           {error && <p className="text-xs font-medium text-destructive">{error}</p>}
