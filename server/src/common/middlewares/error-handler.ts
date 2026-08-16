@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 
 import { AppError } from "../errors/index.js";
+import { logger } from "../../config/logger.js";
 
 export function notFoundHandler(_req: Request, res: Response) {
   res.status(404).json({
@@ -37,7 +38,8 @@ export function errorHandler(
     return;
   }
 
-  console.error("Unhandled error", error);
+  // Log the error with pino (sensitive fields redacted via logger config).
+  logger.error({ error }, "Unhandled error");
   res.status(500).json({
     success: false,
     message: "Internal server error",
