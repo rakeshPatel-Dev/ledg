@@ -30,22 +30,6 @@ export const getSummary = asyncHandler(
   }
 );
 
-export const getTrends = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const period = parsePeriod(req.query.period);
-    const dateFrom = typeof req.query.dateFrom === "string" ? req.query.dateFrom : undefined;
-    const dateTo = typeof req.query.dateTo === "string" ? req.query.dateTo : undefined;
-
-    const data = await analyticsService.getAnalyticsTrends(
-      req.userId!,
-      String(req.params.spaceId),
-      period,
-      { dateFrom, dateTo }
-    );
-    res.json({ success: true, data });
-  }
-);
-
 export const getRecurring = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const minCount = Number(req.query.minCount) || 2;

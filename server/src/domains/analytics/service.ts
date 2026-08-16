@@ -6,10 +6,14 @@ import { NotFoundError } from "../../common/errors/index.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function resolveSpace(spaceId: string, ownerId: Types.ObjectId) {
+async function resolveSpaceIds(spaceId: string, ownerId: Types.ObjectId): Promise<Types.ObjectId[]> {
+  if (spaceId === "all") {
+    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+    return spaces.map((s) => s._id);
+  }
   const space = await spaceRepository.findSpaceById(spaceId, ownerId);
   if (!space) throw new NotFoundError("Space");
-  return space._id;
+  return [space._id];
 }
 
 type Period = "today" | "month" | "3months" | "year" | "all" | "custom";
@@ -53,15 +57,14 @@ function dateRangeForPeriod(
     return { from, to };
   }
 
-  const from = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
   if (period === "month") {
-    from.setMonth(now.getMonth(), 1);
     from.setHours(0, 0, 0, 0);
   } else if (period === "3months") {
-    from.setMonth(now.getMonth() - 2, 1);
+    from.setMonth(now.getMonth() - 2);
     from.setHours(0, 0, 0, 0);
   } else if (period === "year") {
-    from.setMonth(0, 1);
+    from.setMonth(0);
     from.setHours(0, 0, 0, 0);
   }
   return { from };
@@ -98,13 +101,15 @@ function prevDateRangeForPeriod(
   const prevFrom = new Date(prevTo);
 
   if (period === "month") {
-    prevFrom.setMonth(prevTo.getMonth(), 1);
+    prevFrom.setDate(1);
     prevFrom.setHours(0, 0, 0, 0);
   } else if (period === "3months") {
-    prevFrom.setMonth(prevTo.getMonth() - 2, 1);
+    prevFrom.setDate(1);
+    prevFrom.setMonth(prevTo.getMonth() - 2);
     prevFrom.setHours(0, 0, 0, 0);
   } else if (period === "year") {
-    prevFrom.setFullYear(prevTo.getFullYear(), 0, 1);
+    prevFrom.setDate(1);
+    prevFrom.setMonth(0);
     prevFrom.setHours(0, 0, 0, 0);
   }
 
@@ -198,18 +203,18 @@ export async function getAnalyticsSummary(
   period: Period = "month",
   options?: DateRangeOptions
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
+  const resolvedSpaceIds = await resolveSpaceIds(spaceId, ownerId);
 
   const range = dateRangeForPeriod(period, options);
   const prevRange = prevDateRangeForPeriod(period, options);
 
   const [current, previous, currentExpCats, prevExpCats, currentIncCats] =
     await Promise.all([
-      analyticsRepository.getSpaceSummary(resolvedSpaceId, range),
-      analyticsRepository.getSpaceSummary(resolvedSpaceId, prevRange),
-      analyticsRepository.getCategoryBreakdown(resolvedSpaceId, "expense", range),
-      analyticsRepository.getCategoryBreakdown(resolvedSpaceId, "expense", prevRange),
-      analyticsRepository.getCategoryBreakdown(resolvedSpaceId, "income", range),
+      analyticsRepository.getSpaceSummary(resolvedSpaceIds, range),
+      analyticsRepository.getSpaceSummary(resolvedSpaceIds, prevRange),
+      analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "expense", range),
+      analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "expense", prevRange),
+      analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "income", range),
     ]);
 
   const insights = buildInsights(
@@ -261,46 +266,12 @@ export async function getAnalyticsSummary(
   };
 }
 
-export async function getAnalyticsTrends(
-  ownerId: Types.ObjectId,
-  spaceId: string,
-  period: Period = "month",
-  options?: DateRangeOptions
-) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
-
-  const range = dateRangeForPeriod(period, options);
-
-  // For "year" or "all" use monthly grouping; otherwise daily
-  if (period === "year" || period === "all") {
-    const months = period === "year" ? 12 : 24;
-    const monthly = await analyticsRepository.getMonthlyTrend(
-      resolvedSpaceId,
-      months
-    );
-    return {
-      granularity: "monthly" as const,
-      data: monthly.map((m) => ({
-        date: `${m.year}-${String(m.month).padStart(2, "0")}`,
-        income: m.income,
-        expense: m.expense,
-      })),
-    };
-  }
-
-  const daily = await analyticsRepository.getDailyTrend(resolvedSpaceId, range);
-  return {
-    granularity: "daily" as const,
-    data: daily,
-  };
-}
-
 export async function getAnalyticsRecurring(
   ownerId: Types.ObjectId,
   spaceId: string,
   minCount: number = 2
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
-  return analyticsRepository.getRecurringTransactions(resolvedSpaceId, minCount);
+  const resolvedSpaceIds = await resolveSpaceIds(spaceId, ownerId);
+  return analyticsRepository.getRecurringTransactions(resolvedSpaceIds, minCount);
 }
 

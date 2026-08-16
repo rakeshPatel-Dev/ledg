@@ -114,39 +114,43 @@ export default function AnalyticsPage() {
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>("all");
   const [customFrom, setCustomFrom] = useState<string>(todayStr);
   const [customTo, setCustomTo] = useState<string>(todayStr);
   const [drillCategory, setDrillCategory] = useState<string | null>(null);
 
-  // Spaces — pick first space for analytics
+  // Spaces
   const spacesQuery = useSpaces();
   const spaces = spacesQuery.data ?? [];
-  const primarySpaceId = spaces[0]?.id ?? "";
 
-  // Server-computed analytics data
+  // Server-computed analytics data (supports "all" or specific spaceId)
   const summaryQ = useAnalyticsSummary(
-    primarySpaceId,
+    selectedSpaceId,
     period,
     period === "custom" ? customFrom : undefined,
     period === "custom" ? customTo : undefined
   );
-  const recurringQ = useAnalyticsRecurring(primarySpaceId);
+  const recurringQ = useAnalyticsRecurring(selectedSpaceId);
 
   // Raw transactions (needed for drill-down sheet)
   const { transactions } = useAllData();
 
-  const isLoading = spacesQuery.isLoading || (!!primarySpaceId && summaryQ.isLoading);
+  const isLoading = spacesQuery.isLoading || summaryQ.isLoading;
   const summary = summaryQ.data;
   const recurring = recurringQ.data ?? [];
 
-  // Filter transactions according to selected period for category drilldown sheet
+  // Filter transactions according to selected period and space for category drilldown sheet
   const filteredTransactions = useMemo(() => {
-    if (!transactions.length) return [];
+    let list = transactions;
+    if (selectedSpaceId !== "all") {
+      list = list.filter((t) => t.spaceId === selectedSpaceId);
+    }
+    if (!list.length) return [];
     const now = new Date();
 
     if (period === "today") {
       const todayDate = todayStr;
-      return transactions.filter((t) => t.date?.slice(0, 10) === todayDate);
+      return list.filter((t) => t.date?.slice(0, 10) === todayDate);
     }
     if (period === "custom") {
       const from = customFrom ? new Date(customFrom) : null;
@@ -154,7 +158,7 @@ export default function AnalyticsPage() {
       const to = customTo ? new Date(customTo) : from;
       if (to) to.setHours(23, 59, 59, 999);
 
-      return transactions.filter((t) => {
+      return list.filter((t) => {
         const d = new Date(t.date);
         if (from && d < from) return false;
         if (to && d > to) return false;
@@ -163,18 +167,18 @@ export default function AnalyticsPage() {
     }
     if (period === "month") {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      return transactions.filter((t) => new Date(t.date) >= monthStart);
+      return list.filter((t) => new Date(t.date) >= monthStart);
     }
     if (period === "3months") {
       const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      return transactions.filter((t) => new Date(t.date) >= threeMonthsAgo);
+      return list.filter((t) => new Date(t.date) >= threeMonthsAgo);
     }
     if (period === "year") {
       const yearStart = new Date(now.getFullYear(), 0, 1);
-      return transactions.filter((t) => new Date(t.date) >= yearStart);
+      return list.filter((t) => new Date(t.date) >= yearStart);
     }
-    return transactions;
-  }, [transactions, period, customFrom, customTo, todayStr]);
+    return list;
+  }, [transactions, selectedSpaceId, period, customFrom, customTo, todayStr]);
 
   // ── Loading skeleton ────────────────────────────────────────────────────────
   if (isLoading) {
@@ -202,8 +206,46 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold tracking-tight">Insights</h1>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight">Insights</h1>
+          <p className="text-sm text-muted-foreground">
+            Financial analytics & spending breakdown
+          </p>
+        </div>
       </div>
+
+      {/* ── Space selector (if user has spaces) ── */}
+      {spaces.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSelectedSpaceId("all")}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+              selectedSpaceId === "all"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent"
+            )}
+          >
+            All spaces
+          </button>
+          {spaces.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSelectedSpaceId(s.id)}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+                selectedSpaceId === s.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Period Selector ── */}
       <Segmented
@@ -280,7 +322,7 @@ export default function AnalyticsPage() {
       </AnimatePresence>
 
       {/* ── Empty state for no transactions in selected period ── */}
-      {!primarySpaceId || transactionCount === 0 ? (
+      {transactionCount === 0 ? (
         <Card className="border-none bg-card p-6">
           <EmptyState
             icon={<PieChart className="size-7" />}

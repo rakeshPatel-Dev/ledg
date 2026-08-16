@@ -29,12 +29,6 @@ export const queryKeys = {
     dateFrom?: string,
     dateTo?: string
   ) => ["spaces", spaceId, "analytics", "summary", period, dateFrom, dateTo] as const,
-  analyticsTrends: (
-    spaceId: string,
-    period: AnalyticsPeriod,
-    dateFrom?: string,
-    dateTo?: string
-  ) => ["spaces", spaceId, "analytics", "trends", period, dateFrom, dateTo] as const,
   analyticsRecurring: (spaceId: string) =>
     ["spaces", spaceId, "analytics", "recurring"] as const,
 };
@@ -426,20 +420,6 @@ export function useAnalyticsSummary(
   return useQuery({
     queryKey: queryKeys.analyticsSummary(spaceId, period, dateFrom, dateTo),
     queryFn: () => getApi().analytics.summary(spaceId, period, dateFrom, dateTo),
-    enabled: !!spaceId,
-    staleTime: 60_000,
-  });
-}
-
-export function useAnalyticsTrends(
-  spaceId: string,
-  period: AnalyticsPeriod = "month",
-  dateFrom?: string,
-  dateTo?: string
-) {
-  return useQuery({
-    queryKey: queryKeys.analyticsTrends(spaceId, period, dateFrom, dateTo),
-    queryFn: () => getApi().analytics.trends(spaceId, period, dateFrom, dateTo),
     enabled: !!spaceId,
     staleTime: 60_000,
   });
