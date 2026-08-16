@@ -5,11 +5,17 @@ import { UserModel } from "./model.js";
 export async function findUserByClerkId(
   clerkId: string
 ): Promise<Types.ObjectId> {
-  const existing = await UserModel.findOne({ clerkId }).select("_id").lean();
+  const user = await UserModel.findOneAndUpdate(
+    { clerkId },
+    { $setOnInsert: { clerkId } },
+    { upsert: true, returnDocument: "after" }
+  )
+    .select("_id")
+    .lean();
 
-  if (!existing) {
-    throw new Error("User not found");
+  if (!user) {
+    throw new Error("Failed to find or create user");
   }
 
-  return existing._id;
+  return user._id;
 }
