@@ -171,6 +171,13 @@ export function createApi() {
           `/spaces/${spaceId}/analytics/recurring?minCount=${minCount}`
         ),
     },
+    me: {
+      updateEmail: (email: string) =>
+        request<{ email: string }>("/me/email", {
+          method: "PATCH",
+          body: JSON.stringify({ email }),
+        }).then((r) => r.email),
+    },
   };
 }
 
