@@ -1,22 +1,15 @@
 import { Types } from "mongoose";
 
 import { UserModel } from "./model.js";
-import { SpaceModel } from "../spaces/model.js";
 
-export async function findOrCreateUser(
+export async function findUserByClerkId(
   clerkId: string
 ): Promise<Types.ObjectId> {
   const existing = await UserModel.findOne({ clerkId }).select("_id").lean();
 
-  if (existing) {
-    return existing._id;
+  if (!existing) {
+    throw new Error("User not found");
   }
 
-  const created = await UserModel.create({ clerkId });
-  await SpaceModel.create({
-    ownerId: created._id,
-    name: "Personal",
-    type: "personal",
-  });
-  return created._id;
+  return existing._id;
 }

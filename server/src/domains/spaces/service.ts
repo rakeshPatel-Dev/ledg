@@ -1,14 +1,12 @@
-import { Types } from "mongoose";
+import type { Types } from "mongoose";
 
 import { ConflictError, NotFoundError } from "../../common/errors/index.js";
-import { findOrCreateUser } from "../users/repository.js";
 import * as spaceRepository from "./repository.js";
 
 export async function createUserSpace(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   data: { name: string; type: string }
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const count = await spaceRepository.countUserSpaces(ownerId);
 
   if (count >= 10) {
@@ -19,14 +17,12 @@ export async function createUserSpace(
   return space;
 }
 
-export async function getUserSpaces(clerkId: string) {
-  const ownerId = await findOrCreateUser(clerkId);
+export async function getUserSpaces(ownerId: Types.ObjectId) {
   await spaceRepository.ensureDefaultSpace(ownerId);
   return spaceRepository.findSpacesByOwner(ownerId);
 }
 
-export async function getUserSpace(clerkId: string, spaceId: string) {
-  const ownerId = await findOrCreateUser(clerkId);
+export async function getUserSpace(ownerId: Types.ObjectId, spaceId: string) {
   const space = await spaceRepository.findSpaceById(spaceId, ownerId);
 
   if (!space) {
@@ -37,11 +33,10 @@ export async function getUserSpace(clerkId: string, spaceId: string) {
 }
 
 export async function updateUserSpace(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   spaceId: string,
   data: Record<string, unknown>
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const space = await spaceRepository.updateSpace(spaceId, ownerId, data);
 
   if (!space) {
@@ -51,9 +46,7 @@ export async function updateUserSpace(
   return space;
 }
 
-export async function deleteUserSpace(clerkId: string, spaceId: string) {
-  const ownerId = await findOrCreateUser(clerkId);
-
+export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) {
   // cascade delete: remove transactions first, then the space itself
   await spaceRepository.deleteTransactionsBySpace(spaceId);
 
@@ -64,8 +57,4 @@ export async function deleteUserSpace(clerkId: string, spaceId: string) {
   }
 
   return { id: spaceId };
-}
-
-export async function getSpaceOwnerId(clerkId: string): Promise<Types.ObjectId> {
-  return findOrCreateUser(clerkId);
 }

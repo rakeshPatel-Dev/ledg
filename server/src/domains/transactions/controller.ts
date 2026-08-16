@@ -14,7 +14,7 @@ export const createTransaction = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const data = validateCreateTransaction(req.body);
     const transaction = await transactionService.createUserTransaction(
-      req.clerkId as string,
+      req.userId!,
       String(req.params.spaceId),
       data
     );
@@ -27,7 +27,7 @@ export const listTransactions = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const query = validateTransactionQuery(req.query);
     const data = await transactionService.listUserTransactions(
-      req.clerkId as string,
+      req.userId!,
       String(req.params.spaceId),
       query
     );
@@ -40,7 +40,7 @@ export const getTransaction = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const transactionId = validateTransactionId(req.params);
     const transaction = await transactionService.getUserTransaction(
-      req.clerkId as string,
+      req.userId!,
       String(req.params.spaceId),
       transactionId
     );
@@ -54,7 +54,7 @@ export const updateTransaction = asyncHandler(
     const transactionId = validateTransactionId(req.params);
     const data = validateUpdateTransaction(req.body);
     const transaction = await transactionService.updateUserTransaction(
-      req.clerkId as string,
+      req.userId!,
       String(req.params.spaceId),
       transactionId,
       data
@@ -68,7 +68,7 @@ export const deleteTransaction = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const transactionId = validateTransactionId(req.params);
     const result = await transactionService.deleteUserTransaction(
-      req.clerkId as string,
+      req.userId!,
       String(req.params.spaceId),
       transactionId
     );

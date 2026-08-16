@@ -1,7 +1,6 @@
-import { Types } from "mongoose";
+import type { Types } from "mongoose";
 
 import { NotFoundError } from "../../common/errors/index.js";
-import { findOrCreateUser } from "../users/repository.js";
 import * as spaceRepository from "../spaces/repository.js";
 import * as transactionRepository from "./repository.js";
 
@@ -19,11 +18,10 @@ async function resolveSpace(spaceId: string, ownerId: Types.ObjectId) {
 }
 
 export async function createUserTransaction(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   spaceId: string,
   data: Record<string, unknown>
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
 
   const transaction = await transactionRepository.createTransaction({
@@ -35,7 +33,7 @@ export async function createUserTransaction(
 }
 
 export async function listUserTransactions(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   spaceId: string,
   query: {
     category?: string;
@@ -47,7 +45,6 @@ export async function listUserTransactions(
     pageSize?: number;
   }
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
 
   const { items, total } = await transactionRepository.findTransactions({
@@ -74,11 +71,10 @@ export async function listUserTransactions(
 }
 
 export async function getUserTransaction(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   spaceId: string,
   transactionId: string
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
 
   const transaction = await transactionRepository.findTransactionById(
@@ -94,12 +90,11 @@ export async function getUserTransaction(
 }
 
 export async function updateUserTransaction(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   spaceId: string,
   transactionId: string,
   data: Record<string, unknown>
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
 
   const transaction = await transactionRepository.updateTransaction(
@@ -116,11 +111,10 @@ export async function updateUserTransaction(
 }
 
 export async function deleteUserTransaction(
-  clerkId: string,
+  ownerId: Types.ObjectId,
   spaceId: string,
   transactionId: string
 ) {
-  const ownerId = await findOrCreateUser(clerkId);
   const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
 
   const deleted = await transactionRepository.deleteTransaction(

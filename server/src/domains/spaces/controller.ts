@@ -12,10 +12,7 @@ import {
 export const createSpace = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const data = validateCreateSpace(req.body);
-    const space = await spaceService.createUserSpace(
-      req.clerkId as string,
-      data
-    );
+    const space = await spaceService.createUserSpace(req.userId!, data);
 
     res.status(201).json({ success: true, data: { space } });
   }
@@ -23,7 +20,7 @@ export const createSpace = asyncHandler(
 
 export const listSpaces = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const spaces = await spaceService.getUserSpaces(req.clerkId as string);
+    const spaces = await spaceService.getUserSpaces(req.userId!);
 
     res.json({ success: true, data: { spaces } });
   }
@@ -32,10 +29,7 @@ export const listSpaces = asyncHandler(
 export const getSpace = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const spaceId = validateSpaceId(req.params);
-    const space = await spaceService.getUserSpace(
-      req.clerkId as string,
-      spaceId
-    );
+    const space = await spaceService.getUserSpace(req.userId!, spaceId);
 
     res.json({ success: true, data: { space } });
   }
@@ -46,7 +40,7 @@ export const updateSpace = asyncHandler(
     const spaceId = validateSpaceId(req.params);
     const data = validateUpdateSpace(req.body);
     const space = await spaceService.updateUserSpace(
-      req.clerkId as string,
+      req.userId!,
       spaceId,
       data
     );
@@ -58,10 +52,7 @@ export const updateSpace = asyncHandler(
 export const deleteSpace = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const spaceId = validateSpaceId(req.params);
-    const result = await spaceService.deleteUserSpace(
-      req.clerkId as string,
-      spaceId
-    );
+    const result = await spaceService.deleteUserSpace(req.userId!, spaceId);
 
     res.json({ success: true, data: result });
   }
