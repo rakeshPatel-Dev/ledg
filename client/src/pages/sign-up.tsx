@@ -38,7 +38,7 @@ export default function SignUpPage() {
         name,
         email,
         password,
-        callbackURL: "/",
+        callbackURL: window.location.origin + "/",
       });
       if (signUpError) {
         setError(signUpError.message ?? "Failed to create account");
@@ -58,7 +58,7 @@ export default function SignUpPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: window.location.origin + "/",
       });
     } catch {
       setGoogleLoading(false);

@@ -56,7 +56,7 @@ export default function SignInPage() {
     try {
       const { error: socialError } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: window.location.origin + "/",
       });
       if (socialError) {
         setError(socialError.message ?? "Google sign-in failed");
