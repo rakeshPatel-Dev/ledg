@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { PaymentMethod, Space, TransactionInput } from "@ledg/shared";
 import {
+  PAYMENT_LABELS,
   PAYMENT_METHODS,
   TRANSACTION_TYPES,
   transactionSchema,
@@ -9,7 +10,9 @@ import {
 } from "@ledg/shared";
 import { toast } from "sonner";
 import {
-  HandCoins,
+  Banknote,
+  CreditCard,
+  Landmark,
   Wallet,
   Loader2,
 } from "lucide-react";
@@ -42,11 +45,11 @@ interface TransactionFormProps {
 
 const TYPE_OPTIONS = TRANSACTION_TYPES.map((t) => ({ value: t, label: t }));
 
-const PAYMENT_LABELS: Record<string, string> = {
-  cash: "Cash",
-  card: "Card",
-  bank_transfer: "Bank",
-  other: "Other",
+const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
+  cash: Banknote,
+  card: CreditCard,
+  bank_transfer: Landmark,
+  wallet: Wallet,
 };
 
 export function TransactionForm({ spaces, currency }: TransactionFormProps) {
@@ -325,22 +328,25 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
         <div role="group" aria-labelledby="payment-label">
           <p id="payment-label" className="text-sm font-medium">Payment</p>
           <div className="flex flex-wrap gap-2">
-            {PAYMENT_METHODS.map((method) => (
-              <button
-                key={method}
-                type="button"
-                onClick={() => setPaymentMethod(method)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all",
-                  paymentMethod === method
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <HandCoins className="size-4" />
-                {PAYMENT_LABELS[method]}
-              </button>
-            ))}
+            {PAYMENT_METHODS.map((method) => {
+              const Icon = PAYMENT_ICONS[method] ?? Wallet;
+              return (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => setPaymentMethod(method)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all",
+                    paymentMethod === method
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {PAYMENT_LABELS[method]}
+                </button>
+              );
+            })}
           </div>
         </div>
 
