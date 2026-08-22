@@ -213,29 +213,33 @@ export default function SettingsPage() {
 
           <div className="mx-4 my-1 h-px bg-border/60" />
 
-          <button
-            type="button"
-            onClick={() => {
-              setCurrentPassword("");
-              setNewPassword("");
-              setPasswordError("");
-              setPasswordSheetOpen(true);
-            }}
-            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Lock className="size-5" />
-            </span>
-            <span className="flex-1">
-              <span className="block text-sm font-semibold">Change Password</span>
-              <span className="block text-xs font-medium text-muted-foreground">
-                Update your account password
-              </span>
-            </span>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </button>
+          {authProvider !== "google" && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setPasswordError("");
+                  setPasswordSheetOpen(true);
+                }}
+                className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Lock className="size-5" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold">Change Password</span>
+                  <span className="block text-xs font-medium text-muted-foreground">
+                    Update your account password
+                  </span>
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </button>
 
-          <div className="mx-4 my-1 h-px bg-border/60" />
+              <div className="mx-4 my-1 h-px bg-border/60" />
+            </>
+          )}
 
           <button
             type="button"
