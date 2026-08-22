@@ -1,6 +1,5 @@
 import {
   useMutation,
-  useQueries,
   useQuery,
   useQueryClient,
   type QueryClient,
@@ -23,6 +22,8 @@ export const queryKeys = {
   space: (id: string) => ["spaces", id] as const,
   transactions: (spaceId: string, query: TransactionListQuery = {}) =>
     ["spaces", spaceId, "transactions", query] as const,
+  allTransactions: (pageSize: number) =>
+    ["transactions", "all", pageSize] as const,
   analyticsSummary: (
     spaceId: string,
     period: AnalyticsPeriod,
@@ -391,26 +392,19 @@ export interface AggregatedData {
 
 export function useAllData(): AggregatedData {
   const spacesQuery = useSpaces();
-  const spaceIds = (spacesQuery.data ?? []).map((s) => s.id);
 
-  const transactionQueries = useQueries({
-    queries: spaceIds.map((id) => ({
-      queryKey: queryKeys.transactions(id, { pageSize: 100 }),
-      queryFn: () => getApi().transactions.list(id, { pageSize: 100 }),
-      staleTime: 60_000,
-    })),
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.allTransactions(100),
+    queryFn: () => getApi().transactions.listAll(100),
+    staleTime: 60_000,
+    enabled: !!spacesQuery.data,
   });
-
-  const loading =
-    spacesQuery.isLoading || transactionQueries.some((q) => q.isLoading);
-
-  const transactions = transactionQueries.flatMap((q) => q.data?.items ?? []);
 
   return {
     spaces: spacesQuery.data ?? [],
-    transactions,
-    loading,
-    error: spacesQuery.error ?? transactionQueries.find((q) => q.error)?.error,
+    transactions: transactionsQuery.data?.items ?? [],
+    loading: spacesQuery.isLoading || transactionsQuery.isLoading,
+    error: spacesQuery.error ?? transactionsQuery.error,
   };
 }
 

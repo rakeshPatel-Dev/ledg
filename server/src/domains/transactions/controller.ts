@@ -76,3 +76,15 @@ export const deleteTransaction = asyncHandler(
     res.json({ success: true, data: result });
   }
 );
+
+export const listAllTransactions = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const pageSize = req.query.pageSize ? Number(req.query.pageSize) : 100;
+    const data = await transactionService.listAllUserTransactions(
+      req.userId!,
+      pageSize
+    );
+
+    res.json({ success: true, data });
+  }
+);

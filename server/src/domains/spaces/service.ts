@@ -47,6 +47,13 @@ export async function updateUserSpace(
 }
 
 export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) {
+  // Verify ownership BEFORE any destructive operation
+  const space = await spaceRepository.findSpaceById(spaceId, ownerId);
+
+  if (!space) {
+    throw new NotFoundError("Space");
+  }
+
   // cascade delete: remove transactions first, then the space itself
   await spaceRepository.deleteTransactionsBySpace(spaceId);
 

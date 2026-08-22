@@ -13,4 +13,9 @@ router.get("/:id", transactionController.getTransaction);
 router.put("/:id", transactionController.updateTransaction);
 router.delete("/:id", transactionController.deleteTransaction);
 
+// Top-level /transactions/all — not scoped to a single space
+export const allTransactionsRouter = Router();
+allTransactionsRouter.use(authenticate);
+allTransactionsRouter.get("/all", transactionController.listAllTransactions);
+
 export default router;

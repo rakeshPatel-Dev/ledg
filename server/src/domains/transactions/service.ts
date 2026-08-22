@@ -128,3 +128,18 @@ export async function deleteUserTransaction(
 
   return { id: transactionId };
 }
+
+export async function listAllUserTransactions(
+  ownerId: Types.ObjectId,
+  pageSize = 100
+) {
+  const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+  const spaceIds = spaces.map((s) => s._id);
+
+  const items = await transactionRepository.findAllTransactionsByOwner(
+    spaceIds,
+    pageSize
+  );
+
+  return { items, total: items.length };
+}

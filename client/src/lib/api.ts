@@ -121,6 +121,10 @@ export function createApi() {
         }).then((r) => r.id),
     },
     transactions: {
+      listAll: (pageSize = 100) =>
+        request<{ items: Transaction[]; total: number }>(
+          `/transactions/all?pageSize=${pageSize}`
+        ),
       list: (spaceId: string, query: TransactionListQuery = {}) => {
         const params = new URLSearchParams();
         if (query.category) params.set("category", query.category);
@@ -186,11 +190,18 @@ export function createApi() {
       summary: () => request<DashboardSummary>("/dashboard/summary"),
     },
     me: {
+      getProvider: () =>
+        request<{ provider: string }>("/me/provider"),
       updateEmail: (email: string) =>
         request<{ email: string }>("/me/email", {
           method: "PATCH",
           body: JSON.stringify({ email }),
         }).then((r) => r.email),
+      changePassword: (currentPassword: string, newPassword: string) =>
+        request<{ success: true }>("/me/password", {
+          method: "POST",
+          body: JSON.stringify({ currentPassword, newPassword }),
+        }),
     },
   };
 }
