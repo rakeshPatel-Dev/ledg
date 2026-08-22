@@ -3,7 +3,7 @@ import { z } from "zod";
 import { BadRequestError } from "../../common/errors/index.js";
 
 const emailUpdateSchema = z.object({
-  email: z.email("Please enter a valid email address"),
+  email: z.email("Please enter a valid email address").max(255, "Email is too long"),
 });
 
 export function validateEmailUpdate(input: unknown): string {

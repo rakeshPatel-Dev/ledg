@@ -7,12 +7,7 @@ interface ThemeProviderState {
   setTheme: (theme: Theme) => void;
 }
 
-const initialState: ThemeProviderState = {
-  theme: "system",
-  setTheme: () => null,
-};
-
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+const ThemeProviderContext = createContext<ThemeProviderState | null>(null);
 
 export function ThemeProvider({
   children,
@@ -40,6 +35,21 @@ export function ThemeProvider({
     }
 
     root.classList.add(theme);
+  }, [theme]);
+
+  // Listen for OS theme changes when in "system" mode
+  useEffect(() => {
+    if (theme !== "system") return;
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      const root = window.document.documentElement;
+      root.classList.remove("light", "dark");
+      root.classList.add(e.matches ? "dark" : "light");
+    };
+
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {

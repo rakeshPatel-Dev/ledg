@@ -14,7 +14,7 @@ export async function sendVerificationEmail({
   url,
 }: SendVerificationEmailParams) {
   await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+    from: process.env.RESEND_FROM_EMAIL as string,
     to: email,
     subject: `Verify your email address — ${process.env.APP_NAME ?? "Ledg"}`,
     template: {

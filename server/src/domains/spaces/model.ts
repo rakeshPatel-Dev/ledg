@@ -37,6 +37,8 @@ const spaceSchema = new Schema(
   }
 );
 
+spaceSchema.index({ ownerId: 1, type: 1 });
+
 export interface SpaceDoc {
   _id: Types.ObjectId;
   ownerId: Types.ObjectId;

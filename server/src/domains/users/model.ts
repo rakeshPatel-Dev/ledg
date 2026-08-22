@@ -35,4 +35,6 @@ const userSchema = new Schema(
   }
 );
 
+userSchema.index({ email: 1 }, { sparse: true });
+
 export const UserModel = mongoose.models.User || model("User", userSchema);

@@ -15,6 +15,7 @@ export async function findSpacesByOwner(
   ownerId: Types.ObjectId
 ): Promise<SpaceDoc[]> {
   const docs = await SpaceModel.find({ ownerId })
+    .select("-budget -savingsGoal")
     .sort({ createdAt: -1 })
     .lean();
   return docs.map(toSpaceDto);
