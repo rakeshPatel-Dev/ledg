@@ -58,6 +58,7 @@ const transactionSchema = new Schema(
 );
 
 transactionSchema.index({ spaceId: 1, date: -1 });
+transactionSchema.index({ spaceId: 1, type: 1, date: -1 });
 
 export interface TransactionDoc {
   _id: Types.ObjectId;
