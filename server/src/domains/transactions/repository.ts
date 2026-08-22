@@ -2,6 +2,10 @@ import { Types } from "mongoose";
 
 import { TransactionModel, type TransactionDoc } from "./model.js";
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export interface TransactionQuery {
   spaceId: Types.ObjectId;
   category?: string;
@@ -56,9 +60,10 @@ export async function findTransactions(
   }
 
   if (keyword) {
+    const safe = escapeRegex(keyword);
     filter.$or = [
-      { note: { $regex: keyword, $options: "i" } },
-      { category: { $regex: keyword, $options: "i" } },
+      { note: { $regex: safe, $options: "i" } },
+      { category: { $regex: safe, $options: "i" } },
     ];
   }
 
@@ -106,4 +111,18 @@ export async function deleteTransaction(
 
 function toTransactionDto(doc: Record<string, unknown>): TransactionDoc {
   return { ...doc, id: String(doc._id) } as unknown as TransactionDoc;
+}
+
+export async function findAllTransactionsByOwner(
+  ownerSpaceIds: Types.ObjectId[],
+  pageSize = 100
+): Promise<TransactionDoc[]> {
+  if (ownerSpaceIds.length === 0) return [];
+
+  const docs = await TransactionModel.find({ spaceId: { $in: ownerSpaceIds } })
+    .sort({ date: -1 })
+    .limit(pageSize)
+    .lean();
+
+  return docs.map(toTransactionDto);
 }

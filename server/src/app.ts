@@ -16,6 +16,7 @@ import {
   notFoundHandler,
 } from "./common/middlewares/error-handler.js";
 import { connectDatabase } from "./database/index.js";
+import { csrfProtection } from "./common/middlewares/csrf.js";
 
 validateEnv();
 
@@ -130,7 +131,7 @@ app.all(
   }
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 // Reuse the Mongo connection across serverless invocations.
 app.use(async (_req, _res, next) => {
@@ -146,7 +147,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/v1", apiLimiter, apiRoutes);
+app.use("/api/v1", apiLimiter, csrfProtection, apiRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
