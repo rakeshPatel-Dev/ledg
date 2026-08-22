@@ -31,6 +31,7 @@ export const queryKeys = {
   ) => ["spaces", spaceId, "analytics", "summary", period, dateFrom, dateTo] as const,
   analyticsRecurring: (spaceId: string) =>
     ["spaces", spaceId, "analytics", "recurring"] as const,
+  dashboardSummary: () => ["dashboard", "summary"] as const,
 };
 
 type TransactionListQuery = Omit<
@@ -207,6 +208,7 @@ export function useDeleteSpace() {
     onSuccess: (_data, id) => {
       queryClient.removeQueries({ queryKey: transactionListKey(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _id, context) => {
       if (context.previousSpaces !== undefined) {
@@ -288,6 +290,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({
         queryKey: ["spaces", variables.spaceId, "analytics"],
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _variables, context) => {
       restoreTransactionLists(queryClient, context.previous);
@@ -339,6 +342,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({
         queryKey: ["spaces", variables.spaceId, "analytics"],
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _variables, context) => {
       restoreTransactionLists(queryClient, context.previous);
@@ -368,6 +372,7 @@ export function useDeleteTransaction(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: ["spaces", spaceId, "analytics"],
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _id, context) => {
       restoreTransactionLists(queryClient, context.previous);
@@ -431,6 +436,17 @@ export function useAnalyticsRecurring(spaceId: string) {
     queryFn: () => getApi().analytics.recurring(spaceId),
     enabled: !!spaceId,
     staleTime: 60_000,
+  });
+}
+
+// ─── Dashboard Hook ──────────────────────────────────────────────────────────
+
+export function useDashboardSummary() {
+  return useQuery({
+    queryKey: queryKeys.dashboardSummary(),
+    queryFn: () => getApi().dashboard.summary(),
+    staleTime: 5 * 60_000, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 }
 

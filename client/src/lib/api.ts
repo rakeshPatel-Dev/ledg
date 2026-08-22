@@ -64,6 +64,17 @@ export interface RecurringGroup {
   lastDate: string;
 }
 
+export interface DashboardSummary {
+  totalBalance: number;
+  monthIncome: number;
+  monthSpend: number;
+  byCategory: { category: string; amount: number; count: number }[];
+  byIncomeCategory: { category: string; amount: number; count: number }[];
+  byPaymentMethod: { method: string; amount: number; count: number }[];
+  recentTransactions: Transaction[];
+  transactionCount: number;
+}
+
 export function createApi() {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers);
@@ -170,6 +181,9 @@ export function createApi() {
         request<RecurringGroup[]>(
           `/spaces/${spaceId}/analytics/recurring?minCount=${minCount}`
         ),
+    },
+    dashboard: {
+      summary: () => request<DashboardSummary>("/dashboard/summary"),
     },
     me: {
       updateEmail: (email: string) =>

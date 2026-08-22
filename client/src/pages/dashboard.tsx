@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency, formatCompact } from "@/lib/format";
-import { useAnalytics } from "@/lib/analytics";
+import { useDashboardSummary } from "@/lib/queries";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 import { cn } from "@/lib/utils";
@@ -27,40 +27,25 @@ const CATEGORY_TABS: { value: CategoryTab; label: string }[] = [
 ];
 
 export default function DashboardPage() {
-  const analytics = useAnalytics();
+  const { data, isPending } = useDashboardSummary();
   const { openCreate, openEdit } = useTransactionForm();
   const currency = DEFAULT_CURRENCY;
   const [tab, setTab] = useState<CategoryTab>("expense");
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
-  const recent = analytics.transactions
-    .slice()
-    .sort((a, b) => +new Date(b.date) - +new Date(a.date))
-    .slice(0, 5);
+  const recent = data?.recentTransactions ?? [];
+  const byCategory = data?.byCategory ?? [];
+  const byIncomeCategory = data?.byIncomeCategory ?? [];
+  const byPaymentMethod = data?.byPaymentMethod ?? [];
 
-  const activeCategories =
-    tab === "expense" ? analytics.byCategory : analytics.byIncomeCategory;
+  const activeCategories = tab === "expense" ? byCategory : byIncomeCategory;
   const maxCategory = activeCategories[0]?.amount ?? 0;
 
-  // Calculate payment method totals for current tab
-  const paymentMethods = analytics.transactions.reduce((acc, t) => {
-    if (t.type !== tab) return acc;
-    const method = t.paymentMethod || "Cash";
-    acc[method] = (acc[method] || 0) + t.amount;
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Sort payment methods by amount
-  const sortedPaymentMethods = Object.entries(paymentMethods)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
-
-  const activePaymentTotal = sortedPaymentMethods.reduce(
-    (sum, [, amount]) => sum + amount,
+  const activePaymentTotal = byPaymentMethod.reduce(
+    (sum, item) => sum + item.amount,
     0
   );
 
-  // Get icon for payment method
   const getPaymentIcon = (method: string) => {
     const methodLower = method.toLowerCase();
     if (methodLower.includes("card") || methodLower.includes("credit")) {
@@ -75,7 +60,6 @@ export default function DashboardPage() {
     return WalletIcon;
   };
 
-  // Get color for payment method
   const getPaymentColor = (method: string) => {
     const methodLower = method.toLowerCase();
     if (methodLower.includes("card") || methodLower.includes("credit")) {
@@ -105,11 +89,11 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {analytics.loading ? (
+          {isPending ? (
             <Skeleton className="mt-2 h-12 w-48 bg-primary-foreground/20" />
           ) : (
             <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
-              {formatCurrency(analytics.totalBalance, currency)}
+              {formatCurrency(data?.totalBalance ?? 0, currency)}
             </p>
           )}
 
@@ -125,7 +109,7 @@ export default function DashboardPage() {
                 Income
               </div>
               <p className="mt-2 text-lg font-extrabold tabular-nums">
-                {formatCompact(analytics.monthIncome, currency)}
+                {formatCompact(data?.monthIncome ?? 0, currency)}
               </p>
               <p className="text-[0.65rem] font-medium text-primary-foreground/70">
                 this month
@@ -142,7 +126,7 @@ export default function DashboardPage() {
                 Spent
               </div>
               <p className="mt-2 text-lg font-extrabold tabular-nums">
-                {formatCompact(analytics.monthSpend, currency)}
+                {formatCompact(data?.monthSpend ?? 0, currency)}
               </p>
               <p className="text-[0.65rem] font-medium text-primary-foreground/70">
                 this month
@@ -152,7 +136,7 @@ export default function DashboardPage() {
         </section>
       </FadeInItem>
 
-      {!analytics.loading && analytics.transactions.length === 0 ? (
+      {!isPending && data?.transactionCount === 0 ? (
         <FadeInItem>
           <Card className="border-none bg-card">
             <EmptyState
@@ -168,7 +152,7 @@ export default function DashboardPage() {
         </FadeInItem>
       ) : null}
 
-      {analytics.byCategory.length > 0 || analytics.byIncomeCategory.length > 0 ? (
+      {(byCategory.length > 0 || byIncomeCategory.length > 0) && (
         <FadeInItem>
           <section>
             <Segmented
@@ -232,10 +216,10 @@ export default function DashboardPage() {
             )}
           </section>
         </FadeInItem>
-      ) : null}
+      )}
 
       {/* Payment Methods Section */}
-      {!analytics.loading && sortedPaymentMethods.length > 0 && (
+      {!isPending && byPaymentMethod.length > 0 && (
         <FadeInItem>
           <section>
             <div className="mb-3 flex items-center gap-2">
@@ -246,17 +230,17 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {sortedPaymentMethods.map(([method, amount]) => {
-                const Icon = getPaymentIcon(method);
-                const colorClass = getPaymentColor(method);
+              {byPaymentMethod.map((item) => {
+                const Icon = getPaymentIcon(item.method);
+                const colorClass = getPaymentColor(item.method);
                 const percentage = activePaymentTotal > 0
-                  ? Math.round((amount / activePaymentTotal) * 100)
+                  ? Math.round((item.amount / activePaymentTotal) * 100)
                   : 0;
-                const displayName = PAYMENT_LABELS[method.toLowerCase() as keyof typeof PAYMENT_LABELS] || method;
+                const displayName = PAYMENT_LABELS[item.method as keyof typeof PAYMENT_LABELS] || item.method;
 
                 return (
                   <motion.div
-                    key={method}
+                    key={item.method}
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -284,7 +268,7 @@ export default function DashboardPage() {
 
                       <div>
                         <p className="text-base font-bold tabular-nums">
-                          {formatCurrency(amount, currency)}
+                          {formatCurrency(item.amount, currency)}
                         </p>
                         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
                           <motion.div
@@ -318,7 +302,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {analytics.loading ? (
+          {isPending ? (
             <div className="flex flex-col gap-2">
               {[0, 1, 2].map((i) => (
                 <Skeleton key={i} className="h-16 w-full rounded-3xl" />
@@ -350,8 +334,8 @@ export default function DashboardPage() {
               Smart Insight
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {analytics.monthSpend > 0
-                ? `You spent ${formatCompact(analytics.monthSpend, currency)} this month across ${analytics.byCategory.length} categories.`
+              {(data?.monthSpend ?? 0) > 0
+                ? `You spent ${formatCompact(data?.monthSpend ?? 0, currency)} this month across ${byCategory.length} categories.`
                 : "No expenses recorded this month yet."}
             </p>
           </div>
