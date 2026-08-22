@@ -18,7 +18,10 @@
     "lint:server": "npm --prefix server run lint",
     "lint": "npm run lint:client && npm run lint:server",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "build": "npm run build:client && npm run build:server",
+    "start:server": "npm --prefix server run start",
+    "typecheck": "npm run typecheck:client && npm run typecheck:server"
   },
   "license": "ISC",
   "type": "module"

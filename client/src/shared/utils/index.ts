@@ -13,11 +13,3 @@ export function formatCurrency(
     currency,
   }).format(amount);
 }
-
-export function toISODate(date: Date | string): string {
-  return new Date(date).toISOString();
-}
-
-export function pluralize(count: number, singular: string, plural?: string): string {
-  return count === 1 ? singular : (plural ?? `${singular}s`);
-}

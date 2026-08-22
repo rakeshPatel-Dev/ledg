@@ -1,7 +1,7 @@
 import { Link, Navigate } from "react-router-dom";
 import { Zap, ShieldCheck, PieChart } from "lucide-react";
 
-import AppLogo from "@/components/common/AppLogo";
+import AppLogo from "@/components/common/app-logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-provider";
 

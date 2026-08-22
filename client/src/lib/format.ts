@@ -53,10 +53,6 @@ export function monthKey(date: string | Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function todayKey(): string {
-  return monthKey(new Date());
-}
-
 export function relativeDay(date: string | Date): string {
   const d = new Date(date);
   const startOfToday = new Date();

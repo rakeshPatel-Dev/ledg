@@ -6,12 +6,6 @@ import {
   TRANSACTION_TYPES,
 } from "../enums/index.js";
 
-export const createUserSchema = z.object({
-  betterAuthId: z.string().trim().min(1),
-});
-
-export type CreateUserInput = z.infer<typeof createUserSchema>;
-
 export const spaceSchema = z.object({
   name: z.string().trim().min(1).max(100),
   type: z.enum(SPACE_TYPES).default("personal"),

@@ -23,7 +23,7 @@ import {
   Clock,
 } from "lucide-react";
 
-import AppLogo from "@/components/common/AppLogo";
+import AppLogo from "@/components/common/app-logo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
