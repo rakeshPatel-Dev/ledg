@@ -66,6 +66,21 @@ async function createAuth() {
             google: {
               clientId: process.env.GOOGLE_CLIENT_ID,
               clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+              scope: ["openid", "email", "profile"],
+              mapProfileToUser: (profile) => {
+                // Google's OIDC profile includes `picture` for the avatar.
+                // BetterAuth's GoogleProfile type doesn't declare it, so we
+                // access it safely via the raw profile object.
+                const raw = profile as unknown as { picture?: string; given_name?: string };
+                logger.info(
+                  { picture: raw.picture, name: profile.name },
+                  "Google profile mapped to user"
+                );
+                return {
+                  image: raw.picture ?? undefined,
+                  name: profile.name ?? raw.given_name ?? "",
+                };
+              },
             },
           }
         : {},

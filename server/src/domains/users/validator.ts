@@ -17,3 +17,25 @@ export function validateEmailUpdate(input: unknown): string {
 
   return result.data.email;
 }
+
+const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z
+    .string()
+    .min(8, "New password must be at least 8 characters"),
+});
+
+export function validatePasswordChange(input: unknown): {
+  currentPassword: string;
+  newPassword: string;
+} {
+  const result = passwordChangeSchema.safeParse(input);
+
+  if (!result.success) {
+    throw new BadRequestError(
+      result.error.issues[0]?.message ?? "Invalid password data"
+    );
+  }
+
+  return result.data;
+}

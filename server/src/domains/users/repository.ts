@@ -15,16 +15,24 @@ export interface AuthUser {
 export async function upsertUserFromAuth(
   authUser: AuthUser
 ): Promise<Types.ObjectId> {
+  const update: Record<string, unknown> = {
+    email: authUser.email ?? "",
+    name: authUser.name ?? "",
+    fullName: authUser.name ?? "",
+    emailVerified: authUser.emailVerified ?? false,
+  };
+
+  // Only overwrite image if the auth data actually provides one.
+  // This prevents wiping avatars for existing users when the hook
+  // fires without the image field (e.g. email/password sign-in).
+  if (authUser.image) {
+    update.image = authUser.image;
+  }
+
   const user = await UserModel.findOneAndUpdate(
     { betterAuthId: authUser.id },
     {
-      $set: {
-        email: authUser.email ?? "",
-        name: authUser.name ?? "",
-        fullName: authUser.name ?? "",
-        image: authUser.image ?? null,
-        emailVerified: authUser.emailVerified ?? false,
-      },
+      $set: update,
       $setOnInsert: { betterAuthId: authUser.id },
     },
     { upsert: true, returnDocument: "after" }

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { LogOut, Moon, Sun, Monitor, CircleDollarSign, ChevronRight, UserCheck, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves, Loader2, UserRound } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LogOut, Moon, Sun, Monitor, ChevronRight, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves, Loader2, UserRound, Lock } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Sheet } from "@/components/ui/sheet";
 import { RequestFeatureForm } from "@/components/features/request-feature-form";
 import { useTheme } from "@/lib/theme-provider";
@@ -34,6 +35,16 @@ export default function SettingsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [authProvider, setAuthProvider] = useState<string | null>(null);
+
+  useEffect(() => {
+    getApi().me.getProvider().then(({ provider }) => setAuthProvider(provider));
+  }, []);
 
   const openProfileSheet = () => {
     setProfileName(user?.name ?? "");
@@ -114,6 +125,24 @@ export default function SettingsPage() {
     }
   };
 
+  const changePassword = async () => {
+    setSavingPassword(true);
+    setPasswordError("");
+    try {
+      await getApi().me.changePassword(currentPassword, newPassword);
+      toast.success("Password changed successfully");
+      setPasswordSheetOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (error) {
+      setPasswordError(
+        error instanceof Error ? error.message : "Could not change password"
+      );
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const name = user?.name || "Ledg user";
 
   const initials = name
@@ -152,8 +181,8 @@ export default function SettingsPage() {
             <p className="truncate text-xs font-medium text-muted-foreground">
               {user?.email}
             </p>
-            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary">
-              <UserCheck className="size-3" /> Signed in
+            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary capitalize">
+              {authProvider === "google" ? "Google" : "Email & Password"}
             </span>
           </div>
         </div>
@@ -177,6 +206,30 @@ export default function SettingsPage() {
               <span className="block text-sm font-semibold">Edit Profile</span>
               <span className="block text-xs font-medium text-muted-foreground">
                 Update your name and email
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+
+          <div className="mx-4 my-1 h-px bg-border/60" />
+
+          <button
+            type="button"
+            onClick={() => {
+              setCurrentPassword("");
+              setNewPassword("");
+              setPasswordError("");
+              setPasswordSheetOpen(true);
+            }}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Lock className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Change Password</span>
+              <span className="block text-xs font-medium text-muted-foreground">
+                Update your account password
               </span>
             </span>
             <ChevronRight className="size-4 text-muted-foreground" />
@@ -232,25 +285,6 @@ export default function SettingsPage() {
               </span>
             </span>
             <ChevronRight className="size-4 text-muted-foreground" />
-          </button>
-
-          <div className="mx-4 my-1 h-px bg-border/60" />
-
-          <button
-            disabled
-            type="button"
-            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left opacity-75"
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <CircleDollarSign className="size-5" />
-            </span>
-            <span className="flex-1">
-              <span className="block text-sm font-semibold">Default Currency</span>
-              <span className="block text-xs font-medium text-muted-foreground">
-                Nepalese Rupee (NPR)
-              </span>
-            </span>
-            <span className="text-[0.65rem] font-semibold text-muted-foreground">Auto</span>
           </button>
 
           <div className="mx-4 my-1 h-px bg-border/60" />
@@ -557,6 +591,62 @@ export default function SettingsPage() {
               <Loader2 className="size-4 animate-spin" />
             ) : (
               "Permanently delete my account"
+            )}
+          </Button>
+        </div>
+      </Sheet>
+
+      {/* Change Password Sheet */}
+      <Sheet
+        open={passwordSheetOpen}
+        onOpenChange={setPasswordSheetOpen}
+        title="Change Password"
+        description="Enter your current and new password."
+      >
+        <div className="grid gap-3 pt-2">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="current-password"
+              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              Current Password
+            </label>
+              <PasswordInput
+              id="current-password"
+              autoComplete="current-password"
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="new-password"
+              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              New Password
+            </label>
+              <PasswordInput
+              id="new-password"
+              autoComplete="new-password"
+              placeholder="Min 8 characters"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </div>
+          {passwordError && (
+            <p className="text-xs font-medium text-destructive">{passwordError}</p>
+          )}
+          <Button
+            size="lg"
+            disabled={savingPassword || !currentPassword || newPassword.length < 8}
+            onClick={changePassword}
+            className="mt-1 w-full"
+          >
+            {savingPassword ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              "Change password"
             )}
           </Button>
         </div>
