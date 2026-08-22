@@ -8,6 +8,7 @@ import {
   deleteUserWithData,
   upsertUserFromAuth,
 } from "./domains/users/repository.js";
+import { sendVerificationEmail } from "./lib/email.js";
 
 function getTrustedOrigins(): string[] {
   const origins = new Set<string>();
@@ -47,7 +48,16 @@ async function createAuth() {
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
+    },
+
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 3600,
+      sendVerificationEmail: async ({ user, url }) => {
+        await sendVerificationEmail({ email: user.email, url });
+      },
     },
 
     socialProviders:
