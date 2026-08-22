@@ -94,7 +94,7 @@ export default function SettingsPage() {
   };
 
   const deleteAccount = async () => {
-    if (!user || deleteConfirmation.trim() !== user.name) return;
+    if (!user || deleteConfirmation.trim().toLowerCase() !== user.name.trim().toLowerCase()) return;
     setDeletingAccount(true);
     setDeleteError("");
     try {
