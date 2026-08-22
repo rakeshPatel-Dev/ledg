@@ -64,58 +64,58 @@
 
 ## Medium — Plan to Fix
 
-### 11. Theme System Doesn't Listen for OS Changes
+### 11. ~~Theme System Doesn't Listen for OS Changes~~ ✅ FIXED
 - **File:** `client/src/lib/theme-provider.tsx`
 - **Issue:** When theme is "system", the provider reads the OS preference once on mount but never updates if the user toggles dark mode in OS settings
-- **Fix:** Add `window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ...)` listener
+- **Fix:** Added `matchMedia("change")` event listener that updates the theme class live
 
-### 12. `useTheme` Guard Never Triggers
+### 12. ~~`useTheme` Guard Never Triggers~~ ✅ FIXED
 - **File:** `client/src/lib/theme-provider.tsx`
 - **Issue:** `useTheme` checks `if (!context)` but the context is initialized with `initialState` (not null), so the error throw never happens
-- **Fix:** Initialize context as `null` and check for `null` instead, or remove the dead guard
+- **Fix:** Initialized context as `null` so the guard actually works
 
-### 13. Missing Database Indexes
-- **Files:** `server/src/domains/users/model.ts`, `server/src/domains/spaces/model.ts`
+### 13. ~~Missing Database Indexes~~ ✅ FIXED
+- **Files:** `server/src/domains/users/model.ts`, `server/src/domains/spaces/model.ts`, `server/src/domains/transactions/model.ts`
 - **Issues:**
   - `User.email` has no index — `changeEmail` does a full collection scan
   - `Space(ownerId, type)` compound index missing — `ensureDefaultSpace` queries both fields
   - `Transaction(type, date)` compound index missing — analytics aggregation matches on type without space filter
-- **Fix:** Add the missing indexes
+- **Fix:** Added all three indexes
 
-### 14. Missing Input Length Validation on Email
-- **File:** `server/src/domains/users/service.ts`
+### 14. ~~Missing Input Length Validation on Email~~ ✅ FIXED
+- **File:** `server/src/domains/users/validator.ts`
 - **Issue:** `email.trim().toLowerCase()` is the only sanitization. No check for excessively long strings
-- **Fix:** Add `.max(255)` or appropriate limit to the Zod email schema
+- **Fix:** Added `.max(255)` to the Zod email schema
 
-### 15. `RESEND_FROM_EMAIL!` Non-Null Assertion
-- **File:** `server/src/lib/email.ts`
+### 15. ~~`RESEND_FROM_EMAIL!` Non-Null Assertion~~ ✅ FIXED
+- **Files:** `server/src/lib/email.ts`, `server/src/config/env.ts`
 - **Issue:** `process.env.RESEND_FROM_EMAIL!` will pass `undefined` to Resend API if the env var is missing, causing a runtime crash
-- **Fix:** Validate the env var exists at startup (add to `validateEnv()`) and remove the `!` assertion
+- **Fix:** Added `RESEND_FROM_EMAIL` to production env validation, changed `!` to `as string`
 
-### 16. Missing `select` on Space Queries
+### 16. ~~Missing `select` on Space Queries~~ ✅ FIXED
 - **File:** `server/src/domains/spaces/repository.ts`
 - **Issue:** `findSpacesByOwner` fetches all fields including `budget` and `savingsGoal` (unused). Adds overhead to every space query
-- **Fix:** `.select('-budget -savingsGoal')` or only select needed fields
+- **Fix:** Added `.select('-budget -savingsGoal')`
 
 ### 17. Optimistic Update Race on Rapid Create/Delete
 - **File:** `client/src/lib/queries.ts`
 - **Issue:** If two creates happen rapidly, optimistic temp IDs could be replaced out of order
 - **Fix:** Use `queryClient.cancelQueries()` before each mutation, or use a queue-based approach
 
-### 18. Vercel Server Config Missing API Rewrites
+### 18. ~~Vercel Server Config Missing API Rewrites~~ ✅ FIXED
 - **File:** `server/vercel.json`
 - **Issue:** No `routes` or `rewrites` defined. Express API deployed to Vercel will return 404 for all API requests
-- **Fix:** Add `{ "routes": [{ "src": "/(.*)", "dest": "/server.js" }] }` or equivalent
+- **Fix:** Added routes rewrite pointing all requests to `/server.js`
 
-### 19. Vercel Install Command Forces Global npm
+### 19. ~~Vercel Install Command Forces Global npm~~ ✅ FIXED
 - **Files:** `client/vercel.json`, `server/vercel.json`
 - **Issue:** `"installCommand": "npm install -g npm@10 && npm ci"` — fragile, could break with Node version changes on Vercel
-- **Fix:** Remove the global npm install. Use Vercel's built-in Node version settings instead
+- **Fix:** Changed to `"npm ci"` in both configs
 
 ### 20. `.env.local` Files May Not Be Gitignored Properly
 - **Files:** `server/.env.local`, `client/.env.local`
 - **Issue:** Root `.gitignore` lists `.env.local` but these files exist and are readable. Verify actual git tracking status
-- **Fix:** Run `git rm --cached` if tracked, add to `.gitignore` at each package level
+- **Fix:** Verified — files are NOT tracked by git. No action needed.
 
 ---
 
