@@ -72,7 +72,7 @@ export function CategoryDrilldownSheet({
                     {t.note || category}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(t.date).toLocaleDateString("en-IN", {
+                    {new Date(t.date).toLocaleDateString("en-NP", {
                       day: "numeric",
                       month: "short",
                     })}

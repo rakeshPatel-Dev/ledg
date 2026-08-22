@@ -63,7 +63,7 @@ export function TransactionItem({
           ) : (
             <ArrowUpRight className="size-3" />
           )}
-          {new Date(transaction.date).toLocaleDateString("en-IN", {
+          {new Date(transaction.date).toLocaleDateString("en-NP", {
             day: "numeric",
             month: "short",
           })}

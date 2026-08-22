@@ -70,7 +70,7 @@ export function relativeDay(date: string | Date): string {
   if (diff === 0) return "Today";
   if (diff === 1) return "Yesterday";
   if (diff > 1 && diff < 7) {
-    return d.toLocaleDateString("en-IN", { weekday: "long" });
+    return d.toLocaleDateString("en-NP", { weekday: "long" });
   }
   return formatDate(d);
 }

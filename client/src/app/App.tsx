@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-provider";
 import { AppShell } from "@/components/layout/app-shell";
 import { TransactionFormBridge } from "@/components/transactions/transaction-form-bridge";
 import { PageTransition } from "@/components/common/page-transition";
+import { ErrorBoundary } from "@/components/common/error-boundary";
 
 const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const TransactionsPage = lazy(() => import("@/pages/transactions"));
@@ -78,33 +79,35 @@ function RouteFallback() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppProviders>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/welcome" element={<WelcomePage />} />
-            <Route path="/privacy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms" element={<TermsOfServicePage />} />
-            <Route path="/sign-in/*" element={<SignInPage />} />
-            <Route path="/sign-up/*" element={<SignUpPage />} />
-            <Route
-              element={
-                <Protected>
-                  <AppLayout />
-                </Protected>
-              }
-            >
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/transactions" element={<TransactionsPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/spaces" element={<SpacesPage />} />
-              <Route path="/spaces/:id" element={<SpaceDetailPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/welcome" replace />} />
-          </Routes>
-        </Suspense>
-      </AppProviders>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AppProviders>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/welcome" element={<WelcomePage />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/sign-in/*" element={<SignInPage />} />
+              <Route path="/sign-up/*" element={<SignUpPage />} />
+              <Route
+                element={
+                  <Protected>
+                    <AppLayout />
+                  </Protected>
+                }
+              >
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/transactions" element={<TransactionsPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/spaces" element={<SpacesPage />} />
+                <Route path="/spaces/:id" element={<SpaceDetailPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/welcome" replace />} />
+            </Routes>
+          </Suspense>
+        </AppProviders>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
