@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Loader2, Mail, RotateCcw } from "lucide-react";
 
 import AppLogo from "@/components/common/AppLogo";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import {
   passwordRuleError,
 } from "@/components/ui/password-strength";
 import { authClient } from "@/lib/auth-client";
-import { useAuth } from "@/lib/auth-provider";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -25,14 +24,14 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function SignUpPage() {
-  const navigate = useNavigate();
-  const { refetch } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +53,26 @@ export default function SignUpPage() {
         setError(signUpError.message ?? "Failed to create account");
         return;
       }
-      await refetch();
-      navigate("/");
+      setVerificationSent(true);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    setError("");
+    try {
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: window.location.origin + "/",
+      });
+    } catch {
+      setError("Failed to resend verification email. Please try again.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -75,8 +88,61 @@ export default function SignUpPage() {
     }
   };
 
+  if (verificationSent) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-6 sm:py-8">
+        <header className="flex items-center justify-between pt-2">
+          <Link
+            to="/welcome"
+            className="inline-flex size-10 items-center justify-center rounded-full bg-secondary/80 text-foreground transition-all hover:bg-secondary active:scale-95 border border-white/20 dark:border-white/10"
+            aria-label="Back to welcome screen"
+          >
+            <ArrowLeft className="size-5" />
+          </Link>
+          <div className="flex items-center gap-2">
+            <AppLogo className="size-9 rounded-xl shadow-sm" imgClassName="size-5" />
+            <span className="text-xl font-bold tracking-tight">Ledg</span>
+          </div>
+          <div className="size-10" aria-hidden="true" />
+        </header>
+
+        <main className="my-auto w-full py-6 text-center">
+          <Mail className="mx-auto size-16 text-primary mb-4" />
+          <h1 className="text-2xl font-extrabold tracking-tight">Check your email</h1>
+          <p className="mt-2 text-sm font-medium text-muted-foreground">
+            We've sent a verification link to <strong>{email}</strong>
+          </p>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            Click the link to verify your account and get started.
+          </p>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResendVerification}
+            disabled={resendLoading}
+            className="mt-6 w-full gap-2"
+          >
+            {resendLoading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RotateCcw className="size-4" />
+            )}
+            Resend verification email
+          </Button>
+
+          {error && <p className="mt-4 text-xs font-medium text-destructive">{error}</p>}
+        </main>
+
+        <footer className="pb-4 text-center text-xs font-medium text-muted-foreground">
+          Track spending in under five seconds.
+        </footer>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-4 py-6 sm:py-8">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-6 sm:py-8">
       {/* Top Header Navigation */}
       <header className="flex items-center justify-between pt-2">
         <Link

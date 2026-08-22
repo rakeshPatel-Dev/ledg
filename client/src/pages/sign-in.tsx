@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, RotateCcw, X } from "lucide-react";
 
 import AppLogo from "@/components/common/AppLogo";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +41,10 @@ export default function SignInPage() {
         password,
       });
       if (signInError) {
+        if (signInError.status === 403 && signInError.message?.includes("verify")) {
+          setShowVerificationModal(true);
+          return;
+        }
         setError(signInError.message ?? "Invalid email or password");
         return;
       }
@@ -48,6 +54,21 @@ export default function SignInPage() {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    try {
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: window.location.origin + "/",
+      });
+      setShowVerificationModal(false);
+    } catch {
+      setError("Failed to resend verification email. Please try again.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -70,7 +91,7 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-4 py-6 sm:py-8">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-6 sm:py-8">
       {/* Top Header Navigation */}
       <header className="flex items-center justify-between pt-2">
         <Link
@@ -178,6 +199,43 @@ export default function SignInPage() {
       <footer className="pb-4 text-center text-xs font-medium text-muted-foreground">
         Track spending in under five seconds.
       </footer>
+
+      {showVerificationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-background p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Verify your email</h2>
+              <button
+                onClick={() => setShowVerificationModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <Mail className="mx-auto size-12 text-primary mt-4 mb-2" />
+            <p className="text-center text-sm font-medium text-muted-foreground">
+              Your email <strong>{email}</strong> hasn't been verified yet.
+            </p>
+            <p className="mt-1 text-center text-sm font-medium text-muted-foreground">
+              We've sent a verification link. Check your inbox and click the link to activate your account.
+            </p>
+            <Button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendLoading}
+              className="mt-6 w-full gap-2"
+            >
+              {resendLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RotateCcw className="size-4" />
+              )}
+              Resend verification email
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
