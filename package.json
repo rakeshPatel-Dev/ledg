@@ -7,12 +7,18 @@
     "npm": "10.x"
   },
   "scripts": {
+    "sync-shared": "node scripts/sync-shared.js",
     "dev:client": "npm --prefix client run dev",
-    "dev:server": "npm --prefix server run dev",
+    "dev:server": "npm run sync-shared && npm --prefix server run dev",
     "build:client": "npm --prefix client run build",
-    "build:server": "npm --prefix server run build",
+    "build:server": "npm run sync-shared && npm --prefix server run build",
     "typecheck:client": "npm --prefix client run typecheck",
-    "typecheck:server": "npm --prefix server run typecheck"
+    "typecheck:server": "npm run sync-shared && npm --prefix server run typecheck",
+    "lint:client": "npm --prefix client run lint",
+    "lint:server": "npm --prefix server run lint",
+    "lint": "npm run lint:client && npm run lint:server",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\""
   },
   "license": "ISC",
   "type": "module"

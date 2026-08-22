@@ -147,3 +147,6 @@ dist
 .vercel
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# Build artifacts
+.shared-sync-manifest.json

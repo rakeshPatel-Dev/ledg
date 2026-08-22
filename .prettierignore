@@ -1,0 +1,9 @@
+node_modules
+dist
+.vercel
+*.log
+package-lock.json
+.shared-sync-manifest.json
+eslint.config.js
+client/eslint.config.js
+server/eslint.config.js
