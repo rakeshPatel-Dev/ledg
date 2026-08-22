@@ -548,7 +548,7 @@ export default function SettingsPage() {
             size="lg"
             variant="destructive-solid"
             disabled={
-              deletingAccount || deleteConfirmation.trim() !== user?.name
+              deletingAccount || !user?.name || deleteConfirmation.trim().toLowerCase() !== user.name.trim().toLowerCase()
             }
             onClick={deleteAccount}
             className="w-full"
