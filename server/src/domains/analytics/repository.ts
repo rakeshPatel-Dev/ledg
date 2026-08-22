@@ -13,6 +13,12 @@ export interface CategoryBreakdown {
   count: number;
 }
 
+export interface PaymentMethodBreakdown {
+  method: string;
+  amount: number;
+  count: number;
+}
+
 export interface RecurringGroup {
   key: string; // note or category fingerprint
   category: string;
@@ -144,4 +150,99 @@ export async function getRecurringTransactions(
   ]);
 
   return results as RecurringGroup[];
+}
+
+// ─── Payment Method Breakdown ───────────────────────────────────────────────
+
+export async function getPaymentMethodBreakdown(
+  spaceIds: Types.ObjectId[],
+  type: "income" | "expense",
+  range?: DateRange
+): Promise<PaymentMethodBreakdown[]> {
+  const match: Record<string, unknown> =
+    spaceIds.length === 1
+      ? { spaceId: spaceIds[0], type }
+      : { spaceId: { $in: spaceIds }, type };
+  if (range?.from || range?.to) {
+    const dateCond: Record<string, Date> = {};
+    if (range.from) dateCond.$gte = range.from;
+    if (range.to) dateCond.$lte = range.to;
+    match.date = dateCond;
+  }
+
+  const results = await TransactionModel.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: { $ifNull: ["$paymentMethod", "cash"] },
+        amount: { $sum: "$amount" },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { amount: -1 } },
+    {
+      $project: {
+        _id: 0,
+        method: "$_id",
+        amount: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  return results as PaymentMethodBreakdown[];
+}
+
+// ─── Recent Transactions ────────────────────────────────────────────────────
+
+export interface RecentTransaction {
+  id: string;
+  spaceId: string;
+  category: string;
+  type: string;
+  amount: number;
+  note: string;
+  date: Date;
+  tags: string[];
+  paymentMethod: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function getRecentTransactions(
+  spaceIds: Types.ObjectId[],
+  limit: number = 5
+): Promise<RecentTransaction[]> {
+  const match: Record<string, unknown> =
+    spaceIds.length === 1 ? { spaceId: spaceIds[0] } : { spaceId: { $in: spaceIds } };
+
+  const results = await TransactionModel.aggregate([
+    { $match: match },
+    { $sort: { date: -1 } },
+    { $limit: limit },
+    {
+      $addFields: {
+        id: { $toString: "$_id" },
+        spaceId: { $toString: "$spaceId" },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        id: 1,
+        spaceId: 1,
+        category: 1,
+        type: 1,
+        amount: 1,
+        note: 1,
+        date: 1,
+        tags: 1,
+        paymentMethod: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
+  ]);
+
+  return results as RecentTransaction[];
 }

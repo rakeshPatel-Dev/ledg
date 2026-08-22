@@ -275,3 +275,53 @@ export async function getAnalyticsRecurring(
   return analyticsRepository.getRecurringTransactions(resolvedSpaceIds, minCount);
 }
 
+// ─── Dashboard Summary (single endpoint for all dashboard data) ────────────
+
+export async function getDashboardSummary(ownerId: Types.ObjectId) {
+  const resolvedSpaceIds = await resolveSpaceIds("all", ownerId);
+
+  if (resolvedSpaceIds.length === 0) {
+    return {
+      totalBalance: 0,
+      monthIncome: 0,
+      monthSpend: 0,
+      byCategory: [],
+      byIncomeCategory: [],
+      byPaymentMethod: [],
+      recentTransactions: [],
+      transactionCount: 0,
+    };
+  }
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [
+    allTimeSummary,
+    monthSummary,
+    expenseCategories,
+    incomeCategories,
+    expensePaymentMethods,
+    recentTransactions,
+  ] = await Promise.all([
+    analyticsRepository.getSpaceSummary(resolvedSpaceIds),
+    analyticsRepository.getSpaceSummary(resolvedSpaceIds, { from: monthStart }),
+    analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "expense", { from: monthStart }),
+    analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "income", { from: monthStart }),
+    analyticsRepository.getPaymentMethodBreakdown(resolvedSpaceIds, "expense", { from: monthStart }),
+    analyticsRepository.getRecentTransactions(resolvedSpaceIds, 5),
+  ]);
+
+  return {
+    totalBalance: allTimeSummary.totalIncome - allTimeSummary.totalExpense,
+    monthIncome: monthSummary.totalIncome,
+    monthSpend: monthSummary.totalExpense,
+    byCategory: expenseCategories,
+    byIncomeCategory: incomeCategories,
+    byPaymentMethod: expensePaymentMethods,
+    recentTransactions,
+    transactionCount: allTimeSummary.count,
+  };
+}
+

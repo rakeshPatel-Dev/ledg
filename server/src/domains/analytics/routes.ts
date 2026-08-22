@@ -10,4 +10,10 @@ router.use(authenticate);
 router.get("/summary", analyticsController.getSummary);
 router.get("/recurring", analyticsController.getRecurring);
 
+// Dashboard summary — aggregates across all user spaces
+const dashboardRouter = Router();
+dashboardRouter.use(authenticate);
+dashboardRouter.get("/summary", analyticsController.getDashboardSummary);
+
+export { dashboardRouter };
 export default router;

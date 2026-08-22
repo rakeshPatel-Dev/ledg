@@ -42,3 +42,10 @@ export const getRecurring = asyncHandler(
   }
 );
 
+export const getDashboardSummary = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const data = await analyticsService.getDashboardSummary(req.userId!);
+    res.json({ success: true, data });
+  }
+);
+
