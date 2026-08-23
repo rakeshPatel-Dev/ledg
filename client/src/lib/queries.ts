@@ -241,6 +241,9 @@ function invalidateTransactionQueries(
   queryClient.invalidateQueries({
     queryKey: ["spaces", spaceId, "transactions"],
   });
+  queryClient.invalidateQueries({
+    queryKey: ["transactions"],
+  });
 }
 
 export function useCreateTransaction() {
@@ -251,6 +254,9 @@ export function useCreateTransaction() {
     onMutate: async ({ spaceId, data }) => {
       await queryClient.cancelQueries({
         queryKey: transactionListKey(spaceId),
+      });
+      await queryClient.cancelQueries({
+        queryKey: ["transactions", "all"],
       });
       const previous = snapshotTransactionLists(queryClient, spaceId);
 
@@ -278,6 +284,18 @@ export function useCreateTransaction() {
         total: total + 1,
       }));
 
+      queryClient.setQueriesData<{ items: Transaction[]; total: number }>(
+        { queryKey: ["transactions", "all"] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: [optimistic, ...old.items],
+            total: old.total + 1,
+          };
+        }
+      );
+
       return { previous, tempId: optimisticId };
     },
     onSuccess: (real, variables, context) => {
@@ -287,6 +305,16 @@ export function useCreateTransaction() {
         context.tempId,
         real
       );
+      queryClient.setQueriesData<{ items: Transaction[]; total: number }>(
+        { queryKey: ["transactions", "all"] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((t) => (t.id === context.tempId ? real : t)),
+          };
+        }
+      );
       invalidateTransactionQueries(queryClient, variables.spaceId);
       queryClient.invalidateQueries({
         queryKey: ["spaces", variables.spaceId, "analytics"],
@@ -295,6 +323,7 @@ export function useCreateTransaction() {
     },
     onError: (_error, _variables, context) => {
       restoreTransactionLists(queryClient, context.previous);
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
@@ -304,49 +333,135 @@ export function useUpdateTransaction() {
   return useMutation({
     mutationFn: ({
       spaceId,
+      newSpaceId,
       id,
       data,
     }: {
       spaceId: string;
+      newSpaceId: string;
       id: string;
       data: TransactionUpdateInput;
-    }) => getApi().transactions.update(spaceId, id, data),
-    onMutate: async ({ spaceId, id, data }) => {
+    }) =>
+      getApi().transactions.update(
+        newSpaceId,
+        id,
+        spaceId !== newSpaceId ? { ...data, fromSpaceId: spaceId } : data
+      ),
+    onMutate: async ({ spaceId, newSpaceId, id, data }) => {
+      const moved = spaceId !== newSpaceId;
+
       await queryClient.cancelQueries({
         queryKey: transactionListKey(spaceId),
       });
+      await queryClient.cancelQueries({
+        queryKey: ["transactions", "all"],
+      });
       const previous = snapshotTransactionLists(queryClient, spaceId);
 
-      updateTransactionLists(queryClient, spaceId, (items, total) => ({
-        items: items.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                ...data,
-                date:
-                  typeof data.date === "string"
-                    ? data.date
-                    : data.date
-                      ? data.date.toISOString()
-                      : t.date,
-                updatedAt: new Date().toISOString(),
-              }
-            : t
-        ),
-        total,
-      }));
+      if (moved) {
+        await queryClient.cancelQueries({
+          queryKey: transactionListKey(newSpaceId),
+        });
+      }
+      const previousNew = moved
+        ? snapshotTransactionLists(queryClient, newSpaceId)
+        : undefined;
 
-      return { previous };
+      const dateStr =
+        typeof data.date === "string"
+          ? data.date
+          : data.date
+            ? data.date.toISOString()
+            : undefined;
+
+      // Find existing transaction to preserve fields
+      const allTx = queryClient.getQueryData<{ items: Transaction[]; total: number }>(
+        queryKeys.allTransactions(100)
+      );
+      const existingTx =
+        previous.flatMap(([_, d]) => d?.items ?? []).find((t) => t.id === id) ??
+        allTx?.items.find((t) => t.id === id);
+
+      if (moved) {
+        updateTransactionLists(queryClient, spaceId, (items, total) => ({
+          items: items.filter((t) => t.id !== id),
+          total: Math.max(0, total - 1),
+        }));
+
+        updateTransactionLists(queryClient, newSpaceId, (items, total) => ({
+          items: [
+            {
+              ...(existingTx ?? {}),
+              ...data,
+              id,
+              spaceId: newSpaceId,
+              date: dateStr ?? existingTx?.date ?? new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            } as Transaction,
+            ...items.filter((t) => t.id !== id),
+          ],
+          total: total + 1,
+        }));
+      } else {
+        updateTransactionLists(queryClient, spaceId, (items, total) => ({
+          items: items.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  ...data,
+                  date: dateStr ?? t.date,
+                  updatedAt: new Date().toISOString(),
+                }
+              : t
+          ),
+          total,
+        }));
+      }
+
+      // Optimistically update allTransactions
+      queryClient.setQueriesData<{ items: Transaction[]; total: number }>(
+        { queryKey: ["transactions", "all"] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((t) =>
+              t.id === id
+                ? {
+                    ...t,
+                    ...data,
+                    spaceId: newSpaceId,
+                    date: dateStr ?? t.date,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : t
+            ),
+          };
+        }
+      );
+
+      return { previous, previousNew, moved };
     },
     onSuccess: (_data, variables) => {
       invalidateTransactionQueries(queryClient, variables.spaceId);
       queryClient.invalidateQueries({
         queryKey: ["spaces", variables.spaceId, "analytics"],
       });
+      if (variables.newSpaceId !== variables.spaceId) {
+        invalidateTransactionQueries(queryClient, variables.newSpaceId);
+        queryClient.invalidateQueries({
+          queryKey: ["spaces", variables.newSpaceId, "analytics"],
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _variables, context) => {
       restoreTransactionLists(queryClient, context.previous);
+      if (context.moved && context.previousNew) {
+        restoreTransactionLists(queryClient, context.previousNew);
+      }
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
@@ -359,12 +474,27 @@ export function useDeleteTransaction(spaceId: string) {
       await queryClient.cancelQueries({
         queryKey: transactionListKey(spaceId),
       });
+      await queryClient.cancelQueries({
+        queryKey: ["transactions", "all"],
+      });
       const previous = snapshotTransactionLists(queryClient, spaceId);
 
       updateTransactionLists(queryClient, spaceId, (items, total) => ({
         items: items.filter((t) => t.id !== id),
         total: Math.max(0, total - 1),
       }));
+
+      queryClient.setQueriesData<{ items: Transaction[]; total: number }>(
+        { queryKey: ["transactions", "all"] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.filter((t) => t.id !== id),
+            total: Math.max(0, old.total - 1),
+          };
+        }
+      );
 
       return { previous };
     },
@@ -373,10 +503,12 @@ export function useDeleteTransaction(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: ["spaces", spaceId, "analytics"],
       });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _id, context) => {
       restoreTransactionLists(queryClient, context.previous);
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
