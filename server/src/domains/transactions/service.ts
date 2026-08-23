@@ -95,13 +95,51 @@ export async function updateUserTransaction(
   transactionId: string,
   data: Record<string, unknown>
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
+  const { fromSpaceId, ...updateData } = data;
+  const fromSpace = fromSpaceId as string | undefined;
 
-  const transaction = await transactionRepository.updateTransaction(
+  const resolvedToSpaceId = await resolveSpace(spaceId, ownerId);
+
+  if (fromSpace && fromSpace !== spaceId) {
+    const resolvedFromSpaceId = await resolveSpace(fromSpace, ownerId);
+
+    const transaction = await transactionRepository.moveTransaction(
+      transactionId,
+      resolvedFromSpaceId,
+      resolvedToSpaceId,
+      updateData
+    );
+
+    if (!transaction) {
+      throw new NotFoundError("Transaction");
+    }
+
+    return transaction;
+  }
+
+  let transaction = await transactionRepository.updateTransaction(
     transactionId,
-    resolvedSpaceId,
-    data
+    resolvedToSpaceId,
+    updateData
   );
+
+  if (!transaction) {
+    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+    const spaceIds = spaces.map((s) => s._id);
+    const existing = await transactionRepository.findTransactionInSpaces(
+      transactionId,
+      spaceIds
+    );
+
+    if (existing) {
+      transaction = await transactionRepository.moveTransaction(
+        transactionId,
+        existing.spaceId,
+        resolvedToSpaceId,
+        updateData
+      );
+    }
+  }
 
   if (!transaction) {
     throw new NotFoundError("Transaction");
@@ -117,10 +155,25 @@ export async function deleteUserTransaction(
 ) {
   const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
 
-  const deleted = await transactionRepository.deleteTransaction(
+  let deleted = await transactionRepository.deleteTransaction(
     transactionId,
     resolvedSpaceId
   );
+
+  if (!deleted) {
+    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+    const spaceIds = spaces.map((s) => s._id);
+    const existing = await transactionRepository.findTransactionInSpaces(
+      transactionId,
+      spaceIds
+    );
+    if (existing) {
+      deleted = await transactionRepository.deleteTransaction(
+        transactionId,
+        existing.spaceId
+      );
+    }
+  }
 
   if (!deleted) {
     throw new NotFoundError("Transaction");

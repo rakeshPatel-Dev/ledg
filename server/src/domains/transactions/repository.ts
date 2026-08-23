@@ -85,6 +85,18 @@ export async function findTransactionById(
   return doc ? toTransactionDto(doc) : null;
 }
 
+export async function findTransactionInSpaces(
+  id: string,
+  spaceIds: Types.ObjectId[]
+): Promise<TransactionDoc | null> {
+  if (spaceIds.length === 0) return null;
+  const doc = await TransactionModel.findOne({
+    _id: id,
+    spaceId: { $in: spaceIds },
+  }).lean();
+  return doc ? toTransactionDto(doc) : null;
+}
+
 export async function updateTransaction(
   id: string,
   spaceId: Types.ObjectId,
@@ -93,6 +105,23 @@ export async function updateTransaction(
   const doc = await TransactionModel.findOneAndUpdate(
     { _id: id, spaceId },
     data,
+    {
+      returnDocument: "after",
+      runValidators: true,
+    }
+  ).lean();
+  return doc ? toTransactionDto(doc) : null;
+}
+
+export async function moveTransaction(
+  id: string,
+  fromSpaceId: Types.ObjectId,
+  toSpaceId: Types.ObjectId,
+  data: Record<string, unknown>
+): Promise<TransactionDoc | null> {
+  const doc = await TransactionModel.findOneAndUpdate(
+    { _id: id, spaceId: fromSpaceId },
+    { ...data, spaceId: toSpaceId },
     {
       returnDocument: "after",
       runValidators: true,
