@@ -35,7 +35,11 @@ export const transactionSchema = z.object({
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
-export const transactionUpdateSchema = transactionSchema.partial();
+export const transactionUpdateSchema = transactionSchema
+  .partial()
+  .extend({
+    fromSpaceId: z.string().trim().min(1).optional(),
+  });
 
 export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
 
