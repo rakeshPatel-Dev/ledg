@@ -5,12 +5,13 @@ interface TransactionFormState {
   open: boolean;
   editing?: Transaction | null;
   preselectedSpaceId?: string;
+  lockSpace?: boolean;
 }
 
 interface TransactionFormContextValue {
   formState: TransactionFormState;
-  openCreate: (preselectedSpaceId?: string) => void;
-  openEdit: (transaction: Transaction, spaceId: string) => void;
+  openCreate: (preselectedSpaceId?: string, lockSpace?: boolean) => void;
+  openEdit: (transaction: Transaction, spaceId: string, lockSpace?: boolean) => void;
   closeForm: () => void;
   defaultInput: (spaces: Space[]) => TransactionInput;
 }
@@ -28,12 +29,12 @@ export function TransactionFormProvider({
     open: false,
   });
 
-  const openCreate = (preselectedSpaceId?: string) => {
-    setFormState({ open: true, editing: null, preselectedSpaceId });
+  const openCreate = (preselectedSpaceId?: string, lockSpace = false) => {
+    setFormState({ open: true, editing: null, preselectedSpaceId, lockSpace });
   };
 
-  const openEdit = (transaction: Transaction, spaceId: string) => {
-    setFormState({ open: true, editing: transaction, preselectedSpaceId: spaceId });
+  const openEdit = (transaction: Transaction, spaceId: string, lockSpace = false) => {
+    setFormState({ open: true, editing: transaction, preselectedSpaceId: spaceId, lockSpace });
   };
 
   const closeForm = () => setFormState((s) => ({ ...s, open: false }));

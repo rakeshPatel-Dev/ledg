@@ -283,7 +283,7 @@ export default function SpaceDetailPage() {
               <Button
                 size="lg"
                 onClick={() => {
-                  openCreate(space.id);
+                  openCreate(space.id, true);
                 }}
                 className="rounded-full h-12 w-12 shrink-0 shadow-sm"
               >
@@ -347,7 +347,7 @@ export default function SpaceDetailPage() {
                 : `Tap below to add the first transaction to ${space.name}.`
             }
             action={
-              <Button onClick={() => openCreate(space.id)} className="rounded-full">
+              <Button onClick={() => openCreate(space.id, true)} className="rounded-full">
                 Add transaction
               </Button>
             }
@@ -366,7 +366,7 @@ export default function SpaceDetailPage() {
                     <SwipeableTransactionItem
                       key={t.id}
                       transaction={t}
-                      onClick={() => openTransactionEdit(t, space.id)}
+                      onClick={() => openTransactionEdit(t, space.id, true)}
                       onRequestDelete={() => setDeleteTarget(t)}
                     />
                   ))}

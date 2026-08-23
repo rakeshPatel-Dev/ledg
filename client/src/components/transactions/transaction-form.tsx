@@ -40,7 +40,6 @@ import { useTransactionForm } from "@/lib/transaction-form";
 
 interface TransactionFormProps {
   spaces: Space[];
-  currency?: string;
 }
 
 const TYPE_OPTIONS = TRANSACTION_TYPES.map((t) => ({ value: t, label: t }));
@@ -52,7 +51,7 @@ const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
   wallet: Wallet,
 };
 
-export function TransactionForm({ spaces, currency }: TransactionFormProps) {
+export function TransactionForm({ spaces }: TransactionFormProps) {
   const { formState, closeForm, defaultInput } = useTransactionForm();
   const editing = formState.editing;
   const isOpen = formState.open;
@@ -88,11 +87,16 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
       setCategory(editing.category);
       setAmount(String(editing.amount));
       setNote(editing.note ?? "");
-      setDate(editing.date.slice(0, 10));
+      setDate(editing.date ? editing.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
       setPaymentMethod(editing.paymentMethod ?? "cash");
       setSpace(editing.spaceId || formState.preselectedSpaceId || "");
     } else {
-      setSpace(formState.preselectedSpaceId || "");
+      const initialSpace =
+        formState.preselectedSpaceId ||
+        safeSpaces.find((s) => s.type === "personal")?.id ||
+        safeSpaces[0]?.id ||
+        "";
+      setSpace(initialSpace);
       const defaults = defaultInput(spaces);
       setType(defaults.type);
       setCategory(defaults.category);
@@ -101,7 +105,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
       setDate(new Date().toISOString().slice(0, 10));
       setPaymentMethod(defaults.paymentMethod ?? "cash");
     }
-  }, [isOpen, editing, spaces]);
+  }, [isOpen, editing?.id]);
 
   const handleTypeChange = (value: TransactionType) => {
     setType(value);
@@ -152,8 +156,11 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
 
     try {
       if (editing) {
+        const sourceSpaceId =
+          editing.spaceId || formState.preselectedSpaceId || activeSpaceId;
         await updateMutation.mutateAsync({
-          spaceId: editing.spaceId || activeSpaceId,
+          spaceId: sourceSpaceId,
+          newSpaceId: activeSpaceId,
           id: editing.id,
           data: parsed.data,
         });
@@ -197,7 +204,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
           </label>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-muted-foreground">
-              {currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "Rs."}
+              Rs. 
             </span>
             <input
               id="amount"
@@ -223,8 +230,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
                 )}
                 className="rounded-full bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-xs transition-colors hover:text-foreground"
               >
-                +{currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "Rs."}
-                {quick}
+                Rs. +{quick}
               </button>
             ))}
           </div>
@@ -293,9 +299,10 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
               Space
             </label>
             <Select
+              disabled={Boolean(formState.lockSpace)}
               value={activeSpaceId}
               onValueChange={(val) => {
-                if (!val) return;
+                if (!val || formState.lockSpace) return;
                 if (val === "__new__") {
                   closeForm();
                   navigate("/spaces");
@@ -304,7 +311,7 @@ export function TransactionForm({ spaces, currency }: TransactionFormProps) {
                 setSpace(val);
               }}
             >
-              <SelectTrigger className="relative pl-10">
+              <SelectTrigger disabled={Boolean(formState.lockSpace)} className="relative pl-10">
                 <Wallet className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <SelectValue placeholder="Select space">
                   {safeSpaces.find((s) => s.id === activeSpaceId)?.name}

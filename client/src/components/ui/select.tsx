@@ -10,6 +10,7 @@ interface SelectContextValue {
   setOpen: (open: boolean) => void;
   selectedLabel?: React.ReactNode;
   setSelectedLabel: (label: React.ReactNode) => void;
+  disabled?: boolean;
 }
 
 const SelectContext = React.createContext<SelectContextValue | null>(null);
@@ -35,6 +36,7 @@ export function Select({
   defaultValue,
   onValueChange,
   children,
+  disabled,
 }: SelectProps) {
   const [valueState, setValueState] = React.useState(defaultValue ?? "");
   const [open, setOpen] = React.useState(false);
@@ -46,13 +48,14 @@ export function Select({
 
   const handleValueChange = React.useCallback(
     (newValue: string) => {
+      if (disabled) return;
       if (!isControlled) {
         setValueState(newValue);
       }
       onValueChange?.(newValue);
       setOpen(false);
     },
-    [isControlled, onValueChange]
+    [disabled, isControlled, onValueChange]
   );
 
   React.useEffect(() => {
@@ -71,12 +74,15 @@ export function Select({
     () => ({
       value,
       onValueChange: handleValueChange,
-      open,
-      setOpen,
+      open: disabled ? false : open,
+      setOpen: (nextOpen: boolean) => {
+        if (!disabled) setOpen(nextOpen);
+      },
       selectedLabel,
       setSelectedLabel,
+      disabled,
     }),
-    [value, handleValueChange, open, selectedLabel]
+    [value, handleValueChange, open, selectedLabel, disabled]
   );
 
   return (
@@ -123,16 +129,17 @@ export function SelectValue({
 export function SelectTrigger({
   className,
   children,
-  disabled,
+  disabled: disabledProp,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const { open, setOpen } = useSelectContext();
+  const { open, setOpen, disabled: contextDisabled } = useSelectContext();
+  const disabled = disabledProp ?? contextDisabled;
 
   return (
     <button
       type="button"
       disabled={disabled}
-      onClick={() => setOpen(!open)}
+      onClick={() => !disabled && setOpen(!open)}
       className={cn(
         "flex h-12 w-full items-center justify-between gap-2 rounded-2xl border border-input bg-card/80 px-4 text-sm text-foreground shadow-xs backdrop-blur-md transition-all outline-none",
         "hover:bg-card focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
