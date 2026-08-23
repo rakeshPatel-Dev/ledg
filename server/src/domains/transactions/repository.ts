@@ -110,60 +110,19 @@ export async function deleteTransaction(
 }
 
 function toTransactionDto(doc: Record<string, unknown>): TransactionDoc {
-  return {
-    ...doc,
-    id: String(doc._id),
-    spaceId: String(doc.spaceId),
-  } as unknown as TransactionDoc;
+  return { ...doc, id: String(doc._id) } as unknown as TransactionDoc;
 }
 
 export async function findAllTransactionsByOwner(
   ownerSpaceIds: Types.ObjectId[],
-  filters: {
-    type?: string;
-    spaceId?: string;
-    keyword?: string;
-    dateFrom?: Date;
-    dateTo?: Date;
-  } = {},
-  page = 1,
-  pageSize = 20
-): Promise<{ items: TransactionDoc[]; total: number }> {
-  if (ownerSpaceIds.length === 0) return { items: [], total: 0 };
+  pageSize = 100
+): Promise<TransactionDoc[]> {
+  if (ownerSpaceIds.length === 0) return [];
 
-  const filter: Record<string, unknown> = {
-    spaceId: { $in: ownerSpaceIds },
-  };
-
-  if (filters.type) {
-    filter.type = filters.type;
-  }
-
-  if (filters.spaceId) {
-    filter.spaceId = filters.spaceId;
-  }
-
-  if (filters.keyword) {
-    const safe = escapeRegex(filters.keyword);
-    filter.$or = [
-      { note: { $regex: safe, $options: "i" } },
-      { category: { $regex: safe, $options: "i" } },
-    ];
-  }
-
-  if (filters.dateFrom || filters.dateTo) {
-    const dateFilter: Record<string, Date> = {};
-    if (filters.dateFrom) dateFilter.$gte = filters.dateFrom;
-    if (filters.dateTo) dateFilter.$lte = filters.dateTo;
-    filter.date = dateFilter;
-  }
-
-  const total = await TransactionModel.countDocuments(filter);
-  const docs = await TransactionModel.find(filter)
+  const docs = await TransactionModel.find({ spaceId: { $in: ownerSpaceIds } })
     .sort({ date: -1 })
-    .skip((page - 1) * pageSize)
     .limit(pageSize)
     .lean();
 
-  return { items: docs.map(toTransactionDto), total };
+  return docs.map(toTransactionDto);
 }
