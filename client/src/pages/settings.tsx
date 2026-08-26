@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
-import { LogOut, Moon, Sun, Monitor, ChevronRight, ShieldCheck, FileText, Trash2, Sparkles, Activity, Waves, Loader2, UserRound, Lock } from "lucide-react";
+import { LogOut, Moon, Sun, Monitor, ChevronRight, ShieldCheck, FileText, Sparkles, Activity, Waves, Loader2, Download, Database } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Sheet } from "@/components/ui/sheet";
 import { RequestFeatureForm } from "@/components/features/request-feature-form";
 import { useTheme } from "@/lib/theme-provider";
 import { useMotion } from "@/lib/animation-provider";
 import { useAuth } from "@/lib/auth-provider";
-import { authClient } from "@/lib/auth-client";
+import { useAllData } from "@/lib/queries";
+import { exportTransactionsToCSV, exportTransactionsToJSON } from "@/lib/export";
 import { getApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
-  const { user, signOut, refetch } = useAuth();
+  const { user, signOut } = useAuth();
+  const { spaces, transactions, loading: dataLoading } = useAllData();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { motion, setMotion } = useMotion();
@@ -27,131 +27,24 @@ export default function SettingsPage() {
   const [requestSheetOpen, setRequestSheetOpen] = useState(false);
   const [motionSheetOpen, setMotionSheetOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
-  const [profileName, setProfileName] = useState("");
-  const [profileEmail, setProfileEmail] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const [deleteError, setDeleteError] = useState("");
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [savingPassword, setSavingPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
+  const [userProfile, setUserProfile] = useState<{
+    name: string;
+    username: string | null;
+    email: string;
+    image: string | null;
+    provider: string;
+    joinedAt?: string;
+  } | null>(null);
   const [authProvider, setAuthProvider] = useState<string | null>(null);
 
   useEffect(() => {
-    getApi().me.getProvider().then(({ provider }) => setAuthProvider(provider));
+    getApi().me.getProfile().then((data) => {
+      setUserProfile(data);
+      setAuthProvider(data.provider);
+    }).catch(() => null);
   }, []);
 
-  const openProfileSheet = () => {
-    setProfileName(user?.name ?? "");
-    setProfileEmail(user?.email ?? "");
-    setProfileSheetOpen(true);
-  };
-
-  const openDeleteSheet = () => {
-    setDeleteConfirmation("");
-    setDeleteError("");
-    setDeleteSheetOpen(true);
-  };
-
-  const saveProfile = async () => {
-    if (!user) return;
-    setSavingProfile(true);
-    try {
-      const name = profileName.trim();
-      const email = profileEmail.trim().toLowerCase();
-      const nameChanged = name !== user.name;
-      const emailChanged = email !== user.email.toLowerCase();
-
-      if (!nameChanged && !emailChanged) {
-        toast.success("Your profile is already up to date");
-        setProfileSheetOpen(false);
-        return;
-      }
-
-      if (nameChanged) {
-        const { error } = await authClient.updateUser({ name });
-        if (error) {
-          toast.error(error.message ?? "Could not update your name");
-          return;
-        }
-      }
-
-      if (emailChanged) {
-        try {
-          await getApi().me.updateEmail(email);
-        } catch (error) {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Could not update your email"
-          );
-          return;
-        }
-      }
-
-      await refetch();
-      toast.success("Profile updated");
-      setProfileSheetOpen(false);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const deleteAccount = async () => {
-    if (!user || deleteConfirmation.trim().toLowerCase() !== user.name.trim().toLowerCase()) return;
-    setDeletingAccount(true);
-    setDeleteError("");
-    try {
-      const { error } = await authClient.deleteUser();
-      if (error) {
-        setDeleteError(error.message ?? "Could not delete your account");
-        return;
-      }
-      await refetch();
-      setDeleteSheetOpen(false);
-      navigate("/welcome");
-      toast.success("Your account has been deleted");
-    } catch {
-      setDeleteError("Something went wrong. Please try again.");
-    } finally {
-      setDeletingAccount(false);
-    }
-  };
-
-  const changePassword = async () => {
-    setSavingPassword(true);
-    setPasswordError("");
-    try {
-      await getApi().me.changePassword(currentPassword, newPassword);
-      toast.success("Password changed successfully");
-      setPasswordSheetOpen(false);
-      setCurrentPassword("");
-      setNewPassword("");
-    } catch (error) {
-      setPasswordError(
-        error instanceof Error ? error.message : "Could not change password"
-      );
-    } finally {
-      setSavingPassword(false);
-    }
-  };
-
   const name = user?.name || "Ledg user";
-
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   const themeLabels = {
     light: "Light Mode",
@@ -170,97 +63,35 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-extrabold tracking-tight">You</h1>
 
       {/* User Profile Card */}
-      <Card className="flex items-center justify-between gap-4 border-0 rounded-4xl p-5">
-        <div className="flex items-center gap-4 min-w-0">
-          <Avatar className="size-16 ring-2 ring-primary/20">
-            <AvatarImage src={user?.image ?? ""} alt={name} />
-            <AvatarFallback className="text-lg font-semibold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-lg font-bold tracking-tight">{name}</p>
-            <p className="truncate text-xs font-medium text-muted-foreground">
-              {user?.email}
-            </p>
-            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary capitalize">
-              {authProvider === "google" ? "Google" : "Email & Password"}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Account Section */}
-      <div className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Account
-        </h2>
-        <Card className="rounded-4xl p-1.5">
-          <button
-            type="button"
-            onClick={openProfileSheet}
-            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <UserRound className="size-5" />
-            </span>
-            <span className="flex-1">
-              <span className="block text-sm font-semibold">Edit Profile</span>
-              <span className="block text-xs font-medium text-muted-foreground">
-                Update your name and email
-              </span>
-            </span>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </button>
-
-          <div className="mx-4 my-1 h-px bg-border/60" />
-
-          {authProvider !== "google" && (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setCurrentPassword("");
-                  setNewPassword("");
-                  setPasswordError("");
-                  setPasswordSheetOpen(true);
-                }}
-                className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
-              >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Lock className="size-5" />
-                </span>
-                <span className="flex-1">
-                  <span className="block text-sm font-semibold">Change Password</span>
-                  <span className="block text-xs font-medium text-muted-foreground">
-                    Update your account password
+      <Link to="/profile" className="block group">
+        <Card className="flex items-center justify-between gap-4 border border-border/60 rounded-4xl p-5 transition-all group-hover:bg-muted/40 active:scale-[0.99] cursor-pointer">
+          <div className="flex items-center gap-4 min-w-0">
+            <UserAvatar
+              user={user}
+              className="size-16 ring-2 ring-primary/20 transition-all group-hover:ring-primary/40"
+              fallbackClassName="text-lg font-semibold"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
+                {name}
+              </p>
+              {(user?.username || userProfile?.username) && (
+                <p className="text-xs font-semibold text-primary">
+                  @{user?.username || userProfile?.username}
+                </p>
+              )}
+               {authProvider && (
+                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary capitalize">
+                    {authProvider === "google" ? "Google OAuth" : "Email & Password"}
                   </span>
-                </span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </button>
-
-              <div className="mx-4 my-1 h-px bg-border/60" />
-            </>
-          )}
-
-          <button
-            type="button"
-            onClick={openDeleteSheet}
-            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-destructive/5 active:scale-[0.99]"
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-              <Trash2 className="size-5" />
-            </span>
-            <span className="flex-1">
-              <span className="block text-sm font-semibold text-destructive">
-                Delete Account
-              </span>
-              <span className="block text-xs font-medium text-muted-foreground">
-                Permanently erase your account and all data
-              </span>
-            </span>
-            <ChevronRight className="size-4 text-destructive" />
-          </button>
+                </div>
+              )}
+            </div>
+          </div>
+          <ChevronRight className="size-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
         </Card>
-      </div>
+      </Link>
 
       {/* Preferences Section */}
       <div className="flex flex-col gap-2">
@@ -337,6 +168,58 @@ export default function SettingsPage() {
         </Card>
       </div>
 
+      {/* Data & Backup Section */}
+      <div className="flex flex-col gap-2">
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Data & Backup
+        </h2>
+        <Card className="rounded-4xl p-1.5">
+          <button
+            type="button"
+            disabled={dataLoading}
+            onClick={() => {
+              exportTransactionsToCSV(transactions, spaces, "ledg-transactions.csv");
+              toast.success(`Exported ${transactions.length} transactions to CSV`);
+            }}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Download className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Export Transactions (CSV)</span>
+              <span className="block text-xs font-medium text-muted-foreground">
+                Download spreadsheet with all transaction records
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+
+          <div className="mx-4 my-1 h-px bg-border/60" />
+
+          <button
+            type="button"
+            disabled={dataLoading}
+            onClick={() => {
+              exportTransactionsToJSON(transactions, spaces, "ledg-backup.json");
+              toast.success("Full backup file downloaded");
+            }}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Database className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Full Data Backup (JSON)</span>
+              <span className="block text-xs font-medium text-muted-foreground">
+                Export spaces and transactions for backup
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+        </Card>
+      </div>
+
       {/* Legal Section */}
       <div className="flex flex-col gap-2">
         <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -379,7 +262,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      {/* Sign Out Action */}
+      {/* Sign Out */}
       <Button
         variant="outline"
         size="lg"
@@ -409,10 +292,7 @@ export default function SettingsPage() {
       </Button>
 
       {/* Request Feature Sheet */}
-      <Sheet
-        open={requestSheetOpen}
-        onOpenChange={setRequestSheetOpen}
-      >
+      <Sheet open={requestSheetOpen} onOpenChange={setRequestSheetOpen}>
         <RequestFeatureForm />
       </Sheet>
 
@@ -442,10 +322,12 @@ export default function SettingsPage() {
                     : "border-border/60 bg-card text-foreground hover:bg-muted/50"
                 )}
               >
-                <span className={cn(
-                  "flex size-10 shrink-0 items-center justify-center rounded-2xl",
-                  active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                )}>
+                <span
+                  className={cn(
+                    "flex size-10 shrink-0 items-center justify-center rounded-2xl",
+                    active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  )}
+                >
                   <Icon className="size-5" />
                 </span>
                 <span className="flex-1 text-sm">{themeLabels[t]}</span>
@@ -482,10 +364,12 @@ export default function SettingsPage() {
                     : "border-border/60 bg-card text-foreground hover:bg-muted/50"
                 )}
               >
-                <span className={cn(
-                  "flex size-10 shrink-0 items-center justify-center rounded-2xl",
-                  active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                )}>
+                <span
+                  className={cn(
+                    "flex size-10 shrink-0 items-center justify-center rounded-2xl",
+                    active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  )}
+                >
                   <Icon className="size-5" />
                 </span>
                 <span className="flex-1 text-sm">{motionLabels[m]}</span>
@@ -495,167 +379,6 @@ export default function SettingsPage() {
           })}
         </div>
       </Sheet>
-
-      {/* Edit Profile Sheet */}
-      <Sheet
-        open={profileSheetOpen}
-        onOpenChange={setProfileSheetOpen}
-        title="Edit Profile"
-        description="Update the name and email on your account."
-      >
-        <div className="grid gap-3 pt-2">
-          <div className="space-y-1.5">
-            <label
-              htmlFor="profile-name"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Name
-            </label>
-            <Input
-              id="profile-name"
-              type="text"
-              autoComplete="name"
-              placeholder="John Doe"
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label
-              htmlFor="profile-email"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Email
-            </label>
-            <Input
-              id="profile-email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={profileEmail}
-              onChange={(e) => setProfileEmail(e.target.value)}
-            />
-          </div>
-          <Button
-            size="lg"
-            disabled={savingProfile || !profileName.trim() || !profileEmail.trim()}
-            onClick={saveProfile}
-            className="mt-1 w-full"
-          >
-            {savingProfile ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              "Save changes"
-            )}
-          </Button>
-        </div>
-      </Sheet>
-
-      {/* Delete Account Sheet */}
-      <Sheet
-        open={deleteSheetOpen}
-        onOpenChange={setDeleteSheetOpen}
-        title="Delete Account"
-        description="This action cannot be undone."
-      >
-        <div className="grid gap-3 pt-2">
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-3.5 text-xs font-medium text-destructive">
-            Your account, along with all your spaces and transactions, will be
-            permanently deleted.
-          </div>
-          <div className="space-y-1.5">
-            <label
-              htmlFor="delete-confirm"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Type <span className="font-bold text-foreground">{user?.name}</span> to confirm
-            </label>
-            <Input
-              id="delete-confirm"
-              type="text"
-              autoComplete="off"
-              placeholder={user?.name}
-              value={deleteConfirmation}
-              onChange={(e) => setDeleteConfirmation(e.target.value)}
-            />
-          </div>
-          {deleteError && (
-            <p className="text-xs font-medium text-destructive">{deleteError}</p>
-          )}
-          <Button
-            size="lg"
-            variant="destructive-solid"
-            disabled={
-              deletingAccount || !user?.name || deleteConfirmation.trim().toLowerCase() !== user.name.trim().toLowerCase()
-            }
-            onClick={deleteAccount}
-            className="w-full"
-          >
-            {deletingAccount ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              "Permanently delete my account"
-            )}
-          </Button>
-        </div>
-      </Sheet>
-
-      {/* Change Password Sheet */}
-      <Sheet
-        open={passwordSheetOpen}
-        onOpenChange={setPasswordSheetOpen}
-        title="Change Password"
-        description="Enter your current and new password."
-      >
-        <div className="grid gap-3 pt-2">
-          <div className="space-y-1.5">
-            <label
-              htmlFor="current-password"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Current Password
-            </label>
-              <PasswordInput
-              id="current-password"
-              autoComplete="current-password"
-              placeholder="Enter current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label
-              htmlFor="new-password"
-              className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              New Password
-            </label>
-              <PasswordInput
-              id="new-password"
-              autoComplete="new-password"
-              placeholder="Min 8 characters"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-          </div>
-          {passwordError && (
-            <p className="text-xs font-medium text-destructive">{passwordError}</p>
-          )}
-          <Button
-            size="lg"
-            disabled={savingPassword || !currentPassword || newPassword.length < 8}
-            onClick={changePassword}
-            className="mt-1 w-full"
-          >
-            {savingPassword ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              "Change password"
-            )}
-          </Button>
-        </div>
-      </Sheet>
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Mail, RotateCcw } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, RotateCcw, Check, UserPlus, X } from "lucide-react";
 
 import AppLogo from "@/components/common/app-logo";
 import { GoogleIcon } from "@/components/common/google-icon";
@@ -12,9 +12,12 @@ import {
   passwordRuleError,
 } from "@/components/ui/password-strength";
 import { authClient } from "@/lib/auth-client";
+import { getApi } from "@/lib/api";
+import { useUsernameCheck } from "@/hooks/use-username-check";
 
 export default function SignUpPage() {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,26 +26,55 @@ export default function SignUpPage() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
+  const {
+    status: usernameStatus,
+    reason: usernameReason,
+    check: checkUsername,
+  } = useUsernameCheck({ delay: 300 });
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(val);
+    checkUsername(val);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (usernameStatus === "taken" || usernameStatus === "invalid") {
+      setError(usernameReason || "Please choose a different username.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       const ruleError = passwordRuleError(password);
-      if (ruleError) {
-        setError(ruleError);
-        return;
-      }
-      const { error: signUpError } = await authClient.signUp.email({
+      if (ruleError) { setError(ruleError); return; }
+
+      const { error: signUpError } = await (
+        authClient.signUp.email as unknown as (data: {
+          name: string;
+          email: string;
+          password: string;
+          username?: string;
+          callbackURL?: string;
+        }) => Promise<{ error?: { message?: string } | null }>
+      )({
         name,
         email,
         password,
+        username,
         callbackURL: window.location.origin + "/",
       });
       if (signUpError) {
         setError(signUpError.message ?? "Failed to create account");
         return;
       }
+
+      // Best effort sync
+      try {
+        await getApi().me.updateUsername(username);
+      } catch { /* non-blocking */ }
+
       setVerificationSent(true);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -178,6 +210,62 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="username"
+                className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Username
+              </label>
+              <span className="text-[10px] text-muted-foreground">
+                {username.length}/30
+              </span>
+            </div>
+            <div className="relative flex items-center">
+              <span className="absolute left-3.5 text-sm font-semibold text-muted-foreground select-none">
+                @
+              </span>
+              <Input
+                id="username"
+                type="text"
+                required
+                autoComplete="username"
+                placeholder="johndoe"
+                value={username}
+                onChange={handleUsernameChange}
+                maxLength={30}
+                className="pl-8 pr-10"
+              />
+              <div className="absolute right-3 flex items-center">
+                {usernameStatus === "checking" && (
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                )}
+                {usernameStatus === "available" && (
+                  <Check className="size-4 text-emerald-500" />
+                )}
+                {(usernameStatus === "taken" || usernameStatus === "invalid") && (
+                  <X className="size-4 text-destructive" />
+                )}
+              </div>
+            </div>
+            {usernameStatus === "available" && (
+              <p className="text-[11px] font-medium text-emerald-500">
+                @{username} is available!
+              </p>
+            )}
+            {usernameStatus === "taken" && (
+              <p className="text-[11px] font-medium text-destructive">
+                @{username} is already taken
+              </p>
+            )}
+            {usernameStatus === "invalid" && usernameReason && (
+              <p className="text-[11px] font-medium text-destructive">
+                {usernameReason}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
             <label
               htmlFor="email"
               className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
@@ -219,10 +307,15 @@ export default function SignUpPage() {
           <Button
             type="submit"
             size="lg"
-            disabled={loading}
+              disabled={
+              loading ||
+              usernameStatus === "taken" ||
+              usernameStatus === "invalid"
+            }
+
             className="h-12 w-full text-base font-semibold shadow-md"
           >
-            {loading ? <Loader2 className="size-4 animate-spin" /> : "Create account"}
+            {loading ? <Loader2 className="size-4 animate-spin" /> : <><UserPlus className="size-4 mr-2" />Create account</>}
           </Button>
         </form>
 

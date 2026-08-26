@@ -1,5 +1,5 @@
 import { Link, Navigate } from "react-router-dom";
-import { Zap, ShieldCheck, PieChart } from "lucide-react";
+import { Zap, ShieldCheck, PieChart, ArrowRight, LogIn } from "lucide-react";
 
 import AppLogo from "@/components/common/app-logo";
 import { Button } from "@/components/ui/button";
@@ -76,10 +76,12 @@ export default function WelcomePage() {
       {/* Action Buttons */}
       <footer className="flex flex-col gap-3">
         <Button variant="default" size="lg" className="h-13 w-full rounded-full text-base font-semibold shadow-md" render={<Link to="/sign-up" />}>
-          Get Started (Register)
+          <ArrowRight className="size-4 mr-2" />
+          Get Started
         </Button>
         <Button variant="outline" size="lg" className="h-13 w-full rounded-full text-base font-semibold" render={<Link to="/sign-in" />}>
-          I already have an account (Login)
+          <LogIn className="size-4 mr-2" />
+          Sign in to your account
         </Button>
 
         <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pb-2 text-xs font-medium text-muted-foreground">

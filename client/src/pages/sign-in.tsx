@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Mail, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Loader2, LogIn, Mail, RotateCcw, X } from "lucide-react";
 
 import AppLogo from "@/components/common/app-logo";
 import { GoogleIcon } from "@/components/common/google-icon";
@@ -151,7 +151,7 @@ export default function SignInPage() {
             disabled={loading}
             className="h-12 w-full text-base font-semibold shadow-md"
           >
-            {loading ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
+            {loading ? <Loader2 className="size-4 animate-spin" /> : <><LogIn className="size-4 mr-2" />Sign in</>}
           </Button>
         </form>
 

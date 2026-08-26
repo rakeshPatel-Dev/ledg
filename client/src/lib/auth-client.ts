@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { customSessionClient } from "better-auth/client/plugins";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
 const API_ORIGIN =
@@ -6,4 +7,5 @@ const API_ORIGIN =
 
 export const authClient = createAuthClient({
   baseURL: API_ORIGIN,
+  plugins: [customSessionClient()],
 });

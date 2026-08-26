@@ -5,6 +5,7 @@ import { authClient } from "./auth-client";
 export interface AuthUser {
   id: string;
   name: string;
+  username?: string | null;
   email: string;
   image?: string | null;
   emailVerified?: boolean;
