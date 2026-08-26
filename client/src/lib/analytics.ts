@@ -8,6 +8,8 @@ export interface SpaceSummary {
   balance: number;
   income: number;
   expense: number;
+  monthIncome: number;
+  monthExpense: number;
   transactionCount: number;
 }
 
@@ -96,6 +98,7 @@ export function useAnalytics(): AnalyticsData {
 
     const bySpace = spaces.map((space) => {
       const spaceTx = transactions.filter((t) => t.spaceId === space.id);
+      const spaceMonthTx = monthTransactions.filter((t) => t.spaceId === space.id);
       const income = spaceTx.reduce(
         (sum, t) => (t.type === "income" ? sum + t.amount : sum),
         0
@@ -104,10 +107,20 @@ export function useAnalytics(): AnalyticsData {
         (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
         0
       );
+      const spaceMonthIncome = spaceMonthTx.reduce(
+        (sum, t) => (t.type === "income" ? sum + t.amount : sum),
+        0
+      );
+      const spaceMonthExpense = spaceMonthTx.reduce(
+        (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
+        0
+      );
       return {
         space,
         income,
         expense,
+        monthIncome: spaceMonthIncome,
+        monthExpense: spaceMonthExpense,
         balance: income - expense,
         transactionCount: spaceTx.length,
       };

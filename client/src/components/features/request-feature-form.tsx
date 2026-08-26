@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm, ValidationError } from "@formspree/react";
-import { Loader2, Send, CheckCircle2, Sparkles } from "lucide-react";
+import { Loader2, Send, CheckCircle2, Sparkles, RotateCcw } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export function RequestFeatureForm() {
             reset();
           }}
         >
+          <RotateCcw className="size-4 mr-2" />
           Send another request
         </Button>
       </Card>

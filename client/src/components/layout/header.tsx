@@ -2,7 +2,7 @@ import { Bell, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { useAuth } from "@/lib/auth-provider";
 
 export function Header() {
@@ -19,16 +19,15 @@ export function Header() {
         to="/settings"
         className="group flex items-center gap-3 text-left transition-all active:scale-98"
       >
-        <Avatar className="size-11 ring-2 ring-primary/30 transition-all group-hover:ring-primary shadow-xs">
-          <AvatarImage src={user?.image ?? ""} alt={firstName} />
-          <AvatarFallback className="font-semibold bg-card/80 backdrop-blur-md">
-            {firstName.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          user={user}
+          className="size-11 ring-2 ring-primary/30 transition-all group-hover:ring-primary shadow-xs"
+          fallbackClassName="font-semibold bg-card/80 backdrop-blur-md"
+        />
         <div className="leading-tight">
           <p className="text-xs font-medium text-muted-foreground">{greeting}</p>
-          <p className="text-base font-bold tracking-tight capitalize text-foreground group-hover:text-primary transition-colors">
-            {firstName}
+          <p className="font-semibold text-foreground transition-all group-hover:text-primary">
+            {user?.username ? `@${user.username}` : firstName}
           </p>
         </div>
       </Link>

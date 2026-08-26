@@ -9,7 +9,13 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
+  Download,
   Loader2,
+  PieChart,
+  Check,
+  X,
+  ReceiptText,
+  SearchX,
 } from "lucide-react";
 import type { Transaction, TransactionType } from "@ledg/shared";
 import { toast } from "sonner";
@@ -20,6 +26,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import {
@@ -28,8 +42,10 @@ import {
   useUpdateSpace,
   useDeleteSpace,
 } from "@/lib/queries";
-import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
+import { formatCurrency, relativeDay, localDateKey, monthKey } from "@/lib/format";
+import { exportTransactionsToCSV } from "@/lib/export";
 import { useTransactionForm } from "@/lib/transaction-form";
+import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 import {
   SPACE_TYPE_ICONS,
@@ -53,6 +69,8 @@ const TYPE_OPTIONS = SPACE_TYPES.map((t) => ({
   label: t.charAt(0).toUpperCase() + t.slice(1),
 }));
 
+const PAGE_SIZE = 20;
+
 export default function SpaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -65,12 +83,14 @@ export default function SpaceDetailPage() {
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState<SpaceType>("personal");
+  const [editMonthlyBudget, setEditMonthlyBudget] = useState("");
 
   const space = useMemo(
     () => spaces?.find((s) => s.id === id),
@@ -96,36 +116,56 @@ export default function SpaceDetailPage() {
       .sort((a, b) => +new Date(b.date) - +new Date(a.date));
   }, [spaceTransactions, search, typeFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredTransactions.slice(start, start + PAGE_SIZE);
+  }, [filteredTransactions, safePage]);
+
   const analytics = useMemo(() => {
     let income = 0;
     let expense = 0;
+    let monthExpense = 0;
+    const currentMonth = monthKey(new Date());
+
     for (const t of spaceTransactions) {
       if (t.type === "income") income += t.amount;
-      if (t.type === "expense") expense += t.amount;
+      if (t.type === "expense") {
+        expense += t.amount;
+        if (monthKey(t.date) === currentMonth) {
+          monthExpense += t.amount;
+        }
+      }
     }
     return {
       income,
       expense,
+      monthExpense,
       balance: income - expense,
       count: spaceTransactions.length,
     };
   }, [spaceTransactions]);
 
   const groups = useMemo(() => {
-    const map = new Map<string, typeof filteredTransactions>();
-    for (const t of filteredTransactions) {
+    const map = new Map<string, typeof paginatedTransactions>();
+    for (const t of paginatedTransactions) {
       const key = localDateKey(t.date);
       const list = map.get(key) ?? [];
       list.push(t);
       map.set(key, list);
     }
     return [...map.entries()];
-  }, [filteredTransactions]);
+  }, [paginatedTransactions]);
 
   const openEditSpaceModal = () => {
     if (!space) return;
     setEditName(space.name);
     setEditType(space.type);
+    setEditMonthlyBudget(
+      space.monthlyBudget != null ? String(space.monthlyBudget) : ""
+    );
     setSheetOpen(true);
   };
 
@@ -137,7 +177,18 @@ export default function SpaceDetailPage() {
       return;
     }
 
-    const parsed = spaceSchema.safeParse({ name: trimmed, type: editType });
+    const parsedBudget = editMonthlyBudget.trim() ? Number(editMonthlyBudget) : null;
+    if (parsedBudget !== null && (isNaN(parsedBudget) || parsedBudget < 0)) {
+      toast.error("Budget must be a positive number");
+      return;
+    }
+
+    const parsed = spaceSchema.safeParse({
+      name: trimmed,
+      type: editType,
+      monthlyBudget: parsedBudget,
+    });
+
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const path = issue.path.join(".");
@@ -156,6 +207,12 @@ export default function SpaceDetailPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update space");
     }
+  };
+
+  const handleExportCSV = () => {
+    if (!space) return;
+    exportTransactionsToCSV(spaceTransactions, spaces ?? [], `${space.name.toLowerCase().replace(/\s+/g, "-")}-transactions.csv`);
+    toast.success(`Exported ${spaceTransactions.length} transactions`);
   };
 
   const handleDeleteSpace = async () => {
@@ -190,6 +247,7 @@ export default function SpaceDetailPage() {
         description="The space you are looking for does not exist or has been deleted."
         action={
           <Button onClick={() => navigate("/spaces")} className="rounded-full">
+            <ArrowLeft className="size-4 mr-2" />
             Back to Spaces
           </Button>
         }
@@ -221,6 +279,16 @@ export default function SpaceDetailPage() {
             <Button
               variant="outline"
               size="icon"
+              onClick={handleExportCSV}
+              aria-label="Export transactions to CSV"
+              className="rounded-full"
+              title="Export CSV"
+            >
+              <Download className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={openEditSpaceModal}
               aria-label="Edit space"
               className="rounded-full"
@@ -246,7 +314,10 @@ export default function SpaceDetailPage() {
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder={`Search ${space.name} transactions…`}
             className="pl-10"
           />
@@ -321,37 +392,137 @@ export default function SpaceDetailPage() {
                   -{formatCurrency(analytics.expense)}
                 </p>
               </div>
+
+              {space.monthlyBudget && space.monthlyBudget > 0 ? (() => {
+                const spent = analytics.monthExpense;
+                const budget = space.monthlyBudget;
+                const isOver = spent > budget;
+                const percent = Math.round((spent / budget) * 100);
+                const overAmount = spent - budget;
+                const budgetWidth = isOver ? (budget / spent) * 100 : Math.min(100, percent);
+                const overWidth = isOver ? (overAmount / spent) * 100 : 0;
+
+                return (
+                  <>
+                    <div className="my-0.5 h-px bg-border/40" />
+                    <div className="space-y-1.5 pt-0.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <PieChart className="size-3 text-primary" /> Month Budget
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn("font-bold tabular-nums", isOver ? "text-destructive" : "text-foreground")}>
+                            {formatCurrency(spent)}
+                          </span>
+                          <span className="text-muted-foreground text-[11px]">/ {formatCurrency(budget)}</span>
+                        </div>
+                      </div>
+
+                      {isOver ? (
+                        <div className="h-2.5 w-full flex overflow-hidden rounded-full bg-muted/60 gap-0.5 p-0.5">
+                          <div
+                            className="h-full rounded-l-full bg-primary/70 transition-all duration-500"
+                            style={{ width: `${budgetWidth}%` }}
+                            title={`Budget: ${formatCurrency(budget)}`}
+                          />
+                          <div
+                            className="h-full rounded-r-full bg-destructive transition-all duration-500"
+                            style={{ width: `${overWidth}%` }}
+                            title={`Over by: ${formatCurrency(overAmount)}`}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/80">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500",
+                              percent >= 75 ? "bg-amber-500" : "bg-primary"
+                            )}
+                            style={{ width: `${budgetWidth}%` }}
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        {isOver ? (
+                          <>
+                            <span className="text-muted-foreground">Budget: {formatCurrency(budget)}</span>
+                            <span className="font-semibold text-destructive">
+                              +{formatCurrency(overAmount)} over budget ({percent}%)
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-muted-foreground">{percent}% spent</span>
+                            <span className="text-muted-foreground font-medium">
+                              {formatCurrency(budget - spent)} remaining
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+              })() : null}
             </div>
           </Card>
       </FadeInItem>
 
       <FadeInItem className="">
-  
-      <Segmented
+        <Segmented
           options={TYPE_FILTERS}
           value={typeFilter}
-          onChange={setTypeFilter}
-          />
-          </FadeInItem>
-
-      
+          onChange={(val) => {
+            setTypeFilter(val);
+            setCurrentPage(1);
+          }}
+        />
+      </FadeInItem>
 
       {/* Transactions List */}
       {filteredTransactions.length === 0 ? (
         <FadeInItem>
-          <EmptyState
-            title="No transactions in this space"
-            description={
-              search || typeFilter !== "all"
-                ? "Try clearing filters to see transactions."
-                : `Tap below to add the first transaction to ${space.name}.`
-            }
-            action={
-              <Button onClick={() => openCreate(space.id, true)} className="rounded-full">
-                Add transaction
-              </Button>
-            }
-          />
+          <Card className="rounded-4xl p-2 border border-border/60">
+            <EmptyState
+              icon={
+                search || typeFilter !== "all" ? (
+                  <SearchX className="size-7" />
+                ) : (
+                  <ReceiptText className="size-7" />
+                )
+              }
+              title={
+                search || typeFilter !== "all"
+                  ? "No matching transactions"
+                  : "No transactions in this space"
+              }
+              description={
+                search || typeFilter !== "all"
+                  ? "Try clearing your search or category filter to see transactions."
+                  : `Tap below to add the first transaction to ${space.name}.`
+              }
+              action={
+                search || typeFilter !== "all" ? (
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => {
+                      setSearch("");
+                      setTypeFilter("all");
+                    }}
+                  >
+                    <X className="size-4 mr-2" />
+                    Clear filters
+                  </Button>
+                ) : (
+                  <Button onClick={() => openCreate(space.id, true)} className="rounded-full">
+                    <Plus className="size-4 mr-2" />
+                    Add transaction
+                  </Button>
+                )
+              }
+            />
+          </Card>
         </FadeInItem>
       ) : (
         <div className="flex flex-col gap-5">
@@ -374,6 +545,52 @@ export default function SpaceDetailPage() {
               </section>
             </FadeInItem>
           ))}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <FadeInItem>
+              <div className="flex flex-col items-center gap-2 pt-2">
+                <p className="text-xs text-muted-foreground">
+                  Page {safePage} of {totalPages} ({filteredTransactions.length} total)
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={safePage <= 1}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                      if (
+                        p === 1 ||
+                        p === totalPages ||
+                        (p >= safePage - 1 && p <= safePage + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              isActive={p === safePage}
+                              onClick={() => setCurrentPage(p)}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={safePage >= totalPages}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </FadeInItem>
+          )}
         </div>
       )}
 
@@ -382,7 +599,7 @@ export default function SpaceDetailPage() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title="Edit Space"
-        description="Update the space name or type."
+        description="Update the space name, type, or budget."
       >
         <div className="flex flex-col gap-5 pt-2">
           <div className="space-y-1.5">
@@ -407,6 +624,23 @@ export default function SpaceDetailPage() {
             />
           </div>
 
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Monthly Budget (Optional)
+              </p>
+              <span className="text-xs text-muted-foreground">Rs. / month</span>
+            </div>
+            <Input
+              type="number"
+              min="0"
+              step="100"
+              value={editMonthlyBudget}
+              onChange={(e) => setEditMonthlyBudget(e.target.value)}
+              placeholder="e.g. 25000"
+            />
+          </div>
+
           <Button
             size="lg"
             className="mt-2 w-full rounded-full text-base font-semibold"
@@ -419,7 +653,10 @@ export default function SpaceDetailPage() {
                 Saving…
               </>
             ) : (
-              "Save changes"
+              <>
+                <Check className="size-4 mr-2" />
+                Save changes
+              </>
             )}
           </Button>
         </div>
@@ -446,7 +683,10 @@ export default function SpaceDetailPage() {
                 Deleting…
               </>
             ) : (
-              "Delete Space"
+              <>
+                <Trash2 className="size-4 mr-2" />
+                Delete Space
+              </>
             )}
           </Button>
           <Button
@@ -455,6 +695,7 @@ export default function SpaceDetailPage() {
             className="w-full rounded-full text-base font-semibold"
             onClick={() => setDeleting(false)}
           >
+            <X className="size-4 mr-2" />
             Cancel
           </Button>
         </div>

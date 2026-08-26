@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Wallet, Pencil, Trash2, Search, X, Loader2 } from "lucide-react";
+import { Plus, Wallet, Pencil, Trash2, Search, X, Loader2, Check } from "lucide-react";
 import { SPACE_TYPES, spaceSchema, type Space, type SpaceType } from "@ledg/shared";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -48,6 +48,7 @@ export default function SpacesPage() {
   const [deletingSpace, setDeletingSpace] = useState<Space | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState<SpaceType>("personal");
+  const [monthlyBudget, setMonthlyBudget] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter spaces based on search query
@@ -64,6 +65,7 @@ export default function SpacesPage() {
     setEditing(null);
     setName("");
     setType("personal");
+    setMonthlyBudget("");
     setSheetOpen(true);
   };
 
@@ -72,6 +74,9 @@ export default function SpacesPage() {
     setEditing(space);
     setName(space.name);
     setType(space.type);
+    setMonthlyBudget(
+      space.monthlyBudget != null ? String(space.monthlyBudget) : ""
+    );
     setSheetOpen(true);
   };
 
@@ -86,7 +91,18 @@ export default function SpacesPage() {
       return;
     }
 
-    const parsed = spaceSchema.safeParse({ name: trimmed, type });
+    const parsedBudget = monthlyBudget.trim() ? Number(monthlyBudget) : null;
+    if (parsedBudget !== null && (isNaN(parsedBudget) || parsedBudget < 0)) {
+      toast.error("Budget must be a positive number");
+      return;
+    }
+
+    const parsed = spaceSchema.safeParse({
+      name: trimmed,
+      type,
+      monthlyBudget: parsedBudget,
+    });
+
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const path = issue.path.join(".");
@@ -180,30 +196,34 @@ export default function SpacesPage() {
         </div>
       ) : !filteredSpaces || filteredSpaces.length === 0 ? (
         <FadeInItem>
-          <EmptyState
-            icon={<Wallet className="size-7" />}
-            title={searchQuery ? "No results found" : "No spaces yet"}
-            description={
-              searchQuery
-                ? `No spaces match "${searchQuery}"`
-                : "Create a space like Personal, Trip or Business to start tracking money there."
-            }
-            action={
-              !searchQuery ? (
-                <Button onClick={openCreate} className="rounded-full">
-                  Create your first space
-                </Button>
-              ) : (
-                <Button 
-                  onClick={() => setSearchQuery("")} 
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  Clear search
-                </Button>
-              )
-            }
-          />
+          <Card className="rounded-4xl p-2 border border-border/60">
+            <EmptyState
+              icon={<Wallet className="size-7" />}
+              title={searchQuery ? "No results found" : "No spaces yet"}
+              description={
+                searchQuery
+                  ? `No spaces match "${searchQuery}"`
+                  : "Create a space like Personal, Trip or Business to start tracking money there."
+              }
+              action={
+                !searchQuery ? (
+                  <Button onClick={openCreate} className="rounded-full">
+                    <Plus className="size-4 mr-2" />
+                    Create your first space
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setSearchQuery("")}
+                    variant="outline"
+                    className="rounded-full"
+                  >
+                    <X className="size-4 mr-2" />
+                    Clear search
+                  </Button>
+                )
+              }
+            />
+          </Card>
         </FadeInItem>
       ) : (
         <div className="grid gap-3">
@@ -226,73 +246,145 @@ export default function SpacesPage() {
                   <Card
                     onClick={() => handleSpaceClick(space)}
                     className={cn(
-                      "flex items-center gap-2 rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
+                      "flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
                       "cursor-pointer hover:border-primary/20",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
-                        typeBg,
-                        typeText
-                      )}
-                    >
-                      <Icon className="size-5" />
-                    </span>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold text-foreground text-sm">
-                        {space.name}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                            typeBadge
-                          )}
-                        >
-                          {space.type}
-                        </span>
-                        <span className="text-xs text-muted-foreground/60">·</span>
-                        <span className="text-xs truncate w-25 text-muted-foreground">
-                          {summary?.transactionCount ?? 0} {(summary?.transactionCount ?? 0) !== 1 ? "transactions" : "transaction"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <p
+                    <div className="flex items-center gap-2 w-full">
+                      <span
                         className={cn(
-                          "text-base font-bold tabular-nums",
-                          balanceColor
+                          "flex size-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                          typeBg,
+                          typeText
                         )}
                       >
-                        {formatCurrency(balance)}
-                      </p>
+                        <Icon className="size-5" />
+                      </span>
 
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={(e) => openEdit(e, space)}
-                          aria-label={`Edit ${space.name}`}
-                          className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-bold text-foreground text-sm">
+                          {space.name}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                              typeBadge
+                            )}
+                          >
+                            {space.type}
+                          </span>
+                          <span className="text-xs text-muted-foreground/60">·</span>
+                          <span className="text-xs truncate w-25 text-muted-foreground">
+                            {summary?.transactionCount ?? 0} {(summary?.transactionCount ?? 0) !== 1 ? "transactions" : "transaction"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <p
+                          className={cn(
+                            "text-base font-bold tabular-nums",
+                            balanceColor
+                          )}
                         >
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingSpace(space);
-                          }}
-                          aria-label={`Delete ${space.name}`}
-                          className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95 cursor-pointer"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
+                          {formatCurrency(balance)}
+                        </p>
+
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => openEdit(e, space)}
+                            aria-label={`Edit ${space.name}`}
+                            className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingSpace(space);
+                            }}
+                            aria-label={`Delete ${space.name}`}
+                            className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95 cursor-pointer"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
+
+                    {space.monthlyBudget != null && space.monthlyBudget > 0 ? (() => {
+                      const spent = summary?.monthExpense ?? 0;
+                      const budget = space.monthlyBudget;
+                      const isOver = spent > budget;
+                      // Zero budget: any positive spending is over; avoid division by zero
+                      const percent = budget > 0
+                        ? Math.round((spent / budget) * 100)
+                        : isOver ? 100 : 0;
+                      const overAmount = spent - budget;
+                      const budgetWidth = isOver ? (budget / spent) * 100 : Math.min(100, percent);
+                      const overWidth = isOver ? (overAmount / spent) * 100 : 0;
+
+                      return (
+                        <div className="mt-3 pt-2.5 border-t border-border/40 space-y-1.5 w-full">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground font-medium">Monthly budget</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className={cn("font-bold tabular-nums", isOver ? "text-destructive" : "text-foreground")}>
+                                {formatCurrency(spent)}
+                              </span>
+                              <span className="text-muted-foreground text-[11px]">/ {formatCurrency(budget)}</span>
+                            </div>
+                          </div>
+
+                          {isOver ? (
+                            <div className="h-2 w-full flex overflow-hidden rounded-full bg-muted/60 gap-0.5 p-0.5">
+                              <div
+                                className="h-full rounded-l-full bg-primary/70 transition-all duration-500"
+                                style={{ width: `${budgetWidth}%` }}
+                                title={`Budget: ${formatCurrency(budget)}`}
+                              />
+                              <div
+                                className="h-full rounded-r-full bg-destructive transition-all duration-500"
+                                style={{ width: `${overWidth}%` }}
+                                title={`Over by: ${formatCurrency(overAmount)}`}
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted/60">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-500",
+                                  percent >= 75 ? "bg-amber-500" : "bg-primary"
+                                )}
+                                style={{ width: `${budgetWidth}%` }}
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-[10px]">
+                            {isOver ? (
+                              <>
+                                <span className="text-muted-foreground">Budget: {formatCurrency(budget)}</span>
+                                <span className="font-semibold text-destructive">
+                                  +{formatCurrency(overAmount)} over ({percent}%)
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-muted-foreground">{percent}% spent</span>
+                                <span className="text-muted-foreground font-medium">
+                                  {formatCurrency(budget - spent)} remaining
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })() : null}
                   </Card>
                 </motion.div>
               </FadeInItem>
@@ -333,6 +425,23 @@ export default function SpacesPage() {
             />
           </div>
 
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Monthly Budget (Optional)
+              </p>
+              <span className="text-xs text-muted-foreground">Rs. / month</span>
+            </div>
+            <Input
+              type="number"
+              min="0"
+              step="100"
+              value={monthlyBudget}
+              onChange={(e) => setMonthlyBudget(e.target.value)}
+              placeholder="e.g. 25000"
+            />
+          </div>
+
           <Button
             size="lg"
             className="mt-2 w-full rounded-full text-base font-semibold"
@@ -345,9 +454,15 @@ export default function SpacesPage() {
                 {editing ? "Saving…" : "Creating…"}
               </>
             ) : editing ? (
-              "Save changes"
+              <>
+                <Check className="size-4 mr-2" />
+                Save changes
+              </>
             ) : (
-              "Create space"
+              <>
+                <Plus className="size-4 mr-2" />
+                Create space
+              </>
             )}
           </Button>
         </div>
@@ -376,7 +491,10 @@ export default function SpacesPage() {
                 Deleting…
               </>
             ) : (
-              "Delete Space"
+              <>
+                <Trash2 className="size-4 mr-2" />
+                Delete Space
+              </>
             )}
           </Button>
           <Button
@@ -385,6 +503,7 @@ export default function SpacesPage() {
             className="w-full rounded-full text-base font-semibold"
             onClick={() => setDeletingSpace(null)}
           >
+            <X className="size-4 mr-2" />
             Cancel
           </Button>
         </div>

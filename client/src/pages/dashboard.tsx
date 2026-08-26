@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDownLeft, ArrowUpRight, TrendingUp, CreditCard, Landmark, Wallet as WalletIcon, Smartphone } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, TrendingUp, CreditCard, Landmark, Wallet as WalletIcon, Smartphone, Plus, ReceiptText } from "lucide-react";
 import { DEFAULT_CURRENCY, PAYMENT_LABELS, type Transaction } from "@ledg/shared";
 import { motion } from "framer-motion";
 
@@ -74,6 +74,13 @@ export default function DashboardPage() {
     return "bg-amber-500/10 text-amber-500";
   };
 
+  const isAllEmpty =
+    !isPending &&
+    ((data?.transactionCount ?? 0) === 0 ||
+      (recent.length === 0 &&
+        byCategory.length === 0 &&
+        byIncomeCategory.length === 0));
+
   return (
     <FadeInStagger className="flex flex-col gap-6">
       <Header />
@@ -136,14 +143,27 @@ export default function DashboardPage() {
         </section>
       </FadeInItem>
 
-      {!isPending && data?.transactionCount === 0 ? (
+      {/* Loading Skeleton */}
+      {isPending ? (
         <FadeInItem>
-          <Card className="border-none bg-card">
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-28 w-full rounded-4xl" />
+            <Skeleton className="h-40 w-full rounded-4xl" />
+          </div>
+        </FadeInItem>
+      ) : null}
+
+      {/* Empty State Card */}
+      {isAllEmpty ? (
+        <FadeInItem>
+          <Card className="rounded-4xl p-2 border border-border/60">
             <EmptyState
+              icon={<ReceiptText className="size-7" />}
               title="Nothing tracked yet"
               description="Add your first transaction to start understanding your spending."
               action={
-                <Button onClick={() => openCreate()}>
+                <Button onClick={() => openCreate()} className="rounded-full">
+                  <Plus className="size-4 mr-2" />
                   Add your first transaction
                 </Button>
               }
@@ -198,8 +218,9 @@ export default function DashboardPage() {
                 })}
               </Card>
             ) : (
-              <Card className="border-none bg-card">
+              <Card className="rounded-4xl p-2 border border-border/60">
                 <EmptyState
+                  icon={<ReceiptText className="size-7" />}
                   title={tab === "income" ? "No income tracked" : "No expenses tracked"}
                   description={
                     tab === "income"
@@ -207,7 +228,8 @@ export default function DashboardPage() {
                       : "Add your first expense to see it broken down here."
                   }
                   action={
-                    <Button onClick={() => openCreate()} variant="outline">
+                    <Button onClick={() => openCreate()} variant="outline" className="rounded-full">
+                      <Plus className="size-4 mr-2" />
                       Add {tab}
                     </Button>
                   }
@@ -288,59 +310,63 @@ export default function DashboardPage() {
         </FadeInItem>
       )}
 
-      <FadeInItem>
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Recent activity
-            </h2>
-            <Link
-              to="/transactions"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              See all
-            </Link>
-          </div>
-
-          {isPending ? (
-            <div className="flex flex-col gap-2">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-3xl" />
-              ))}
+      {(isPending || recent.length > 0) && (
+        <FadeInItem>
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Recent activity
+              </h2>
+              <Link
+                to="/transactions"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                See all
+              </Link>
             </div>
-          ) : recent.length === 0 ? null : (
-            <div className="flex flex-col gap-2">
-              {recent.map((t) => (
-                <SwipeableTransactionItem
-                  key={t.id}
-                  transaction={t}
-                  currency={currency}
-                  onClick={() => openEdit(t, t.spaceId)}
-                  onRequestDelete={() => setDeleteTarget(t)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </FadeInItem>
 
-      <FadeInItem>
-        <section className="flex items-center gap-3 rounded-4xl bg-accent/50 p-4">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-            <TrendingUp className="size-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground">
-              Smart Insight
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {(data?.monthSpend ?? 0) > 0
-                ? `You spent ${formatCompact(data?.monthSpend ?? 0, currency)} this month across ${byCategory.length} categories.`
-                : "No expenses recorded this month yet."}
-            </p>
-          </div>
-        </section>
-      </FadeInItem>
+            {isPending ? (
+              <div className="flex flex-col gap-2">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-3xl" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {recent.map((t) => (
+                  <SwipeableTransactionItem
+                    key={t.id}
+                    transaction={t}
+                    currency={currency}
+                    onClick={() => openEdit(t, t.spaceId)}
+                    onRequestDelete={() => setDeleteTarget(t)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </FadeInItem>
+      )}
+
+      {!isPending && (data?.transactionCount ?? 0) > 0 && (
+        <FadeInItem>
+          <section className="flex items-center gap-3 rounded-4xl bg-accent/50 p-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <TrendingUp className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-foreground">
+                Smart Insight
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {(data?.monthSpend ?? 0) > 0
+                  ? `You spent ${formatCompact(data?.monthSpend ?? 0, currency)} this month across ${byCategory.length} categories.`
+                  : "No expenses recorded this month yet."}
+              </p>
+            </div>
+          </section>
+        </FadeInItem>
+      )}
 
       <DeleteTransactionSheet
         transaction={deleteTarget}

@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Segmented } from "@/components/ui/segmented";
 import { DatePicker } from "@/components/ui/date-picker";
 import { getCategoryMeta } from "@/lib/categories";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, localDateKey } from "@/lib/format";
 import { useSpaces, useAnalyticsSummary, useAnalyticsRecurring, useAllData } from "@/lib/queries";
 import type { AnalyticsPeriod } from "@/lib/api";
 import { InsightsCard } from "@/components/analytics/insights-card";
@@ -111,7 +111,7 @@ function getPeriodComparisonLabel(period: AnalyticsPeriod) {
 
 export default function AnalyticsPage() {
   const currency = DEFAULT_CURRENCY;
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = localDateKey(new Date());
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>("all");
@@ -149,8 +149,8 @@ export default function AnalyticsPage() {
     const now = new Date();
 
     if (period === "today") {
-      const todayDate = todayStr;
-      return list.filter((t) => t.date?.slice(0, 10) === todayDate);
+      const todayDate = localDateKey(new Date());
+      return list.filter((t) => localDateKey(t.date) === todayDate);
     }
     if (period === "custom") {
       const from = customFrom ? new Date(customFrom) : null;
@@ -323,7 +323,7 @@ export default function AnalyticsPage() {
 
       {/* ── Empty state for no transactions in selected period ── */}
       {transactionCount === 0 ? (
-        <Card className="border-none bg-card p-6">
+        <Card className="rounded-4xl p-2 border border-border/60">
           <EmptyState
             icon={<PieChart className="size-7" />}
             title="No data for this period"
@@ -415,7 +415,7 @@ export default function AnalyticsPage() {
               </h2>
               <Card className="flex flex-col gap-4 p-5">
                 {summary!.byExpenseCategory.map(({ category, amount, count }) => {
-                  const meta = getCategoryMeta(category);
+                  const meta = getCategoryMeta(category, "expense");
                   const Icon = meta.icon;
                   const percentage =
                     totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
@@ -476,7 +476,7 @@ export default function AnalyticsPage() {
               </h2>
               <Card className="flex flex-col gap-4 p-5">
                 {summary!.byIncomeCategory.map(({ category, amount, count }) => {
-                  const meta = getCategoryMeta(category);
+                  const meta = getCategoryMeta(category, "income");
                   const Icon = meta.icon;
                   const percentage =
                     totalIncome > 0 ? (amount / totalIncome) * 100 : 0;

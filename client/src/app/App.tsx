@@ -15,6 +15,7 @@ const AnalyticsPage = lazy(() => import("@/pages/analytics"));
 const SpacesPage = lazy(() => import("@/pages/spaces"));
 const SpaceDetailPage = lazy(() => import("@/pages/space-detail"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
+const ProfilePage = lazy(() => import("@/pages/profile"));
 const SignInPage = lazy(() => import("@/pages/sign-in"));
 const SignUpPage = lazy(() => import("@/pages/sign-up"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
@@ -102,6 +103,7 @@ export default function App() {
                 <Route path="/spaces" element={<SpacesPage />} />
                 <Route path="/spaces/:id" element={<SpaceDetailPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
               </Route>
               <Route path="*" element={<Navigate to="/welcome" replace />} />
             </Routes>

@@ -48,6 +48,11 @@ export function FadeInStagger({
   );
 }
 
+/**
+ * Child of FadeInStagger. Variants are inherited from the parent so
+ * staggerChildren/delayChildren orchestration stays parent-controlled —
+ * do not set initial/animate here.
+ */
 export function FadeInItem({
   children,
   className,
@@ -57,6 +62,36 @@ export function FadeInItem({
 }) {
   return (
     <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 6 },
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: {
+            duration: 0.16,
+            ease: [0.16, 1, 0.3, 1],
+          },
+        },
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Standalone entrance animation for use outside of FadeInStagger. */
+export function FadeIn({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial="hidden"
+      animate="visible"
       variants={{
         hidden: { opacity: 0, y: 6 },
         visible: {

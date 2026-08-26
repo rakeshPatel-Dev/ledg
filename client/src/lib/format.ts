@@ -28,8 +28,16 @@ export function formatCompact(amount: number, currency = "NPR"): string {
   }).format(amount);
 }
 
+function parseLocalDate(date: string | Date): Date {
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return new Date(date);
+}
+
 export function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString("en-NP", {
+  return parseLocalDate(date).toLocaleDateString("en-NP", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -44,17 +52,17 @@ export function formatTime(date: string | Date): string {
 }
 
 export function localDateKey(date: string | Date): string {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function monthKey(date: string | Date): string {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function relativeDay(date: string | Date): string {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const startOfDay = new Date(d);
