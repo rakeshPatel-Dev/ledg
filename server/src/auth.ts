@@ -1,4 +1,5 @@
-﻿import { betterAuth } from "better-auth";
+import { betterAuth } from "better-auth";
+import { customSession } from "better-auth/plugins";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import mongoose from "mongoose";
 
@@ -7,7 +8,11 @@ import { logger } from "./config/logger.js";
 import {
   deleteUserWithData,
   upsertUserFromAuth,
+  generateUsername,
+  authUserFilter,
+  type AuthUser,
 } from "./domains/users/repository.js";
+import { UserModel } from "./domains/users/model.js";
 import { sendVerificationEmail } from "./lib/email.js";
 
 function getTrustedOrigins(): string[] {
@@ -86,10 +91,56 @@ async function createAuth() {
         : {},
 
     user: {
+      additionalFields: {
+        username: {
+          type: "string",
+          required: false,
+          defaultValue: null,
+          input: true,
+        },
+      },
       deleteUser: {
         enabled: true,
       },
     },
+
+    plugins: [
+      customSession(async ({ user, session }) => {
+        let username = (user as unknown as { username?: string | null }).username;
+        if (!username) {
+          // Look up in UserModel first
+          const domainUser = await UserModel.findOne({ betterAuthId: user.id })
+            .select("username")
+            .lean() as { username?: string } | null;
+
+          if (domainUser?.username) {
+            username = domainUser.username;
+          } else {
+            const emailPrefix = (user.email ?? "").split("@")[0] || user.name || "user";
+            username = await generateUsername(emailPrefix);
+            await UserModel.updateOne(
+              { betterAuthId: user.id },
+              { $set: { username } }
+            ).catch(() => null);
+          }
+
+          // Backfill to Better Auth user collection
+          const db = mongoose.connection.getClient().db(process.env.MONGODB_DB_NAME);
+          await db
+            .collection("user")
+            .updateOne(authUserFilter(user.id), { $set: { username } })
+            .catch(() => null);
+        }
+
+        return {
+          user: {
+            ...user,
+            username,
+          },
+          session,
+        };
+      }),
+    ],
 
     session: {
       freshAge: 0,
@@ -102,7 +153,7 @@ async function createAuth() {
         create: {
           after: async (user) => {
             try {
-              await upsertUserFromAuth(user);
+              await upsertUserFromAuth(user as unknown as AuthUser & { username?: string | null });
             } catch (error) {
               logger.error({ error }, "Failed to sync app user on create");
             }
@@ -111,7 +162,7 @@ async function createAuth() {
         update: {
           after: async (user) => {
             try {
-              await upsertUserFromAuth(user);
+              await upsertUserFromAuth(user as unknown as AuthUser & { username?: string | null });
             } catch (error) {
               logger.error({ error }, "Failed to sync app user on update");
             }

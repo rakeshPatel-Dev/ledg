@@ -11,6 +11,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     name: string;
+    username?: string | null;
     email: string;
     image?: string | null;
     emailVerified?: boolean;
@@ -38,5 +39,27 @@ export async function authenticate(
     next();
   } catch (error) {
     next(error);
+  }
+}
+
+export async function optionalAuthenticate(
+  req: AuthRequest,
+  _res: Response,
+  next: NextFunction
+) {
+  try {
+    const auth = await getAuth();
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    }).catch(() => null);
+
+    if (session?.user) {
+      req.user = session.user;
+      const userId = await resolveUserIdFromAuth(session.user).catch(() => undefined);
+      req.userId = userId;
+    }
+    next();
+  } catch {
+    next();
   }
 }
