@@ -11,7 +11,7 @@ Ledg is evolving from a single-user money tracker into a collaborative finance t
 ### Key Goals
 1. **Ownership vs Membership**:
    - **Owner (Creator)**: Complete authority over space configuration (name, budget, type), member invitations, member removals, and cascade deletion.
-   - **Member**: Collaborative partner with full transaction CRUD capabilities inside the shared space, with the autonomy to leave at any time.
+   - **Member**: Collaborative partner who can create transactions and manage their own entries (the owner may edit or delete anyone's), with the autonomy to leave at any time.
 2. **Frictionless Invites via Email & In-App**:
    - Owner can invite members during space creation via email chips or on-the-fly from the space details page.
    - Invitees receive a branded email via **Resend** and an interactive in-app notification with inline **Accept** and **Reject** buttons.
@@ -199,7 +199,9 @@ createdBy: {
 | Action | Space Owner | Space Member | Non-Member |
 | :--- | :---: | :---: | :---: |
 | **View Space & Transactions** | ✅ | ✅ | ❌ (403/404) |
-| **Create / Update / Delete Transactions** | ✅ | ✅ | ❌ |
+| **Create Transactions** | ✅ | ✅ | ❌ |
+| **Update / Delete Own Transactions** | ✅ | ✅ | ❌ |
+| **Update / Delete Others' Transactions** | ✅ | ❌ | ❌ |
 | **Edit Space Name / Budget / Type** | ✅ | ❌ | ❌ |
 | **Invite New Members** | ✅ | ❌ | ❌ |
 | **Remove Members** | ✅ | ❌ | ❌ |
@@ -243,6 +245,8 @@ Steps execute within a transaction where the deployment supports it; otherwise t
 
 #### 4.1.2 Email Delivery Outbox
 
+> **⚠️ SUPERSEDED** by `SHARED_SPACES_BUILD_PLAN.md` decision #21: invitations are sent **inline within the request** (same pattern as verification emails), with no outbox collection, worker, or cron. The owner's Resend action is the manual retry path and re-mints the token; multi-invite creation sends in parallel via `Promise.allSettled`. Token lifecycle rules below (hash-only storage, rotation on resend, expiry) remain fully in force.
+
 Invitation email delivery is decoupled from space creation and invitation persistence:
 
 - **Persist first:** creating an invitation writes only the invitation document plus a delivery job in an outbox collection (`{ invitationId (unique index), attempts, status: "queued" | "sending" | "sent" | "failed", lastError?, nextAttemptAt }`). The job is created through an atomic upsert keyed by `invitationId`, so at most one job can ever exist per invitation even under concurrent creation paths.
@@ -257,7 +261,7 @@ Invitation email delivery is decoupled from space creation and invitation persis
 - `POST /api/v1/invitations/:id/accept` — Accept invitation (adds user to `space.members`, creates notifications, invalidates cache). **Authorized recipient only:** the request must satisfy `req.userId === invitation.inviteeId`, or — when `inviteeId` is null — the normalized authenticated email (`req.userEmail.toLowerCase()`) matches `invitation.inviteeEmail`. Unauthorized requests are rejected with 403 **without modifying the invitation**.
 - `POST /api/v1/invitations/:id/reject` — Reject invitation. Same recipient authorization rules as accept; unauthorized requests are rejected without state changes.
 - `DELETE /api/v1/invitations/:id` — Cancel invitation (Owner only).
-- `POST /api/v1/invitations/:id/resend` — Owner only. Claims the invitation's existing outbox job under its `invitationId` guard (4.1.2); the worker then regenerates the single-use token via the mint → hash → send path (new hash, fresh `expiresAt`), which invalidates all previously issued links, and re-notifies the invitee. Idempotent semantics: repeated calls within a short cooldown return the current invitation state without stacking duplicate deliveries (the `invitationId` claim makes concurrent resends enqueue at most one job); resending an already-resolved invitation returns 409.
+- `POST /api/v1/invitations/:id/resend` — Owner only. Re-mints the single-use token via the mint → hash → send path inline (new hash, fresh `expiresAt`), which invalidates all previously issued links, and re-notifies the invitee. Idempotent semantics: repeated calls within a short cooldown return the current invitation state without stacking duplicate deliveries; resending an already-resolved invitation returns 409.
 
 The pending list and owner-only cancellation behavior are unchanged by these additions; only authorization on mutations is tightened.
 
@@ -275,7 +279,7 @@ All operations are scoped to the authenticated recipient — every query and mut
 [Owner invites friend@email.com]
         │
         ├── 1. In-App Notification created for friend (if already registered)
-        └── 2. Email dispatched via Resend (through the 4.1.2 outbox):
+        └── 2. Email dispatched via Resend (inline, decision #21 in the build plan):
                Subject: Rikesh invited you to join "Trip to Pokhara" on Ledg
                Body:
                - Space Name & Type badge

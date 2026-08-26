@@ -8,7 +8,7 @@
 
 ## 1. Goal
 
-Add a public welcome screen that becomes the first impression for unauthenticated users. It shows the app logo, name, a short tagline, and two prominent actions: **Register** and **Login**. The screen follows the existing calm, minimal, Apple-style aesthetic defined in `docs/DESIGN.md.md` and `docs/UI_GUIDELINES.md`.
+Add a public welcome screen that becomes the first impression for unauthenticated users. It shows the app logo, name, a short tagline, and two prominent actions: **Register** and **Login**. The screen follows the existing calm, minimal, Apple-style aesthetic defined in `docs/product/DESIGN.md` and `docs/guides/UI_GUIDELINES.md`.
 
 ## 2. Scope
 
@@ -122,7 +122,7 @@ Browser back button after sign-in lands on `/welcome`. This is acceptable for th
 - Buttons are real interactive elements via `<Button asChild><Link>...</Link></Button>`, so keyboard focus, Enter, and Space all work.
 - Visible focus rings come from the existing `Button` styles (`focus-visible:ring-3 focus-visible:ring-ring/50`).
 - Color contrast is inherited from the verified theme tokens; emerald on white/dark meets WCAG AA.
-- Touch target: `size="lg"` buttons are 48px tall, meeting the 44px minimum from `docs/UI_GUIDELINES.md`.
+- Touch target: `size="lg"` buttons are 48px tall, meeting the 44px minimum from `docs/guides/UI_GUIDELINES.md`.
 
 ## 8. File-Level Changes
 
