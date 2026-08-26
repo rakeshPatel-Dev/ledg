@@ -1,7 +1,9 @@
 import type { Response } from "express";
 
 import { asyncHandler } from "../../common/utils/async-handler.js";
+import { BadRequestError } from "../../common/errors/index.js";
 import type { AuthRequest } from "../../common/middlewares/authenticate.js";
+import { transactionQuerySchema } from "../../shared/index.js";
 import * as transactionService from "./service.js";
 import {
   validateCreateTransaction,
@@ -77,12 +79,35 @@ export const deleteTransaction = asyncHandler(
   }
 );
 
+const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
+
 export const listAllTransactions = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const pageSize = req.query.pageSize ? Number(req.query.pageSize) : 100;
+    const parsed = transactionQuerySchema
+      .pick({ page: true, pageSize: true, type: true, keyword: true })
+      .safeParse(req.query);
+
+    if (!parsed.success) {
+      throw new BadRequestError("Invalid query parameters");
+    }
+
+    let spaceId: string | undefined;
+    if (typeof req.query.spaceId === "string" && req.query.spaceId.trim()) {
+      spaceId = req.query.spaceId.trim();
+      if (spaceId !== "all" && !OBJECT_ID_RE.test(spaceId)) {
+        throw new BadRequestError("Invalid space id");
+      }
+    }
+
     const data = await transactionService.listAllUserTransactions(
       req.userId!,
-      pageSize
+      parsed.data.page,
+      parsed.data.pageSize,
+      {
+        type: parsed.data.type,
+        keyword: parsed.data.keyword,
+        spaceId,
+      }
     );
 
     res.json({ success: true, data });

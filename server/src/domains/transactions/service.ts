@@ -1,10 +1,16 @@
 import type { Types } from "mongoose";
 
-import { NotFoundError } from "../../common/errors/index.js";
+import { BadRequestError, NotFoundError } from "../../common/errors/index.js";
 import * as spaceRepository from "../spaces/repository.js";
 import * as transactionRepository from "./repository.js";
 
+const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
+
 async function resolveSpace(spaceId: string, ownerId: Types.ObjectId) {
+  if (!OBJECT_ID_RE.test(spaceId)) {
+    throw new BadRequestError("Invalid space id");
+  }
+
   const space = await spaceRepository.findSpaceById(
     spaceId,
     ownerId
@@ -182,17 +188,40 @@ export async function deleteUserTransaction(
   return { id: transactionId };
 }
 
+export interface ListAllFilters {
+  type?: string;
+  spaceId?: string;
+  keyword?: string;
+}
+
 export async function listAllUserTransactions(
   ownerId: Types.ObjectId,
-  pageSize = 100
+  page = 1,
+  pageSize = 20,
+  filters: ListAllFilters = {}
 ) {
-  const spaces = await spaceRepository.findSpacesByOwner(ownerId);
-  const spaceIds = spaces.map((s) => s._id);
+  // Narrow to a single owned space when a specific spaceId is requested;
+  // otherwise aggregate across all of the owner's spaces.
+  let spaceIds: Types.ObjectId[];
+  if (filters.spaceId && filters.spaceId !== "all") {
+    spaceIds = [await resolveSpace(filters.spaceId, ownerId)];
+  } else {
+    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+    spaceIds = spaces.map((s) => s._id);
+  }
 
-  const items = await transactionRepository.findAllTransactionsByOwner(
+  const { items, total } = await transactionRepository.findAllTransactionsByOwner(
     spaceIds,
-    pageSize
+    page,
+    pageSize,
+    { type: filters.type, keyword: filters.keyword }
   );
 
-  return { items, total: items.length };
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize) || 1,
+  };
 }

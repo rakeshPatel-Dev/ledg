@@ -142,16 +142,39 @@ function toTransactionDto(doc: Record<string, unknown>): TransactionDoc {
   return { ...doc, id: String(doc._id) } as unknown as TransactionDoc;
 }
 
+export interface AllTransactionsFilters {
+  type?: string;
+  keyword?: string;
+}
+
 export async function findAllTransactionsByOwner(
   ownerSpaceIds: Types.ObjectId[],
-  pageSize = 100
-): Promise<TransactionDoc[]> {
-  if (ownerSpaceIds.length === 0) return [];
+  page = 1,
+  pageSize = 20,
+  filters: AllTransactionsFilters = {}
+): Promise<{ items: TransactionDoc[]; total: number }> {
+  if (ownerSpaceIds.length === 0) return { items: [], total: 0 };
 
-  const docs = await TransactionModel.find({ spaceId: { $in: ownerSpaceIds } })
-    .sort({ date: -1 })
+  const filter: Record<string, unknown> = { spaceId: { $in: ownerSpaceIds } };
+
+  if (filters.type) {
+    filter.type = filters.type;
+  }
+
+  if (filters.keyword) {
+    const safe = escapeRegex(filters.keyword);
+    filter.$or = [
+      { note: { $regex: safe, $options: "i" } },
+      { category: { $regex: safe, $options: "i" } },
+    ];
+  }
+
+  const total = await TransactionModel.countDocuments(filter);
+  const docs = await TransactionModel.find(filter)
+    .sort({ date: -1, _id: 1 })
+    .skip((page - 1) * pageSize)
     .limit(pageSize)
     .lean();
 
-  return docs.map(toTransactionDto);
+  return { items: docs.map(toTransactionDto), total };
 }

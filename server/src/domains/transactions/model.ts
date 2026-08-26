@@ -42,10 +42,6 @@ const transactionSchema = new Schema(
       required: true,
       index: true,
     },
-    tags: {
-      type: [String],
-      default: [],
-    },
     paymentMethod: {
       type: String,
       enum: PAYMENT_METHODS,
@@ -69,7 +65,6 @@ export interface TransactionDoc {
   amount: number;
   note: string;
   date: Date;
-  tags: string[];
   paymentMethod: PaymentMethod | null;
   createdAt: Date;
   updatedAt: Date;
