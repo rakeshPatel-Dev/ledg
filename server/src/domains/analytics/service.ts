@@ -23,51 +23,85 @@ interface DateRangeOptions {
   dateTo?: string;
 }
 
+// All calendar periods ("today", "month", ...) are computed in a fixed app
+// timezone instead of the server's local clock (UTC on Vercel). Without this,
+// users in UTC+05:45 see transactions land in the wrong day/month bucket.
+const APP_TZ_OFFSET_MINUTES = 345; // Asia/Kathmandu (UTC+05:45), no DST
+
+function zonedParts(date: Date): { y: number; m: number; d: number } {
+  const shifted = new Date(date.getTime() + APP_TZ_OFFSET_MINUTES * 60_000);
+  return {
+    y: shifted.getUTCFullYear(),
+    m: shifted.getUTCMonth(),
+    d: shifted.getUTCDate(),
+  };
+}
+
+function zonedBoundary(
+  y: number,
+  m: number,
+  d: number,
+  endOfDay = false
+): Date {
+  const ms = endOfDay
+    ? Date.UTC(y, m, d, 23, 59, 59, 999)
+    : Date.UTC(y, m, d, 0, 0, 0, 0);
+  return new Date(ms - APP_TZ_OFFSET_MINUTES * 60_000);
+}
+
+function parseDayParts(
+  raw: string | undefined
+): { y: number; m: number; d: number } | null {
+  if (!raw) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw.trim());
+  if (!match) return null;
+  return { y: Number(match[1]), m: Number(match[2]) - 1, d: Number(match[3]) };
+}
+
+function firstOfZonedMonth(monthOffset: number): Date {
+  const now = zonedParts(new Date());
+  const shifted = new Date(Date.UTC(now.y, now.m + monthOffset, 1));
+  return zonedBoundary(shifted.getUTCFullYear(), shifted.getUTCMonth(), 1);
+}
+
 function dateRangeForPeriod(
   period: Period,
   options?: DateRangeOptions
 ): { from?: Date; to?: Date } {
-  const now = new Date();
   if (period === "all") return {};
 
   if (period === "today") {
-    const from = new Date(now);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(now);
-    to.setHours(23, 59, 59, 999);
-    return { from, to };
+    const { y, m, d } = zonedParts(new Date());
+    return { from: zonedBoundary(y, m, d), to: zonedBoundary(y, m, d, true) };
   }
 
   if (period === "custom") {
-    if (!options?.dateFrom && !options?.dateTo) {
+    const dateFrom = options?.dateFrom;
+    const dateTo = options?.dateTo;
+
+    if (!dateFrom && !dateTo) {
       // Default to today if custom dates not specified yet
-      const from = new Date(now);
-      from.setHours(0, 0, 0, 0);
-      const to = new Date(now);
-      to.setHours(23, 59, 59, 999);
-      return { from, to };
+      const { y, m, d } = zonedParts(new Date());
+      return { from: zonedBoundary(y, m, d), to: zonedBoundary(y, m, d, true) };
     }
 
-    const from = options?.dateFrom ? new Date(options.dateFrom) : undefined;
-    if (from) from.setHours(0, 0, 0, 0);
+    // Only one bound given → single-day range on that bound
+    const fromSrc = dateFrom ?? dateTo;
+    const toSrc = dateTo ?? dateFrom;
+    const fromParts = parseDayParts(fromSrc);
+    const toParts = parseDayParts(toSrc);
 
-    const to = options?.dateTo ? new Date(options.dateTo) : options?.dateFrom ? new Date(options.dateFrom) : undefined;
-    if (to) to.setHours(23, 59, 59, 999);
-
-    return { from, to };
+    return {
+      from: fromParts ? zonedBoundary(fromParts.y, fromParts.m, fromParts.d) : undefined,
+      to: toParts ? zonedBoundary(toParts.y, toParts.m, toParts.d, true) : undefined,
+    };
   }
 
-  const from = new Date(now.getFullYear(), now.getMonth(), 1);
-  if (period === "month") {
-    from.setHours(0, 0, 0, 0);
-  } else if (period === "3months") {
-    from.setMonth(now.getMonth() - 2);
-    from.setHours(0, 0, 0, 0);
-  } else if (period === "year") {
-    from.setMonth(0);
-    from.setHours(0, 0, 0, 0);
-  }
-  return { from };
+  if (period === "month") return { from: firstOfZonedMonth(0) };
+  if (period === "3months") return { from: firstOfZonedMonth(-2) };
+
+  const { y } = zonedParts(new Date());
+  return { from: zonedBoundary(y, 0, 1) }; // year
 }
 
 function prevDateRangeForPeriod(
@@ -79,41 +113,29 @@ function prevDateRangeForPeriod(
   const currentRange = dateRangeForPeriod(period, options);
   if (!currentRange.from) return {};
 
-  if (period === "today") {
-    const now = new Date();
-    const prevFrom = new Date(now);
-    prevFrom.setDate(prevFrom.getDate() - 1);
-    prevFrom.setHours(0, 0, 0, 0);
-    const prevTo = new Date(now);
-    prevTo.setDate(prevTo.getDate() - 1);
-    prevTo.setHours(23, 59, 59, 999);
-    return { from: prevFrom, to: prevTo };
-  }
-
-  if (period === "custom" && currentRange.from && currentRange.to) {
-    const duration = currentRange.to.getTime() - currentRange.from.getTime();
+  // "today" and "custom" shift back by the range's own duration.
+  // For custom ranges with a single bound, dateRangeForPeriod already
+  // defaults `to` to that same day's end, so duration is a full day.
+  if (period === "today" || period === "custom") {
+    const duration = (currentRange.to?.getTime() ?? 0) - currentRange.from.getTime();
     const prevTo = new Date(currentRange.from.getTime() - 1);
     const prevFrom = new Date(prevTo.getTime() - duration);
     return { from: prevFrom, to: prevTo };
   }
 
-  const prevTo = new Date(currentRange.from.getTime() - 1);
-  const prevFrom = new Date(prevTo);
-
   if (period === "month") {
-    prevFrom.setDate(1);
-    prevFrom.setHours(0, 0, 0, 0);
-  } else if (period === "3months") {
-    prevFrom.setDate(1);
-    prevFrom.setMonth(prevTo.getMonth() - 2);
-    prevFrom.setHours(0, 0, 0, 0);
-  } else if (period === "year") {
-    prevFrom.setDate(1);
-    prevFrom.setMonth(0);
-    prevFrom.setHours(0, 0, 0, 0);
+    return { from: firstOfZonedMonth(-1), to: new Date(firstOfZonedMonth(0).getTime() - 1) };
+  }
+  if (period === "3months") {
+    return { from: firstOfZonedMonth(-5), to: new Date(firstOfZonedMonth(-2).getTime() - 1) };
   }
 
-  return { from: prevFrom, to: prevTo };
+  // year
+  const { y } = zonedParts(new Date());
+  return {
+    from: zonedBoundary(y - 1, 0, 1),
+    to: new Date(zonedBoundary(y, 0, 1).getTime() - 1),
+  };
 }
 
 // ─── Generate Quick Insights ──────────────────────────────────────────────────
@@ -269,10 +291,11 @@ export async function getAnalyticsSummary(
 export async function getAnalyticsRecurring(
   ownerId: Types.ObjectId,
   spaceId: string,
-  minCount: number = 2
+  minCount: number = 2,
+  limit: number = 20
 ) {
   const resolvedSpaceIds = await resolveSpaceIds(spaceId, ownerId);
-  return analyticsRepository.getRecurringTransactions(resolvedSpaceIds, minCount);
+  return analyticsRepository.getRecurringTransactions(resolvedSpaceIds, minCount, limit);
 }
 
 // ─── Dashboard Summary (single endpoint for all dashboard data) ────────────
@@ -293,9 +316,8 @@ export async function getDashboardSummary(ownerId: Types.ObjectId) {
     };
   }
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  monthStart.setHours(0, 0, 0, 0);
+  const now = zonedParts(new Date());
+  const monthStart = zonedBoundary(now.y, now.m, 1);
 
   const [
     allTimeSummary,

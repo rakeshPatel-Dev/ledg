@@ -106,7 +106,8 @@ export async function getCategoryBreakdown(
 
 export async function getRecurringTransactions(
   spaceIds: Types.ObjectId[],
-  minCount: number = 2
+  minCount: number = 2,
+  limit: number = 20
 ): Promise<RecurringGroup[]> {
   const match: Record<string, unknown> =
     spaceIds.length === 1
@@ -133,6 +134,7 @@ export async function getRecurringTransactions(
     },
     { $match: { count: { $gte: minCount } } },
     { $sort: { totalSpent: -1 } },
+    { $limit: limit },
     {
       $project: {
         _id: 0,
@@ -203,7 +205,6 @@ export interface RecentTransaction {
   amount: number;
   note: string;
   date: Date;
-  tags: string[];
   paymentMethod: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -236,7 +237,6 @@ export async function getRecentTransactions(
         amount: 1,
         note: 1,
         date: 1,
-        tags: 1,
         paymentMethod: 1,
         createdAt: 1,
         updatedAt: 1,
