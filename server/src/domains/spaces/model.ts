@@ -20,16 +20,10 @@ const spaceSchema = new Schema(
       enum: SPACE_TYPES,
       default: "personal",
     },
-    // Phase 2: per-category monthly budget limits (category -> amount)
-    budget: {
-      type: Map,
-      of: Number,
-      default: {},
-    },
-    // Phase 2: savings goal amount
-    savingsGoal: {
+    monthlyBudget: {
       type: Number,
       default: null,
+      min: 0,
     },
   },
   {
@@ -44,8 +38,7 @@ export interface SpaceDoc {
   ownerId: Types.ObjectId;
   name: string;
   type: SpaceType;
-  budget?: Map<string, number>;
-  savingsGoal?: number | null;
+  monthlyBudget?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
