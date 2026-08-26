@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import type { RequestHandler } from "express";
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
 import { pinoHttp } from "pino-http";
 import { toNodeHandler } from "better-auth/node";
 
@@ -117,10 +118,12 @@ const apiLimiter = rateLimit({
 });
 
 // BetterAuth — mounted BEFORE express.json() so it can read the raw request
-// body (it parses the stream itself).
+// body (it parses the stream itself). csrfProtection blocks state-changing
+// requests whose Origin/Referer is not a trusted origin (safe methods pass).
 app.all(
   "/api/auth/*splat",
   authLimiter,
+  csrfProtection,
   async (req, res, next) => {
     try {
       const auth = await getAuth();
@@ -144,7 +147,10 @@ app.use(async (_req, _res, next) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok",
+    db: { readyState: mongoose.connection.readyState },
+  });
 });
 
 app.use("/api/v1", apiLimiter, csrfProtection, apiRoutes);
