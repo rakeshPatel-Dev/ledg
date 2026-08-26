@@ -49,7 +49,6 @@ export function TransactionFormProvider({
       amount: 0,
       note: "",
       date: now.toISOString(),
-      tags: [],
       paymentMethod: preferred?.type === "business" ? "card" : "cash",
     };
   };

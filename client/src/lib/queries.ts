@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -22,8 +23,8 @@ export const queryKeys = {
   space: (id: string) => ["spaces", id] as const,
   transactions: (spaceId: string, query: TransactionListQuery = {}) =>
     ["spaces", spaceId, "transactions", query] as const,
-  allTransactions: (pageSize: number) =>
-    ["transactions", "all", pageSize] as const,
+  allTransactions: (page = 1, pageSize = 20) =>
+    ["transactions", "all", page, pageSize] as const,
   analyticsSummary: (
     spaceId: string,
     period: AnalyticsPeriod,
@@ -209,6 +210,7 @@ export function useDeleteSpace() {
     onSuccess: (_data, id) => {
       queryClient.removeQueries({ queryKey: transactionListKey(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _id, context) => {
@@ -273,7 +275,6 @@ export function useCreateTransaction() {
           typeof data.date === "string"
             ? data.date
             : data.date.toISOString(),
-        tags: data.tags ?? [],
         paymentMethod: data.paymentMethod ?? null,
         createdAt: now,
         updatedAt: now,
@@ -375,9 +376,10 @@ export function useUpdateTransaction() {
             : undefined;
 
       // Find existing transaction to preserve fields
-      const allTx = queryClient.getQueryData<{ items: Transaction[]; total: number }>(
-        queryKeys.allTransactions(100)
-      );
+      const allTx = queryClient.getQueryData<{ items: Transaction[]; total: number }>([
+        "transactions",
+        "all",
+      ]);
       const existingTx =
         previous.flatMap(([_, d]) => d?.items ?? []).find((t) => t.id === id) ??
         allTx?.items.find((t) => t.id === id);
@@ -526,8 +528,24 @@ export function useAllData(): AggregatedData {
   const spacesQuery = useSpaces();
 
   const transactionsQuery = useQuery({
-    queryKey: queryKeys.allTransactions(100),
-    queryFn: () => getApi().transactions.listAll(100),
+    queryKey: ["transactions", "all"] as const,
+    queryFn: async ({ signal }: { signal: AbortSignal }) => {
+      // Aggregate every page so consumers never work from a partial list
+      const pageSize = 100;
+      const first = await getApi().transactions.listAll(1, pageSize);
+      if (first.items.length >= first.total) return first;
+
+      const items = [...first.items];
+      const totalPages = Math.ceil(first.total / pageSize);
+      for (let page = 2; page <= totalPages; page++) {
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        const next = await getApi().transactions.listAll(page, pageSize);
+        items.push(...next.items);
+      }
+      return { ...first, items };
+    },
     staleTime: 60_000,
     enabled: !!spacesQuery.data,
   });
@@ -538,6 +556,52 @@ export function useAllData(): AggregatedData {
     loading: spacesQuery.isLoading || transactionsQuery.isLoading,
     error: spacesQuery.error ?? transactionsQuery.error,
   };
+}
+
+export function usePaginatedAllTransactions(page = 1, pageSize = 20) {
+  return useQuery({
+    queryKey: queryKeys.allTransactions(page, pageSize),
+    queryFn: () => getApi().transactions.listAll(page, pageSize),
+    staleTime: 60_000,
+  });
+}
+
+export interface AllTransactionsQueryFilter {
+  type?: string;
+  spaceId?: string;
+  keyword?: string;
+}
+
+export function useFilteredAllTransactions(
+  page: number,
+  pageSize: number,
+  filters: AllTransactionsQueryFilter
+) {
+  return useQuery({
+    queryKey: ["transactions", "all", page, pageSize, filters] as const,
+    queryFn: () => getApi().transactions.listAll(page, pageSize, filters),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
+const EXPORT_MAX_PAGES = 50;
+
+/** Fetches every page matching the filters (capped) — used by CSV export. */
+export async function fetchAllFilteredTransactions(
+  filters: AllTransactionsQueryFilter
+): Promise<Transaction[]> {
+  const pageSize = 100;
+  const first = await getApi().transactions.listAll(1, pageSize, filters);
+  if (first.items.length >= first.total) return first.items;
+
+  const items = [...first.items];
+  const totalPages = Math.min(Math.ceil(first.total / pageSize), EXPORT_MAX_PAGES);
+  for (let page = 2; page <= totalPages; page++) {
+    const next = await getApi().transactions.listAll(page, pageSize, filters);
+    items.push(...next.items);
+  }
+  return items;
 }
 
 // ─── Server-computed Analytics Hooks ─────────────────────────────────────────

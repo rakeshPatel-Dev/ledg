@@ -75,6 +75,12 @@ export interface DashboardSummary {
   transactionCount: number;
 }
 
+export interface AllTransactionsFilter {
+  type?: string;
+  spaceId?: string;
+  keyword?: string;
+}
+
 export function createApi() {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers);
@@ -86,14 +92,17 @@ export function createApi() {
       headers,
     });
 
-    const body = (await response.json().catch(() => null)) as
-      | ApiResponse<T>
-      | null;
+    const contentType = response.headers.get("content-type") ?? "";
+    const body = contentType.includes("application/json")
+      ? ((await response.json().catch(() => null)) as ApiResponse<T> | null)
+      : null;
 
     if (!response.ok || !body?.success) {
+      // Non-JSON bodies (e.g. HTML 502 pages from the host) get a
+      // status-based message instead of a parse failure.
       const message =
         (body && "message" in body ? body.message : undefined) ??
-        `Request failed with ${response.status}`;
+        `Request failed with ${response.status} ${response.statusText}`.trim();
       const errors = body && "errors" in body ? body.errors : [];
       throw new ApiError(response.status, message, errors);
     }
@@ -121,10 +130,20 @@ export function createApi() {
         }).then((r) => r.id),
     },
     transactions: {
-      listAll: (pageSize = 100) =>
-        request<{ items: Transaction[]; total: number }>(
-          `/transactions/all?pageSize=${pageSize}`
-        ),
+      listAll: (page = 1, pageSize = 20, filters: AllTransactionsFilter = {}) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: String(pageSize),
+        });
+        if (filters.type && filters.type !== "all") params.set("type", filters.type);
+        if (filters.spaceId && filters.spaceId !== "all") {
+          params.set("spaceId", filters.spaceId);
+        }
+        if (filters.keyword) params.set("keyword", filters.keyword);
+        return request<PaginatedResult<Transaction>>(
+          `/transactions/all?${params.toString()}`
+        );
+      },
       list: (spaceId: string, query: TransactionListQuery = {}) => {
         const params = new URLSearchParams();
         if (query.category) params.set("category", query.category);
@@ -192,6 +211,32 @@ export function createApi() {
     me: {
       getProvider: () =>
         request<{ provider: string }>("/me/provider"),
+      getProfile: () =>
+        request<{
+          name: string;
+          fullName: string;
+          username: string | null;
+          email: string;
+          image: string | null;
+          emailVerified: boolean;
+          provider: string;
+          joinedAt: string;
+        }>("/me/profile"),
+      updateProfile: (data: { name?: string; username?: string }) =>
+        request<{ name: string; username: string | null }>("/me/profile", {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        }),
+      checkUsernameAvailable: (username: string, signal?: AbortSignal) =>
+        request<{ available: boolean; reason?: string }>(
+          `/me/username/check?u=${encodeURIComponent(username)}`,
+          { signal }
+        ),
+      updateUsername: (username: string) =>
+        request<{ username: string }>("/me/username", {
+          method: "PATCH",
+          body: JSON.stringify({ username }),
+        }),
       updateEmail: (email: string) =>
         request<{ email: string }>("/me/email", {
           method: "PATCH",

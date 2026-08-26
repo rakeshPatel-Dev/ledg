@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, X } from "lucide-react";
 import type { Transaction } from "@ledg/shared";
 import { toast } from "sonner";
 
@@ -103,6 +103,7 @@ export function DeleteTransactionSheet({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
+              <X className="size-4 mr-2" />
               Cancel
             </Button>
           </div>

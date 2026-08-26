@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { PaymentMethod, Space, TransactionInput } from "@ledg/shared";
 import {
@@ -15,6 +15,8 @@ import {
   Landmark,
   Wallet,
   Loader2,
+  Check,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CATEGORIES } from "@/lib/categories";
+import { getCategoriesByType } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import {
   useCreateTransaction,
@@ -79,6 +81,29 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     "";
   const activeSpaceId = space || defaultSpaceId;
 
+  const activeCategories = useMemo(() => getCategoriesByType(type), [type]);
+
+  const quickDates = useMemo(() => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    const fmt = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    return [
+      { label: "Today", value: fmt(today) },
+      { label: "Yesterday", value: fmt(yesterday) },
+      { label: "2 days ago", value: fmt(twoDaysAgo) },
+    ];
+  }, []);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -109,10 +134,10 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
 
   const handleTypeChange = (value: TransactionType) => {
     setType(value);
-    const meta = CATEGORIES.find(
-      (c) => c.defaultsTo === value
-    );
-    if (meta) setCategory(meta.name);
+    const available = getCategoriesByType(value);
+    if (!available.some((c) => c.name === category)) {
+      setCategory(available[0]?.name ?? "Other");
+    }
   };
 
   const submit = async () => {
@@ -131,8 +156,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
       category,
       amount: parsedAmount,
       note: note.trim(),
-      date: new Date(date + "T00:00:00Z").toISOString(),
-      tags: [],
+      date: new Date(date + "T00:00:00").toISOString(),
       paymentMethod,
     };
 
@@ -146,7 +170,6 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
         amount: "Amount",
         note: "Note",
         date: "Date",
-        tags: "Tags",
         paymentMethod: "Payment method",
       };
       const label = path ? fieldLabel[path] ?? path : "";
@@ -241,7 +264,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
             Category
           </p>
           <div className="grid grid-cols-4 gap-2">
-            {CATEGORIES.map((meta) => {
+            {activeCategories.map((meta) => {
               const Icon = meta.icon;
               const active = category === meta.name;
               return (
@@ -251,9 +274,9 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                   title={meta.name}
                   onClick={() => setCategory(meta.name)}
                   className={cn(
-                    "flex min-w-0 w-full flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all overflow-hidden border border-white/10",
+                    "flex min-w-0 w-full flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all overflow-hidden border border-white/10 cursor-pointer",
                     active
-                      ? "bg-accent/80 text-foreground shadow-sm border-white/25"
+                      ? "bg-accent/80 text-foreground shadow-sm border-white/25 ring-1 ring-primary/30"
                       : "bg-card/75 text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -293,6 +316,23 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
               value={date}
               onChange={(val) => setDate(val)}
             />
+            <div className="flex flex-wrap gap-1 pt-1">
+              {quickDates.map((q) => (
+                <button
+                  key={q.value}
+                  type="button"
+                  onClick={() => setDate(q.value)}
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors cursor-pointer",
+                    date === q.value
+                      ? "bg-primary/20 text-primary font-semibold"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="space-y-1.5 min-w-0">
             <label className="text-sm font-medium">
@@ -369,9 +409,15 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
               {editing ? "Saving…" : "Adding…"}
             </>
           ) : editing ? (
-            "Save changes"
+            <>
+              <Check className="size-4 mr-2" />
+              Save changes
+            </>
           ) : (
-            "Add transaction"
+            <>
+              <Plus className="size-4 mr-2" />
+              Add transaction
+            </>
           )}
         </Button>
       </div>

@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, SlidersHorizontal, Download, Plus, ReceiptText, SearchX, X } from "lucide-react";
 import { DEFAULT_CURRENCY, type TransactionType, type Transaction } from "@ledg/shared";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,8 +12,17 @@ import { SwipeableTransactionItem } from "@/components/transactions/swipeable-tr
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
-import { useAllData } from "@/lib/queries";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { useSpaces, useFilteredAllTransactions, fetchAllFilteredTransactions } from "@/lib/queries";
 import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
+import { exportTransactionsToCSV } from "@/lib/export";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
@@ -23,6 +34,9 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "expense", label: "Expense" },
   { value: "income", label: "Income" },
 ];
+
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 350;
 
 function formatDayBalance(
   items: { type: TransactionType; amount: number }[]
@@ -37,39 +51,67 @@ function formatDayBalance(
 }
 
 export default function TransactionsPage() {
-  const { spaces, transactions, loading } = useAllData();
+  const spacesQuery = useSpaces();
+  const spaces = spacesQuery.data ?? [];
   const { openCreate, openEdit } = useTransactionForm();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [spaceFilter, setSpaceFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
-  const filtered = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return transactions
-      .filter((t) => {
-        if (typeFilter !== "all" && t.type !== typeFilter) return false;
-        if (spaceFilter !== "all" && t.spaceId !== spaceFilter) return false;
-        if (keyword) {
-          const haystack = `${t.note} ${t.category} ${t.paymentMethod ?? ""}`.toLowerCase();
-          if (!haystack.includes(keyword)) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => +new Date(b.date) - +new Date(a.date));
-  }, [transactions, search, typeFilter, spaceFilter]);
+  // Server-side search: debounce raw input before it hits the query key
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Server-side filters — changing any of them resets to the first page
+  const filters = useMemo(
+    () => ({
+      type: typeFilter,
+      spaceId: spaceFilter,
+      keyword: debouncedSearch || undefined,
+    }),
+    [typeFilter, spaceFilter, debouncedSearch]
+  );
+
+  const transactionsQuery = useFilteredAllTransactions(currentPage, PAGE_SIZE, filters);
+  const items = useMemo(
+    () => transactionsQuery.data?.items ?? [],
+    [transactionsQuery.data]
+  );
+  const total = transactionsQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, transactionsQuery.data?.totalPages ?? 1);
+  const safePage = Math.min(currentPage, totalPages);
+  const hasActiveFilters =
+    Boolean(debouncedSearch) || typeFilter !== "all" || spaceFilter !== "all";
 
   const groups = useMemo(() => {
-    const map = new Map<string, typeof filtered>();
-    for (const t of filtered) {
+    const map = new Map<string, typeof items>();
+    for (const t of items) {
       const key = localDateKey(t.date);
       const list = map.get(key) ?? [];
       list.push(t);
       map.set(key, list);
     }
     return [...map.entries()];
-  }, [filtered]);
+  }, [items]);
+
+  const handleExportCSV = async () => {
+    try {
+      const all = await fetchAllFilteredTransactions(filters);
+      exportTransactionsToCSV(all, spaces, "all-transactions.csv");
+      toast.success(`Exported ${all.length} transactions`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Export failed");
+    }
+  };
 
   return (
     <FadeInStagger className="flex flex-col gap-5">
@@ -80,12 +122,30 @@ export default function TransactionsPage() {
               Activity
             </h1>
             <p className="text-sm text-muted-foreground">
-              {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
+              {total} transaction{total === 1 ? "" : "s"}
             </p>
           </div>
-          <Button aria-label="Show Filters" variant="outline" size="icon" onClick={() => setShowFilters((v) => !v)}>
-            <SlidersHorizontal className="size-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              aria-label="Export CSV"
+              title="Export CSV"
+              variant="outline"
+              size="icon"
+              onClick={handleExportCSV}
+              className="rounded-full"
+            >
+              <Download className="size-4" />
+            </Button>
+            <Button
+              aria-label="Show Filters"
+              variant="outline"
+              size="icon"
+              onClick={() => setShowFilters((v) => !v)}
+              className="rounded-full"
+            >
+              <SlidersHorizontal className="size-4" />
+            </Button>
+          </div>
         </header>
       </FadeInItem>
 
@@ -105,7 +165,10 @@ export default function TransactionsPage() {
         <Segmented
           options={TYPE_FILTERS}
           value={typeFilter}
-          onChange={setTypeFilter}
+          onChange={(val) => {
+            setTypeFilter(val);
+            setCurrentPage(1);
+          }}
         />
       </FadeInItem>
 
@@ -121,7 +184,10 @@ export default function TransactionsPage() {
             <div className="flex flex-wrap gap-1.5 pt-1">
               <button
                 type="button"
-                onClick={() => setSpaceFilter("all")}
+                onClick={() => {
+                  setSpaceFilter("all");
+                  setCurrentPage(1);
+                }}
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
                   spaceFilter === "all"
@@ -135,7 +201,10 @@ export default function TransactionsPage() {
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setSpaceFilter(s.id)}
+                  onClick={() => {
+                    setSpaceFilter(s.id);
+                    setCurrentPage(1);
+                  }}
                   className={cn(
                     "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
                     spaceFilter === s.id
@@ -151,29 +220,72 @@ export default function TransactionsPage() {
         )}
       </AnimatePresence>
 
-      {loading ? (
+      {transactionsQuery.isPending ? (
         <div className="flex flex-col gap-3">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-16 w-full rounded-3xl" />
           ))}
         </div>
+      ) : transactionsQuery.isError ? (
+        <FadeInItem>
+          <Card className="rounded-4xl p-2 border border-border/60">
+            <EmptyState
+              icon={<SearchX className="size-7" />}
+              title="Couldn't load transactions"
+              description={
+                transactionsQuery.error instanceof Error
+                  ? transactionsQuery.error.message
+                  : "Something went wrong while loading your transactions."
+              }
+            />
+          </Card>
+        </FadeInItem>
       ) : groups.length === 0 ? (
         <FadeInItem>
-          <EmptyState
-            title="No transactions found"
-            description={
-              search || typeFilter !== "all" || spaceFilter !== "all"
-                ? "Try clearing filters or search to see more results."
-                : "Tap below to log your first transaction."
-            }
-            action={
-              <Button onClick={() => openCreate()}>Add transaction</Button>
-            }
-          />
+          <Card className="rounded-4xl p-2 border border-border/60">
+            <EmptyState
+              icon={
+                hasActiveFilters ? (
+                  <SearchX className="size-7" />
+                ) : (
+                  <ReceiptText className="size-7" />
+                )
+              }
+              title={hasActiveFilters ? "No matching transactions" : "No transactions yet"}
+              description={
+                hasActiveFilters
+                  ? "No transactions match your current search or filters."
+                  : "Start recording your expenses and income to see them here."
+              }
+              action={
+                hasActiveFilters ? (
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => {
+                      setSearch("");
+                      setDebouncedSearch("");
+                      setTypeFilter("all");
+                      setSpaceFilter("all");
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <X className="size-4 mr-2" />
+                    Clear filters
+                  </Button>
+                ) : (
+                  <Button onClick={() => openCreate()} className="rounded-full">
+                    <Plus className="size-4 mr-2" />
+                    Add transaction
+                  </Button>
+                )
+              }
+            />
+          </Card>
         </FadeInItem>
       ) : (
         <div className="flex flex-col gap-6">
-          {groups.map(([day, items]) => (
+          {groups.map(([day, dayItems]) => (
             <FadeInItem key={day}>
               <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between px-1">
@@ -181,11 +293,11 @@ export default function TransactionsPage() {
                     {relativeDay(day)}
                   </h3>
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    {formatDayBalance(items)}
+                    {formatDayBalance(dayItems)}
                   </span>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {items.map((t) => (
+                  {dayItems.map((t) => (
                     <SwipeableTransactionItem
                       key={t.id}
                       transaction={t}
@@ -198,6 +310,52 @@ export default function TransactionsPage() {
               </section>
             </FadeInItem>
           ))}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <FadeInItem>
+              <div className="flex flex-col items-center gap-2 pt-2">
+                <p className="text-xs text-muted-foreground">
+                  Page {safePage} of {totalPages} ({total} total)
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={safePage <= 1}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                      if (
+                        p === 1 ||
+                        p === totalPages ||
+                        (p >= safePage - 1 && p <= safePage + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              isActive={p === safePage}
+                              onClick={() => setCurrentPage(p)}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={safePage >= totalPages}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </FadeInItem>
+          )}
         </div>
       )}
 
