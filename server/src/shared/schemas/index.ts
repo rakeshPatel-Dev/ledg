@@ -9,6 +9,7 @@ import {
 export const spaceSchema = z.object({
   name: z.string().trim().min(1).max(100),
   type: z.enum(SPACE_TYPES).default("personal"),
+  monthlyBudget: z.number().nonnegative().nullable().optional(),
 });
 
 export type SpaceInput = z.infer<typeof spaceSchema>;
@@ -29,7 +30,6 @@ export const transactionSchema = z.object({
   amount: z.number().positive(),
   note: z.string().trim().max(500).default(""),
   date: dateStringSchema.or(z.date()),
-  tags: z.array(z.string().trim().min(1)).default([]),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
 });
 
@@ -44,7 +44,10 @@ export const transactionUpdateSchema = transactionSchema
 export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
 
 export const idParamsSchema = z.object({
-  id: z.string().trim().min(1),
+  id: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid id"),
 });
 
 export type IdParams = z.infer<typeof idParamsSchema>;
@@ -54,7 +57,7 @@ export const transactionQuerySchema = z.object({
   type: z.enum(TRANSACTION_TYPES).optional(),
   dateFrom: dateStringSchema.optional(),
   dateTo: dateStringSchema.optional(),
-  keyword: z.string().trim().optional(),
+  keyword: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 });

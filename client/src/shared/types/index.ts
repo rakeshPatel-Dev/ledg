@@ -9,6 +9,7 @@ export interface User {
   betterAuthId: string;
   email: string;
   name: string;
+  username: string | null;
   fullName: string;
   image: string | null;
   emailVerified: boolean;
@@ -21,8 +22,7 @@ export interface Space {
   ownerId: string;
   name: string;
   type: SpaceType;
-  budget?: Record<string, number>;
-  savingsGoal?: number | null;
+  monthlyBudget?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,7 +35,6 @@ export interface Transaction {
   amount: number;
   note: string;
   date: string;
-  tags: string[];
   paymentMethod: PaymentMethod | null;
   createdAt: string;
   updatedAt: string;
