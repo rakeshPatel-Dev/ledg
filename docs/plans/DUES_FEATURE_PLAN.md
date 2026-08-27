@@ -16,7 +16,7 @@ When you lend Ramesh Rs 5,000 from your wallet, cash goes **out** — but it is 
 |---|---|---|
 | 1 | Relation to Transaction model | **Separate `Debt` entity** with its own domain + UI — never pseudo expense/income types |
 | 2 | Counterparty identity | **Any contact** — free-text name (+ optional phone); `linkedUserId` reserved for future Ledg-account linking |
-| 3 | Settlement effect on ledger | **Auto-create the matching cash transaction** so total balance stays truthful; flagged `source: "dues"` so analytics exclude it |
+| 3 | Ledger interaction | **Auto-create `source: "dues"` transactions on BOTH lending and settlement** so total balance stays truthful; flagged `source: "dues"` so analytics exclude both sides |
 | 4 | Scope | **Personal-only v1** (per user); space-scoped dues revisit after Shared Spaces ships |
 
 ---
@@ -37,6 +37,7 @@ interface DebtDoc {
   date: Date;                      // when the money moved
   dueDate?: Date | null;           // optional reminder target
   note?: string;
+  transactionId?: Types.ObjectId;  // backlink to the auto-created lending transaction
   status: "open" | "partially_settled" | "settled";
   settledAmount: number;           // denormalized sum of settlements
   createdAt: Date;
@@ -75,24 +76,36 @@ A settlement that would exceed the remaining balance is rejected with 400 (clien
 
 ## 4. The ledger-interaction design (the subtle part)
 
-Repayments aren't income; repaying isn't spending. But wallet truthfulness requires the money movement to hit the balance. Resolution:
+Lending isn't spending; repaying isn't income. But wallet truthfulness requires the money movement to hit the balance on **both sides** — when money leaves AND when it returns. Resolution:
 
 - Transactions gain `source: "manual" | "dues"` (default `"manual"`).
 - **Balance-including queries** (`getSpaceSummary` totals → `totalBalance`, dashboard month in/out) treat both sources equally.
 - **Analytics-excluding queries** (category breakdowns, insights/deltas, savings rate, recurring detection, payment-method breakdown) add `$match: { source: { $ne: "dues" } }` — or equivalently `source: "manual"`.
 
-Result: Ramesh paying back Rs 5,000 raises your balance but never triggers *"You spent 30% less than last month"* nonsense.
+Result: Lending Rs 5,000 lowers your balance (truthful), and Ramesh paying it back raises your balance (truthful) — but neither triggers *"You spent 30% less than last month"* nonsense.
 
 ### Auto-created transactions
-| Debt direction | Settlement event | Created transaction |
-|---|---|---|
-| `lent` | counterparty repays me | `type: "income"`, category `"Due received"`, `source: "dues"` |
-| `borrowed` | I repay counterparty | `type: "expense"`, category `"Due paid"`, `source: "dues"` |
 
-The linked `transactionId` is stored on the settlement row.
+Two events create transactions — lending (money goes out) and settlement (money comes back):
+
+| Debt direction | Event | Created transaction |
+|---|---|---|
+| `lent` | **Lending** — I give money to counterparty | `type: "expense"`, category `"Due paid"`, `source: "dues"` |
+| `lent` | **Settlement** — counterparty repays me | `type: "income"`, category `"Due received"`, `source: "dues"` |
+| `borrowed` | **Lending** — counterparty gives money to me | `type: "income"`, category `"Due received"`, `source: "dues"` |
+| `borrowed` | **Settlement** — I repay counterparty | `type: "expense"`, category `"Due paid"`, `source: "dues"` |
+
+The linked `transactionId` is stored on both the `DebtDoc` (lending txn) and the `DebtSettlementDoc` (settlement txn).
+
+### Why both sides matter
+
+If only settlement creates a transaction, the user must also manually create a regular expense when lending — leading to double-entry or a false balance. Auto-creating on both sides means:
+- **One action = one transaction.** User creates debt via Dues page → system creates the lending txn. User records settlement → system creates the settlement txn.
+- **No manual expense entry needed** for lending/borrowing. The Dues page is the single entry point.
+- **Balance stays correct at all times** without user double-work.
 
 ### Undo semantics
-Deleting a settlement also deletes its linked transaction (both in one unit of work / ordered idempotent steps). Settling is otherwise append-only — no editing of past settlements in v1 (keep history trustworthy).
+Deleting a settlement also deletes its linked transaction (both in one unit of work / ordered idempotent steps). Deleting an unsettled debt also deletes its linked lending transaction. Settling is otherwise append-only — no editing of past settlements in v1 (keep history trustworthy).
 
 ---
 
@@ -100,12 +113,12 @@ Deleting a settlement also deletes its linked transaction (both in one unit of w
 
 | Method & path | Purpose |
 |---|---|
-| `POST /dues` | Create due — `{direction, counterparty:{name, phone?}, principal, date, dueDate?, note?, paymentMethod?}` |
+| `POST /dues` | Create due — `{direction, counterparty:{name, phone?}, principal, date, dueDate?, note?, paymentMethod?}` — also auto-creates linked lending transaction (`source: "dues"`) |
 | `GET /dues` | List — filters `status`, `direction`, `person`; pagination; sorted by `date desc` |
 | `GET /dues/:id` | Single due with its settlements |
 | `POST /dues/:id/settle` | `{amount, date, paymentMethod?, note?}` — creates settlement (+linked txn), updates `settledAmount`/`status` atomically |
 | `DELETE /dues/:id/settlements/:sid` | Undo settlement — removes it and its linked txn, recomputes status |
-| `DELETE /dues/:id` | Delete due — only when unsettled, else 409 (avoid silent history loss) |
+| `DELETE /dues/:id` | Delete due — only when unsettled, else 409; also removes linked lending transaction |
 | `GET /dues/summary` | `{ owedToMe, iOwe, byPerson: [{name, net, direction}] }` |
 
 All queries filter by `userId` (personal scope). Ownership checked on every mutation. Standard validators via shared zod schemas; invalid ObjectIds → 400 (same regex pattern as transactions).
@@ -151,7 +164,7 @@ Future (after a scheduler exists for any reason): push-style notifications "Loan
 | Phase | Work | Days |
 |---|---|---|
 | 1 | Models, shared schemas, sync-shared, indexes | 0.5 |
-| 2 | Repository/service/routes incl. settlement↔transaction linking + undo | 1.5 |
+| 2 | Repository/service/routes incl. lending↔transaction linking, settlement↔transaction linking + undo | 2 |
 | 3 | Analytics exclusion guards across all aggregate call sites | 1 |
 | 4 | Dues page, create/settle/detail sheets, bottom-nav entry | 2 |
 | 5 | Dashboard widget + overdue states | 0.5 |
@@ -161,15 +174,17 @@ Suggested commit sequence:
 ```
 feat(dues): debt and settlement models with ledger-linked statuses
 feat(transactions): source flag separates dues transfers from manual entries
+feat(dues): lending flow auto-creating linked expense/income transaction
 feat(dues): settle/undo flows creating linked cash transactions
 fix(analytics): exclude dues transfers from insights, keep balances true
 feat(client): dues page with per-person net view and settle sheets
 feat(client): dashboard outstanding-dues widget
-test(dues): settlement math, undo, and analytics exclusion suites
+test(dues): lending txn, settlement math, undo, and analytics exclusion suites
 ```
 
 ## 9. Test checklist (minimum)
 
+- Lending txn: creating a debt auto-creates a linked `source: "dues"` transaction; deleting an unsettled debt removes it.
 - Settlement math: partial → partial_settled → exact-final-payment flips to settled; over-settle → 400.
 - Undo: deleting a mid settlement recomputes status correctly; linked txn removed with it.
 - Ledger: after lend + full repay, `totalBalance` returns to baseline; category breakdowns show zero dues noise; month in/out includes the movements.
