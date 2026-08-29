@@ -15,6 +15,10 @@
 2. **Username system** — `plans/USERNAME_SYSTEM_PLAN.md`
 3. **Dues (lend/borrow)** — `plans/DUES_FEATURE_PLAN.md`
 
+## Future plans
+
+4. **Push Notifications** — `plans/PUSH_NOTIFICATIONS_PLAN.md` — Browser push via raw Web Push API (no vendor). Depends on Shared Spaces + in-app notifications being fully built and stable first.
+
 ## Key reference docs
 
 - Architecture → `architecture/ARCHITECTURE.md`, `architecture/DATABASE_DESIGN.md`, `architecture/API_DESIGN.md`
