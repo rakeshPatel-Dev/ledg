@@ -1,5 +1,11 @@
 import type {
   ApiResponse,
+  Debt,
+  DebtCreateInput,
+  DebtSettlement,
+  DebtSettlementInput,
+  DuesQuery,
+  DuesSummary,
   PaginatedResult,
   Space,
   SpaceInput,
@@ -207,6 +213,39 @@ export function createApi() {
     },
     dashboard: {
       summary: () => request<DashboardSummary>("/dashboard/summary"),
+    },
+    dues: {
+      summary: () => request<DuesSummary>("/dues/summary"),
+      list: (query: Partial<DuesQuery> = {}) => {
+        const params = new URLSearchParams();
+        if (query.status) params.set("status", query.status);
+        if (query.direction) params.set("direction", query.direction);
+        if (query.person) params.set("person", query.person);
+        if (query.page) params.set("page", String(query.page));
+        if (query.pageSize) params.set("pageSize", String(query.pageSize));
+        const qs = params.toString();
+        return request<PaginatedResult<Debt>>(`/dues${qs ? `?${qs}` : ""}`);
+      },
+      get: (id: string) =>
+        request<{ due: Debt }>(`/dues/${id}`).then((r) => r.due),
+      create: (data: DebtCreateInput) =>
+        request<{ due: Debt }>("/dues", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }).then((r) => r.due),
+      settle: (id: string, data: DebtSettlementInput) =>
+        request<{ settlement: DebtSettlement; debt: Debt }>(`/dues/${id}/settle`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      undoSettlement: (id: string, settlementId: string) =>
+        request<{ due: Debt }>(`/dues/${id}/settlements/${settlementId}`, {
+          method: "DELETE",
+        }).then((r) => r.due),
+      remove: (id: string) =>
+        request<{ id: string }>(`/dues/${id}`, {
+          method: "DELETE",
+        }).then((r) => r.id),
     },
     me: {
       getProvider: () =>

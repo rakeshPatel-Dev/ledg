@@ -19,6 +19,7 @@ import {
   Building,
   Users,
   Coins,
+  HandCoins,
   type LucideIcon,
 } from "lucide-react";
 import type { TransactionType } from "@ledg/shared";
@@ -42,6 +43,7 @@ export const EXPENSE_CATEGORIES: CategoryMeta[] = [
   { name: "Travel", icon: Plane, color: "#0B7285", defaultsTo: "expense" },
   { name: "Education", icon: GraduationCap, color: "#CA8A04", defaultsTo: "expense" },
   { name: "Family", icon: Users, color: "#059669", defaultsTo: "expense" },
+  { name: "Due paid", icon: HandCoins, color: "#7C3AED", defaultsTo: "expense" },
   { name: "Other", icon: Coins, color: "#868E96", defaultsTo: "expense" },
 ];
 
@@ -54,6 +56,7 @@ export const INCOME_CATEGORIES: CategoryMeta[] = [
   { name: "Refund", icon: RotateCcw, color: "#EA580C", defaultsTo: "income" },
   { name: "Interest", icon: Landmark, color: "#4F46E5", defaultsTo: "income" },
   { name: "Rental", icon: Building, color: "#0891B2", defaultsTo: "income" },
+  { name: "Due received", icon: HandCoins, color: "#059669", defaultsTo: "income" },
   { name: "Other", icon: Coins, color: "#64748B", defaultsTo: "income" },
 ];
 

@@ -1,12 +1,14 @@
-import { Bell, Sparkles } from "lucide-react";
+import { Bell, HandCoins, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/common/user-avatar";
 import { useAuth } from "@/lib/auth-provider";
+import { useDuesSummary } from "@/lib/queries";
 
 export function Header() {
   const { user } = useAuth();
+  const { data: duesSummary } = useDuesSummary();
 
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const hour = new Date().getHours();
@@ -32,19 +34,35 @@ export function Header() {
         </div>
       </Link>
 
-      <button
-        type="button"
-        aria-label="Notifications"
-        onClick={() =>
-          toast.info("All caught up!", {
-            description: "You have no unread expense alerts or notifications.",
-            icon: <Sparkles className="size-4 text-primary" />,
-          })
-        }
-        className="relative flex size-11 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
-      >
-        <Bell className="size-5" />
-      </button>
+      <div className="flex items-center gap-2">
+        <Link
+          to="/dues"
+          aria-label="Dues and loans"
+          className="relative flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-md shadow-primary/30 transition-all hover:bg-primary/90 active:scale-95"
+        >
+          <HandCoins className="size-4" />
+          <span className="text-xs font-bold">Dues</span>
+          {duesSummary && duesSummary.overdueCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[0.55rem] font-bold text-white shadow-sm animate-pulse">
+              {duesSummary.overdueCount}
+            </span>
+          )}
+        </Link>
+
+        <button
+          type="button"
+          aria-label="Notifications"
+          onClick={() =>
+            toast.info("All caught up!", {
+              description: "You have no unread expense alerts or notifications.",
+              icon: <Sparkles className="size-4 text-primary" />,
+            })
+          }
+          className="relative flex size-10 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
+        >
+          <Bell className="size-4.5" />
+        </button>
+      </div>
     </header>
   );
 }

@@ -14,6 +14,7 @@ const TransactionsPage = lazy(() => import("@/pages/transactions"));
 const AnalyticsPage = lazy(() => import("@/pages/analytics"));
 const SpacesPage = lazy(() => import("@/pages/spaces"));
 const SpaceDetailPage = lazy(() => import("@/pages/space-detail"));
+const DuesPage = lazy(() => import("@/pages/dues"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const SignInPage = lazy(() => import("@/pages/sign-in"));
@@ -99,6 +100,7 @@ export default function App() {
               >
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/transactions" element={<TransactionsPage />} />
+                <Route path="/dues" element={<DuesPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/spaces" element={<SpacesPage />} />
                 <Route path="/spaces/:id" element={<SpaceDetailPage />} />

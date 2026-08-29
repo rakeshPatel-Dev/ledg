@@ -6,6 +6,12 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import type {
+  Debt,
+  DebtCreateInput,
+  DebtSettlement,
+  DebtSettlementInput,
+  DuesQuery,
+  DuesSummary,
   PaginatedResult,
   Space,
   SpaceInput,
@@ -34,6 +40,9 @@ export const queryKeys = {
   analyticsRecurring: (spaceId: string) =>
     ["spaces", spaceId, "analytics", "recurring"] as const,
   dashboardSummary: () => ["dashboard", "summary"] as const,
+  duesSummary: () => ["dues", "summary"] as const,
+  dues: (query: Partial<DuesQuery> = {}) => ["dues", "list", query] as const,
+  due: (id: string) => ["dues", id] as const,
 };
 
 type TransactionListQuery = Omit<
@@ -276,6 +285,7 @@ export function useCreateTransaction() {
             ? data.date
             : data.date.toISOString(),
         paymentMethod: data.paymentMethod ?? null,
+        source: data.source ?? "manual",
         createdAt: now,
         updatedAt: now,
       };
@@ -640,4 +650,105 @@ export function useDashboardSummary() {
   });
 }
 
-export type { Space, SpaceInput, SpaceUpdateInput, Transaction };
+// ─── Dues Hooks ─────────────────────────────────────────────────────────────
+
+export function useDuesSummary() {
+  return useQuery({
+    queryKey: queryKeys.duesSummary(),
+    queryFn: () => getApi().dues.summary(),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useDues(query: Partial<DuesQuery> = {}) {
+  return useQuery({
+    queryKey: queryKeys.dues(query),
+    queryFn: () => getApi().dues.list(query),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
+export function useDue(id: string) {
+  return useQuery({
+    queryKey: queryKeys.due(id),
+    queryFn: () => getApi().dues.get(id),
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateDue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: DebtCreateInput) => getApi().dues.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useSettleDue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DebtSettlementInput }) =>
+      getApi().dues.settle(id, data),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.due(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useUndoSettlement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, settlementId }: { id: string; settlementId: string }) =>
+      getApi().dues.undoSettlement(id, settlementId),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.due(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useDeleteDue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => getApi().dues.remove(id),
+    onSuccess: (_result, id) => {
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.removeQueries({ queryKey: queryKeys.due(id) });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export type {
+  Debt,
+  DebtCreateInput,
+  DebtSettlement,
+  DebtSettlementInput,
+  DuesQuery,
+  DuesSummary,
+  Space,
+  SpaceInput,
+  SpaceUpdateInput,
+  Transaction,
+};

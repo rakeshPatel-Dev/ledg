@@ -71,7 +71,9 @@ export async function getCategoryBreakdown(
   range?: DateRange
 ): Promise<CategoryBreakdown[]> {
   const match: Record<string, unknown> =
-    spaceIds.length === 1 ? { spaceId: spaceIds[0], type } : { spaceId: { $in: spaceIds }, type };
+    spaceIds.length === 1
+      ? { spaceId: spaceIds[0], type, source: { $ne: "dues" } }
+      : { spaceId: { $in: spaceIds }, type, source: { $ne: "dues" } };
   if (range?.from || range?.to) {
     const dateCond: Record<string, Date> = {};
     if (range.from) dateCond.$gte = range.from;
@@ -111,8 +113,8 @@ export async function getRecurringTransactions(
 ): Promise<RecurringGroup[]> {
   const match: Record<string, unknown> =
     spaceIds.length === 1
-      ? { spaceId: spaceIds[0], type: "expense" }
-      : { spaceId: { $in: spaceIds }, type: "expense" };
+      ? { spaceId: spaceIds[0], type: "expense", source: { $ne: "dues" } }
+      : { spaceId: { $in: spaceIds }, type: "expense", source: { $ne: "dues" } };
 
   const results = await TransactionModel.aggregate([
     { $match: match },
@@ -163,8 +165,8 @@ export async function getPaymentMethodBreakdown(
 ): Promise<PaymentMethodBreakdown[]> {
   const match: Record<string, unknown> =
     spaceIds.length === 1
-      ? { spaceId: spaceIds[0], type }
-      : { spaceId: { $in: spaceIds }, type };
+      ? { spaceId: spaceIds[0], type, source: { $ne: "dues" } }
+      : { spaceId: { $in: spaceIds }, type, source: { $ne: "dues" } };
   if (range?.from || range?.to) {
     const dateCond: Record<string, Date> = {};
     if (range.from) dateCond.$gte = range.from;
