@@ -2,8 +2,10 @@ import mongoose, { Schema, model, type Types } from "mongoose";
 
 import {
   PAYMENT_METHODS,
+  TRANSACTION_SOURCES,
   TRANSACTION_TYPES,
   type PaymentMethod,
+  type TransactionSource,
   type TransactionType,
 } from "../../shared/index.js";
 
@@ -47,6 +49,12 @@ const transactionSchema = new Schema(
       enum: PAYMENT_METHODS,
       default: null,
     },
+    source: {
+      type: String,
+      enum: TRANSACTION_SOURCES,
+      default: "manual",
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -55,6 +63,7 @@ const transactionSchema = new Schema(
 
 transactionSchema.index({ spaceId: 1, date: -1 });
 transactionSchema.index({ spaceId: 1, type: 1, date: -1 });
+transactionSchema.index({ spaceId: 1, source: 1, date: -1 });
 transactionSchema.index({ type: 1, date: -1 });
 
 export interface TransactionDoc {
@@ -66,6 +75,7 @@ export interface TransactionDoc {
   note: string;
   date: Date;
   paymentMethod: PaymentMethod | null;
+  source: TransactionSource;
   createdAt: Date;
   updatedAt: Date;
 }
