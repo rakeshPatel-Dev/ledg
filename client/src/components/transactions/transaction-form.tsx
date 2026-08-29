@@ -158,7 +158,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
       note: note.trim(),
       date: new Date(date + "T00:00:00").toISOString(),
       paymentMethod,
-    };
+      source: editing?.source ?? "manual",    };
 
     const parsed = transactionSchema.safeParse(payload);
     if (!parsed.success) {

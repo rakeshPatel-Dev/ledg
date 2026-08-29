@@ -10,6 +10,7 @@ interface SheetProps {
   description?: string;
   children: ReactNode;
   className?: string;
+  scrollClassName?: string;
 }
 
 export function Sheet({
@@ -19,6 +20,7 @@ export function Sheet({
   description,
   children,
   className,
+  scrollClassName,
 }: SheetProps) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
@@ -32,24 +34,32 @@ export function Sheet({
                 className
               )}
             >
-              <div className="flex items-center justify-center pt-3 pb-1">
+              {/* Drag handle */}
+              <div className="flex items-center justify-center pt-3 pb-1 shrink-0">
                 <div className="h-1.5 w-12 rounded-full bg-muted-foreground/25" />
               </div>
-              {(title || description) && (
-                <div className="flex flex-col gap-0.5 px-5 pt-2 pb-3">
-                  {title ? (
+
+              {/* Title/description (shown or sr-only) */}
+              {title || description ? (
+                <div className="flex flex-col gap-0.5 px-5 pt-2 pb-3 shrink-0">
+                  {title && (
                     <Drawer.Title className="text-lg font-bold tracking-tight">
                       {title}
                     </Drawer.Title>
-                  ) : null}
-                  {description ? (
+                  )}
+                  {description && (
                     <Drawer.Description className="text-sm text-muted-foreground">
                       {description}
                     </Drawer.Description>
-                  ) : null}
+                  )}
                 </div>
+              ) : (
+                <Drawer.Title className="sr-only">Sheet</Drawer.Title>
               )}
-              <div className="flex-1 overflow-y-auto px-5 pb-8">{children}</div>
+
+              <div className={cn("flex-1 overflow-y-auto px-5 pb-10", scrollClassName)}>
+                {children}
+              </div>
             </div>
           </Drawer.Popup>
         </Drawer.Viewport>

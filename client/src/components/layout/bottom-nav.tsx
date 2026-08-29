@@ -4,7 +4,7 @@ import {
   House,
   Wallet,
   ChartNoAxesCombined,
-  FolderOpen,
+  Layers,
   Plus,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -23,7 +23,7 @@ export function BottomNav() {
     { type: "link", to: "/", label: "Home", icon: House, end: true },
     { type: "link", to: "/transactions", label: "Activity", icon: Wallet, end: false },
     { type: "button" },
-    { type: "link", to: "/spaces", label: "Spaces", icon: FolderOpen, end: false },
+    { type: "link", to: "/spaces", label: "Spaces", icon: Layers, end: false },
     { type: "link", to: "/analytics", label: "Insights", icon: ChartNoAxesCombined, end: false },
   ];
 
@@ -88,7 +88,7 @@ export function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  "relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[0.6rem] font-semibold transition-colors select-none rounded-full touch-manipulation",
+                  "relative flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[0.55rem] font-semibold transition-colors select-none rounded-full touch-manipulation",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -116,7 +116,7 @@ export function BottomNav() {
                   >
                     <Icon 
                       className={cn(
-                        "size-5 transition-all duration-200",
+                        "size-[1.15rem] transition-all duration-200",
                         isActive && "stroke-[2.5px] scale-105"
                       )} 
                     />

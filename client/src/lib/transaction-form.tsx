@@ -50,6 +50,7 @@ export function TransactionFormProvider({
       note: "",
       date: now.toISOString(),
       paymentMethod: preferred?.type === "business" ? "card" : "cash",
+      source: "manual",
     };
   };
 

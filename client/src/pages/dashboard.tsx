@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
+import { DuesSummaryCard } from "@/components/dues/dues-summary-card";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { getCategoryMeta } from "@/lib/categories";
@@ -141,6 +142,10 @@ export default function DashboardPage() {
             </motion.div>
           </div>
         </section>
+      </FadeInItem>
+
+      <FadeInItem>
+        <DuesSummaryCard />
       </FadeInItem>
 
       {/* Loading Skeleton */}
