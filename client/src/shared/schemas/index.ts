@@ -1,8 +1,11 @@
 import { z } from "zod";
 
 import {
+  DEBT_DIRECTIONS,
+  DEBT_STATUSES,
   PAYMENT_METHODS,
   SPACE_TYPES,
+  TRANSACTION_SOURCES,
   TRANSACTION_TYPES,
 } from "../enums/index.js";
 
@@ -31,6 +34,7 @@ export const transactionSchema = z.object({
   note: z.string().trim().max(500).default(""),
   date: dateStringSchema.or(z.date()),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+  source: z.enum(TRANSACTION_SOURCES).default("manual"),
 });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
@@ -63,3 +67,48 @@ export const transactionQuerySchema = z.object({
 });
 
 export type TransactionQuery = z.infer<typeof transactionQuerySchema>;
+
+export const debtCreateSchema = z.object({
+  direction: z.enum(DEBT_DIRECTIONS),
+  counterparty: z.object({
+    name: z.string().trim().min(1, "Name is required").max(100),
+    phone: z.string().trim().max(30).optional(),
+    linkedUserId: z
+      .string()
+      .trim()
+      .regex(/^[0-9a-fA-F]{24}$/, "Invalid user id")
+      .nullable()
+      .optional(),
+  }),
+  principal: z.number().positive("Principal must be greater than 0"),
+  date: dateStringSchema.or(z.date()),
+  dueDate: dateStringSchema.or(z.date()).nullable().optional(),
+  note: z.string().trim().max(500).default(""),
+  paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+  spaceId: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid space id")
+    .optional(),
+});
+
+export type DebtCreateInput = z.infer<typeof debtCreateSchema>;
+
+export const debtSettlementSchema = z.object({
+  amount: z.number().positive("Amount must be greater than 0"),
+  date: dateStringSchema.or(z.date()),
+  paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+  note: z.string().trim().max(500).default(""),
+});
+
+export type DebtSettlementInput = z.infer<typeof debtSettlementSchema>;
+
+export const duesQuerySchema = z.object({
+  status: z.enum([...DEBT_STATUSES, "all"]).optional(),
+  direction: z.enum(DEBT_DIRECTIONS).optional(),
+  person: z.string().trim().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export type DuesQuery = z.infer<typeof duesQuerySchema>;

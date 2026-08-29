@@ -18,3 +18,12 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: "Bank",
   wallet: "Wallet",
 };
+
+export const TRANSACTION_SOURCES = ["manual", "dues"] as const;
+export type TransactionSource = (typeof TRANSACTION_SOURCES)[number];
+
+export const DEBT_DIRECTIONS = ["lent", "borrowed"] as const;
+export type DebtDirection = (typeof DEBT_DIRECTIONS)[number];
+
+export const DEBT_STATUSES = ["open", "partially_settled", "settled"] as const;
+export type DebtStatus = (typeof DEBT_STATUSES)[number];

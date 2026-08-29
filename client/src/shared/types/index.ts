@@ -1,6 +1,9 @@
 import type {
+  DebtDirection,
+  DebtStatus,
   PaymentMethod,
   SpaceType,
+  TransactionSource,
   TransactionType,
 } from "../enums/index.js";
 
@@ -36,8 +39,64 @@ export interface Transaction {
   note: string;
   date: string;
   paymentMethod: PaymentMethod | null;
+  source: TransactionSource;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DebtCounterparty {
+  name: string;
+  phone?: string;
+  linkedUserId?: string | null;
+}
+
+export interface DebtSettlement {
+  id: string;
+  debtId: string;
+  userId: string;
+  spaceId: string;
+  amount: number;
+  date: string;
+  paymentMethod: PaymentMethod | null;
+  note: string;
+  transactionId?: string;
+  createdAt: string;
+}
+
+export interface Debt {
+  id: string;
+  userId: string;
+  spaceId: string;
+  direction: DebtDirection;
+  counterparty: DebtCounterparty;
+  principal: number;
+  date: string;
+  dueDate?: string | null;
+  note: string;
+  transactionId?: string;
+  status: DebtStatus;
+  settledAmount: number;
+  settlements?: DebtSettlement[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PersonDuesSummary {
+  name: string;
+  phone?: string;
+  owedToMe: number;
+  iOwe: number;
+  net: number; // positive = they owe me, negative = I owe them
+  activeCount: number;
+}
+
+export interface DuesSummary {
+  owedToMe: number;
+  iOwe: number;
+  net: number;
+  overdueCount: number;
+  activeCount: number;
+  byPerson: PersonDuesSummary[];
 }
 
 export interface ApiSuccess<T> {
