@@ -166,7 +166,6 @@ const debtSettlementSchema = new Schema(
 );
 
 debtSettlementSchema.index({ debtId: 1, date: -1 });
-debtSettlementSchema.index({ userId: 1 });
 
 export interface DebtSettlementDoc {
   _id: Types.ObjectId;
