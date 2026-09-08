@@ -15,6 +15,13 @@ export default [
     },
   },
   {
+    // Standalone backfill/CLI scripts — console output is their interface.
+    files: ["src/scripts/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     ignores: ["dist/**", "node_modules/**"],
   },
 ];
