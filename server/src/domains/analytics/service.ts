@@ -2,19 +2,19 @@ import type { Types } from "mongoose";
 
 import * as spaceRepository from "../spaces/repository.js";
 import * as analyticsRepository from "./repository.js";
-import { NotFoundError } from "../../common/errors/index.js";
+import { assertSpaceAccess } from "../spaces/access.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function resolveSpaceIds(spaceId: string, ownerId: Types.ObjectId): Promise<Types.ObjectId[]> {
+async function resolveSpaceIds(spaceId: string, userId: Types.ObjectId): Promise<Types.ObjectId[]> {
   if (spaceId === "all") {
-    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+    const spaces = await spaceRepository.findSpacesForUser(userId);
     return spaces.map((s) => s._id);
   }
-  const space = await spaceRepository.findSpaceById(spaceId, ownerId);
-  if (!space) throw new NotFoundError("Space");
-  return [space._id];
+  const access = await assertSpaceAccess(spaceId, userId);
+  return [access.space._id];
 }
+
 
 type Period = "today" | "month" | "3months" | "year" | "all" | "custom";
 
