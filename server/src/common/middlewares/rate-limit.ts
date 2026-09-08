@@ -21,3 +21,18 @@ export const sensitiveActionLimiter = rateLimit({
     errors: [],
   },
 });
+
+// Public read endpoints that touch the DB but require no auth (e.g. invitation
+// preview by token). More generous than the mutation limiter but still caps
+// automated abuse / DoS volume.
+export const publicReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later.",
+    errors: [],
+  },
+});
