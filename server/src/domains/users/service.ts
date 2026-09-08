@@ -11,6 +11,9 @@ import {
   type AuthUser,
 } from "./repository.js";
 import { UserModel } from "./model.js";
+import { SpaceModel } from "../spaces/model.js";
+import { SpaceInvitationModel } from "../invitations/model.js";
+import { TransactionModel } from "../transactions/model.js";
 import { USERNAME_REGEX, RESERVED_USERNAMES } from "../../shared/index.js";
 
 export async function changeEmail(
@@ -429,8 +432,62 @@ export async function updateProfile(
     });
   }
 
+  // Identity fan-out: keep space member snapshots in sync with name/username changes
+  if (updates.name || updates.username) {
+    const user = await UserModel.findOne({ betterAuthId: authUser.id }).select("_id").lean();
+    if (user) {
+      const memberSet: Record<string, string> = {};
+      if (updates.name) memberSet["members.$[elem].name"] = updates.name;
+      if (updates.username) memberSet["members.$[elem].username"] = updates.username;
+
+      await SpaceModel.updateMany(
+        { "members.userId": user._id },
+        { $set: memberSet },
+        { arrayFilters: [{ "elem.userId": user._id }] }
+      ).catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to space members"));
+
+      // Fan out to pending invitations where the renamed user is the inviter,
+      // so the invitee sees the current inviter identity (mirrors the re-invite
+      // refresh in invitations/service.ts).
+      const inviterSet: Record<string, string> = {};
+      if (updates.name) inviterSet["inviterName"] = updates.name;
+      if (updates.username) inviterSet["inviterUsername"] = updates.username;
+
+      await SpaceInvitationModel
+        .updateMany(
+          { inviterId: user._id, status: "pending" },
+          { $set: inviterSet }
+        )
+        .catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to inviter invitations"));
+
+      // Fan out the invitee username snapshot where the renamed user is the
+      // invitee (matches by inviteeId, since pending invites track the target
+      // user id for registered accounts).
+      if (updates.username) {
+        await SpaceInvitationModel
+          .updateMany(
+            { inviteeId: user._id, status: "pending" },
+            { $set: { inviteeUsername: updates.username } }
+          )
+          .catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to invitee invitations"));
+      }
+
+      // Fan out to transactions where the renamed user is the creator, so
+      // shared-space transaction lists keep the current identity snapshot.
+      const txnSet: Record<string, string> = {};
+      if (updates.name) txnSet["createdBy.name"] = updates.name;
+      if (updates.username) txnSet["createdBy.username"] = updates.username;
+
+      await TransactionModel.updateMany(
+        { "createdBy.userId": user._id },
+        { $set: txnSet }
+      ).catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to transactions"));
+    }
+  }
+
   return {
     name: updated?.name ?? "",
     username: updated?.username ?? null,
   };
-}
+}
+
