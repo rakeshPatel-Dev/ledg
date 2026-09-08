@@ -22,6 +22,8 @@ const SignUpPage = lazy(() => import("@/pages/sign-up"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/privacy-policy"));
 const TermsOfServicePage = lazy(() => import("@/pages/terms-of-service"));
+const InvitePage = lazy(() => import("@/pages/invite"));
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,8 +91,10 @@ export default function App() {
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/invite/:token" element={<InvitePage />} />
               <Route path="/sign-in/*" element={<SignInPage />} />
               <Route path="/sign-up/*" element={<SignUpPage />} />
+
               <Route
                 element={
                   <Protected>

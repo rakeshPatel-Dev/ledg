@@ -1,10 +1,11 @@
-import { Bell, HandCoins, Sparkles } from "lucide-react";
+import { HandCoins } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
 import { UserAvatar } from "@/components/common/user-avatar";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 import { useAuth } from "@/lib/auth-provider";
 import { useDuesSummary } from "@/lib/queries";
+
 
 export function Header() {
   const { user } = useAuth();
@@ -49,20 +50,9 @@ export function Header() {
           )}
         </Link>
 
-        <button
-          type="button"
-          aria-label="Notifications"
-          onClick={() =>
-            toast.info("All caught up!", {
-              description: "You have no unread expense alerts or notifications.",
-              icon: <Sparkles className="size-4 text-primary" />,
-            })
-          }
-          className="relative flex size-10 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
-        >
-          <Bell className="size-4.5" />
-        </button>
+        <NotificationCenter />
       </div>
+
     </header>
   );
 }
