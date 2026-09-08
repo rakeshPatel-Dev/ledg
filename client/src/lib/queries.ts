@@ -27,6 +27,12 @@ import { getApi, type AnalyticsPeriod } from "./api";
 export const queryKeys = {
   spaces: ["spaces"] as const,
   space: (id: string) => ["spaces", id] as const,
+  spaceMembers: (spaceId: string) => ["spaces", spaceId, "members"] as const,
+  spaceInvitations: (spaceId: string) => ["spaces", spaceId, "invitations"] as const,
+  pendingInvitations: ["invitations", "pending"] as const,
+  invitationPreview: (token: string) => ["invitations", "preview", token] as const,
+  notifications: (page = 1, pageSize = 20) => ["notifications", page, pageSize] as const,
+  notificationPreferences: ["me", "notification-preferences"] as const,
   transactions: (spaceId: string, query: TransactionListQuery = {}) =>
     ["spaces", spaceId, "transactions", query] as const,
   allTransactions: (page = 1, pageSize = 20) =>
@@ -44,6 +50,7 @@ export const queryKeys = {
   dues: (query: Partial<DuesQuery> = {}) => ["dues", "list", query] as const,
   due: (id: string) => ["dues", id] as const,
 };
+
 
 type TransactionListQuery = Omit<
   TransactionQuery,
@@ -129,8 +136,16 @@ export function useSpaces() {
 
 export function useCreateSpace() {
   const queryClient = useQueryClient();
+  // Idempotency key is generated once per logical submit and reused across
+  // retries until the request settles, so rapid double-submits can't create
+  // duplicate spaces.
+  let pendingKey: string | null = null;
   return useMutation({
-    mutationFn: (data: SpaceInput) => getApi().spaces.create(data),
+    mutationFn: async (data: SpaceInput) => {
+      const idempotencyKey =
+        pendingKey ?? (pendingKey = crypto.randomUUID());
+      return getApi().spaces.create(data, idempotencyKey);
+    },
     onMutate: async (data) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.spaces });
       const previous = queryClient.getQueryData<Space[]>(queryKeys.spaces);
@@ -141,9 +156,12 @@ export function useCreateSpace() {
         ownerId: "",
         name: data.name,
         type: data.type,
+        isShared: false,
+        members: [],
         createdAt: now,
         updatedAt: now,
       };
+
 
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) => [
         ...(old ?? []),
@@ -153,14 +171,16 @@ export function useCreateSpace() {
       return { previous, tempId: optimistic.id };
     },
     onSuccess: (real, _variables, context) => {
+      pendingKey = null;
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
         (old ?? []).map((s) => (s.id === context.tempId ? real : s))
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
     },
     onError: (_error, _variables, context) => {
-      if (context.previous !== undefined) {
-        queryClient.setQueryData(queryKeys.spaces, context.previous);
+      pendingKey = null;
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.spaces, context?.previous);
       }
     },
   });
@@ -189,8 +209,8 @@ export function useUpdateSpace() {
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
     },
     onError: (_error, _variables, context) => {
-      if (context.previous !== undefined) {
-        queryClient.setQueryData(queryKeys.spaces, context.previous);
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.spaces, context?.previous);
       }
     },
   });
@@ -223,10 +243,10 @@ export function useDeleteSpace() {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _id, context) => {
-      if (context.previousSpaces !== undefined) {
-        queryClient.setQueryData(queryKeys.spaces, context.previousSpaces);
+      if (context?.previousSpaces !== undefined) {
+        queryClient.setQueryData(queryKeys.spaces, context?.previousSpaces);
       }
-      restoreTransactionLists(queryClient, context.previousTransactions);
+      restoreTransactionLists(queryClient, context?.previousTransactions);
     },
   });
 }
@@ -333,7 +353,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _variables, context) => {
-      restoreTransactionLists(queryClient, context.previous);
+      restoreTransactionLists(queryClient, context?.previous);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
@@ -469,9 +489,9 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
     },
     onError: (_error, _variables, context) => {
-      restoreTransactionLists(queryClient, context.previous);
-      if (context.moved && context.previousNew) {
-        restoreTransactionLists(queryClient, context.previousNew);
+      restoreTransactionLists(queryClient, context?.previous);
+      if (context?.moved && context?.previousNew) {
+        restoreTransactionLists(queryClient, context?.previousNew);
       }
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
@@ -740,6 +760,239 @@ export function useDeleteDue() {
   });
 }
 
+export function useSpace(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.space(id || ""),
+    queryFn: () => getApi().spaces.get(id!),
+    enabled: Boolean(id),
+  });
+}
+
+export function useSpaceMembers(spaceId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.spaceMembers(spaceId || ""),
+    queryFn: () => getApi().spaces.getMembers(spaceId!),
+    enabled: Boolean(spaceId),
+  });
+}
+
+export function useSpaceInvitations(spaceId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.spaceInvitations(spaceId || ""),
+    queryFn: () => getApi().spaces.getInvitations(spaceId!),
+    enabled: Boolean(spaceId),
+  });
+}
+
+export function useInviteMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ spaceId, identifier }: { spaceId: string; identifier: string }) =>
+      getApi().spaces.inviteMember(spaceId, identifier),
+    onSuccess: (_result, { spaceId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.spaceInvitations(spaceId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+}
+
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
+      getApi().spaces.removeMember(spaceId, userId),
+    onSuccess: (_result, { spaceId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.spaceMembers(spaceId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.space(spaceId) });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+}
+
+export function useTransferOwnership() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
+      getApi().spaces.transferOwnership(spaceId, userId),
+    onSuccess: (_result, { spaceId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.spaceMembers(spaceId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.space(spaceId) });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+}
+
+export function useLeaveSpace() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (spaceId: string) => getApi().spaces.leave(spaceId),
+    onSuccess: (_result, spaceId) => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.removeQueries({ queryKey: queryKeys.space(spaceId) });
+      queryClient.removeQueries({ queryKey: queryKeys.spaceMembers(spaceId) });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+// ─── Invitations Hooks ───────────────────────────────────────────────────────
+
+export function usePendingInvitations() {
+  return useQuery({
+    queryKey: queryKeys.pendingInvitations,
+    queryFn: () => getApi().invitations.getPending(),
+  });
+}
+
+export function useInvitationPreview(token: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.invitationPreview(token || ""),
+    queryFn: () => getApi().invitations.getPreview(token!),
+    enabled: Boolean(token),
+    retry: false,
+  });
+}
+
+export function useAcceptInvitationByToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => getApi().invitations.acceptByToken(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingInvitations });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => getApi().invitations.accept(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingInvitations });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useRejectInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => getApi().invitations.reject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingInvitations });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useRejectInvitationByToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => getApi().invitations.rejectByToken(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingInvitations });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+}
+
+export function useResendInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => getApi().invitations.resend(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+}
+
+export function useCancelInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => getApi().invitations.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingInvitations });
+    },
+  });
+}
+
+// ─── Notifications Hooks ─────────────────────────────────────────────────────
+
+export function useNotifications(page = 1, pageSize = 20) {
+  return useQuery({
+    queryKey: queryKeys.notifications(page, pageSize),
+    queryFn: () => getApi().notifications.list(page, pageSize),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => getApi().notifications.markRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => getApi().notifications.markAllRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useNotificationPreferences() {
+  return useQuery({
+    queryKey: queryKeys.notificationPreferences,
+    queryFn: () => getApi().notifications.getPreferences(),
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Parameters<ReturnType<typeof getApi>["notifications"]["updatePreferences"]>[0]) =>
+      getApi().notifications.updatePreferences(data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(queryKeys.notificationPreferences, updated);
+    },
+  });
+}
+
 export type {
   Debt,
   DebtCreateInput,
@@ -752,3 +1005,4 @@ export type {
   SpaceUpdateInput,
   Transaction,
 };
+
