@@ -1,5 +1,21 @@
 import { useState, useEffect } from "react";
-import { LogOut, Moon, Sun, Monitor, ChevronRight, ShieldCheck, FileText, Sparkles, Activity, Waves, Loader2, Download, Database } from "lucide-react";
+import {
+  LogOut,
+  Moon,
+  Sun,
+  Monitor,
+  ChevronRight,
+  ShieldCheck,
+  FileText,
+  Sparkles,
+  Activity,
+  Waves,
+  Loader2,
+  Download,
+  Database,
+  Bell,
+  Check,
+} from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -7,14 +23,21 @@ import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
+import { Segmented } from "@/components/ui/segmented";
 import { RequestFeatureForm } from "@/components/features/request-feature-form";
 import { useTheme } from "@/lib/theme-provider";
 import { useMotion } from "@/lib/animation-provider";
 import { useAuth } from "@/lib/auth-provider";
-import { useAllData } from "@/lib/queries";
+import {
+  useAllData,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+} from "@/lib/queries";
 import { exportTransactionsToCSV, exportTransactionsToJSON } from "@/lib/export";
 import { getApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import type { TransactionActivityMode } from "@ledg/shared";
+
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -26,7 +49,9 @@ export default function SettingsPage() {
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [requestSheetOpen, setRequestSheetOpen] = useState(false);
   const [motionSheetOpen, setMotionSheetOpen] = useState(false);
+  const [notifSheetOpen, setNotifSheetOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
   const [userProfile, setUserProfile] = useState<{
     name: string;
     username: string | null;
@@ -57,6 +82,19 @@ export default function SettingsPage() {
     reduced: "Reduced Motion",
     system: "System Default",
   };
+
+   const {
+    data: notifPrefs,
+    isLoading: loadingNotifPrefs,
+    isError: notifPrefsError,
+  } = useNotificationPreferences();
+  const updateNotifPrefsMutation = useUpdateNotificationPreferences();
+
+  const notifActivityModeOptions: { value: TransactionActivityMode; label: string }[] = [
+    { value: "realtime", label: "Realtime" },
+    { value: "daily_digest", label: "Daily Digest" },
+    { value: "off", label: "Off" },
+  ];
 
   return (
     <div className="flex flex-col gap-5">
@@ -136,6 +174,29 @@ export default function SettingsPage() {
               <span className="block text-sm font-semibold">Motion</span>
               <span className="block text-xs font-medium text-muted-foreground capitalize">
                 {motionLabels[motion]}
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+
+          <div className="mx-4 my-1 h-px bg-border/60" />
+
+          <button
+            type="button"
+            onClick={() => setNotifSheetOpen(true)}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Bell className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Notifications</span>
+              <span className="block text-xs font-medium text-muted-foreground">
+                {notifPrefs
+                  ? notifPrefs.inviteEvents
+                    ? "Invite alerts on"
+                    : "Invite alerts off"
+                  : "Configure alerts"}
               </span>
             </span>
             <ChevronRight className="size-4 text-muted-foreground" />
@@ -379,6 +440,120 @@ export default function SettingsPage() {
           })}
         </div>
       </Sheet>
+
+      {/* Notification Preferences Sheet */}
+      <Sheet
+        open={notifSheetOpen}
+        onOpenChange={setNotifSheetOpen}
+        title="Notification Preferences"
+        description="Control which events send you in-app alerts."
+      >
+        <div className="flex flex-col gap-5 pt-2">
+          {loadingNotifPrefs ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifPrefsError || !notifPrefs ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8">
+              <p className="text-sm font-semibold text-destructive">Failed to load preferences</p>
+              <p className="text-xs text-muted-foreground">
+                Please try again later or refresh the page.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Invite Events Toggle */}
+              <div className="flex items-center justify-between rounded-2xl bg-muted/40 p-4 border border-border/40">
+                <div>
+                  <p className="text-sm font-semibold">Invitation Alerts</p>
+                  <p className="text-xs text-muted-foreground">
+                    Notify me when I receive a space invitation
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateNotifPrefsMutation.mutate({
+                      inviteEvents: !notifPrefs.inviteEvents,
+                    })
+                  }
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    notifPrefs.inviteEvents ? "bg-primary" : "bg-muted-foreground/30"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                      notifPrefs.inviteEvents ? "translate-x-6" : "translate-x-1"
+                    )}
+                  />
+                </button>
+              </div>
+
+              {/* Member Changes Toggle */}
+              <div className="flex items-center justify-between rounded-2xl bg-muted/40 p-4 border border-border/40">
+                <div>
+                  <p className="text-sm font-semibold">Member Changes</p>
+                  <p className="text-xs text-muted-foreground">
+                    Notify me when members join or leave my spaces
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateNotifPrefsMutation.mutate({
+                      memberChanges: !notifPrefs.memberChanges,
+                    })
+                  }
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    notifPrefs.memberChanges ? "bg-primary" : "bg-muted-foreground/30"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                      notifPrefs.memberChanges ? "translate-x-6" : "translate-x-1"
+                    )}
+                  />
+                </button>
+              </div>
+
+              {/* Transaction Activity Mode */}
+              <div className="flex flex-col gap-2 rounded-2xl bg-muted/40 p-4 border border-border/40">
+                <div>
+                  <p className="text-sm font-semibold">Transaction Alerts</p>
+                  <p className="text-xs text-muted-foreground">
+                    How to notify you of transaction activity in shared spaces
+                  </p>
+                </div>
+                <Segmented
+                  options={notifActivityModeOptions}
+                  value={notifPrefs.transactionActivity ?? "realtime"}
+                  onChange={(val) =>
+                    updateNotifPrefsMutation.mutate({
+                      transactionActivity: val as TransactionActivityMode,
+                    })
+                  }
+                />
+                <p className="text-[11px] text-muted-foreground/70">
+                  Applies to new and edited transactions. Space deletion alerts
+                  are always sent regardless of these settings.
+                </p>
+              </div>
+
+              {updateNotifPrefsMutation.isSuccess && (
+                <div className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-500">
+                  <Check className="size-4" />
+                  Preferences saved
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Sheet>
     </div>
+
   );
 }
