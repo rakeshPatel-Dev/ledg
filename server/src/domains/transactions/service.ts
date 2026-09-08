@@ -1,45 +1,77 @@
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 
-import { BadRequestError, NotFoundError } from "../../common/errors/index.js";
+import {
+  ForbiddenError,
+  NotFoundError,
+} from "../../common/errors/index.js";
 import * as spaceRepository from "../spaces/repository.js";
 import * as transactionRepository from "./repository.js";
+import { assertSpaceAccess } from "../spaces/access.js";
+import { UserModel } from "../users/model.js";
+import * as notificationService from "../notifications/service.js";
+import { logger } from "../../config/logger.js";
 
-const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
 
-async function resolveSpace(spaceId: string, ownerId: Types.ObjectId) {
-  if (!OBJECT_ID_RE.test(spaceId)) {
-    throw new BadRequestError("Invalid space id");
-  }
-
-  const space = await spaceRepository.findSpaceById(
-    spaceId,
-    ownerId
-  );
-
-  if (!space) {
-    throw new NotFoundError("Space");
-  }
-
-  return space._id;
+async function getUserContext(userId: Types.ObjectId) {
+  const user = await UserModel.findById(userId).lean();
+  if (!user) throw new NotFoundError("User");
+  return {
+    userId: user._id,
+    name: user.name || "Ledg User",
+    email: user.email,
+    username: user.username ?? null,
+  };
 }
 
 export async function createUserTransaction(
-  ownerId: Types.ObjectId,
+  userId: Types.ObjectId,
   spaceId: string,
   data: Record<string, unknown>
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
+  const { space } = await assertSpaceAccess(spaceId, userId);
+  const user = await getUserContext(userId);
+
+  const createdBy = {
+    userId: user.userId,
+    name: user.name,
+    email: user.email,
+    username: user.username,
+  };
 
   const transaction = await transactionRepository.createTransaction({
-    spaceId: resolvedSpaceId,
+    spaceId: space._id,
     ...data,
+    createdBy,
   });
+
+  // If shared space, notify other members in real-time
+  if (space.isShared && space.members && space.members.length > 1) {
+    const otherMembers = space.members.filter(
+      (m) => m.userId.toString() !== userId.toString()
+    );
+
+    if (otherMembers.length > 0) {
+      await notificationService.notifyMembers({
+        recipientIds: otherMembers.map((m) => m.userId),
+        type: "transaction_added",
+        data: {
+          spaceId: String(space._id),
+          spaceName: space.name,
+          transactionId: transaction.id,
+          actorId: String(userId),
+          actorName: user.name,
+          transactionType: transaction.type,
+          amount: transaction.amount,
+        },
+      }).catch((e) => logger.error({ error: e }, "Failed to notify on transaction added"));
+    }
+  }
 
   return transaction;
 }
 
 export async function listUserTransactions(
-  ownerId: Types.ObjectId,
+  userId: Types.ObjectId,
   spaceId: string,
   query: {
     category?: string;
@@ -51,10 +83,10 @@ export async function listUserTransactions(
     pageSize?: number;
   }
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
+  const { space } = await assertSpaceAccess(spaceId, userId);
 
   const { items, total } = await transactionRepository.findTransactions({
-    spaceId: resolvedSpaceId,
+    spaceId: space._id,
     category: query.category,
     type: query.type,
     dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
@@ -72,20 +104,20 @@ export async function listUserTransactions(
     total,
     page,
     pageSize,
-    totalPages: Math.ceil(total / pageSize),
+    totalPages: Math.ceil(total / pageSize) || 1,
   };
 }
 
 export async function getUserTransaction(
-  ownerId: Types.ObjectId,
+  userId: Types.ObjectId,
   spaceId: string,
   transactionId: string
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
+  const { space } = await assertSpaceAccess(spaceId, userId);
 
   const transaction = await transactionRepository.findTransactionById(
     transactionId,
-    resolvedSpaceId
+    space._id
   );
 
   if (!transaction) {
@@ -96,93 +128,145 @@ export async function getUserTransaction(
 }
 
 export async function updateUserTransaction(
-  ownerId: Types.ObjectId,
+  userId: Types.ObjectId,
   spaceId: string,
   transactionId: string,
   data: Record<string, unknown>
 ) {
   const { fromSpaceId, ...updateData } = data;
   const fromSpace = fromSpaceId as string | undefined;
+  const isMove = Boolean(fromSpace && fromSpace !== spaceId);
 
-  const resolvedToSpaceId = await resolveSpace(spaceId, ownerId);
+  // The transaction lives in the source space; when moving, `spaceId` is the
+  // destination and `fromSpaceId` the current home. When editing in place they
+  // are the same space.
+  const sourceSpaceId = isMove ? fromSpace! : spaceId;
+  const sourceAccess = await assertSpaceAccess(sourceSpaceId, userId);
+  const user = await getUserContext(userId);
 
-  if (fromSpace && fromSpace !== spaceId) {
-    const resolvedFromSpaceId = await resolveSpace(fromSpace, ownerId);
-
-    const transaction = await transactionRepository.moveTransaction(
-      transactionId,
-      resolvedFromSpaceId,
-      resolvedToSpaceId,
-      updateData
-    );
-
-    if (!transaction) {
-      throw new NotFoundError("Transaction");
-    }
-
-    return transaction;
-  }
-
-  let transaction = await transactionRepository.updateTransaction(
+  const existingTxn = await transactionRepository.findTransactionById(
     transactionId,
-    resolvedToSpaceId,
-    updateData
+    sourceAccess.space._id
   );
 
-  if (!transaction) {
-    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
-    const spaceIds = spaces.map((s) => s._id);
-    const existing = await transactionRepository.findTransactionInSpaces(
-      transactionId,
-      spaceIds
-    );
-
-    if (existing) {
-      transaction = await transactionRepository.moveTransaction(
-        transactionId,
-        existing.spaceId,
-        resolvedToSpaceId,
-        updateData
-      );
-    }
-  }
-
-  if (!transaction) {
+  if (!existingTxn) {
     throw new NotFoundError("Transaction");
   }
 
-  return transaction;
+  // Permission check: source-space owner can edit anything in the space;
+  // a member can only edit/edit-move their own transactions.
+  const isCreator =
+    existingTxn.createdBy?.userId &&
+    existingTxn.createdBy.userId.toString() === userId.toString();
+
+  if (sourceAccess.role !== "owner" && !isCreator) {
+    throw new ForbiddenError(
+      "You can only edit transactions created by yourself"
+    );
+  }
+
+  let updatedTransaction;
+
+  if (isMove) {
+    // Moving also requires access to the destination space.
+    const targetAccess = await assertSpaceAccess(spaceId, userId);
+
+    updatedTransaction = await transactionRepository.moveTransaction(
+      transactionId,
+      sourceAccess.space._id,
+      targetAccess.space._id,
+      updateData
+    );
+  } else {
+    updatedTransaction = await transactionRepository.updateTransaction(
+      transactionId,
+      sourceAccess.space._id,
+      updateData
+    );
+  }
+
+  if (!updatedTransaction) {
+    throw new NotFoundError("Transaction");
+  }
+
+  // If owner modified someone else's transaction, notify the creator
+  if (
+    sourceAccess.role === "owner" &&
+    existingTxn.createdBy?.userId &&
+    existingTxn.createdBy.userId.toString() !== userId.toString()
+  ) {
+    await notificationService.notify({
+      userId: existingTxn.createdBy.userId,
+      type: "transaction_modified",
+      variant: "edited",
+      data: {
+        spaceId: String(sourceAccess.space._id),
+        spaceName: sourceAccess.space.name,
+        transactionId: updatedTransaction.id,
+        actorId: String(userId),
+        actorName: user.name,
+        amount: updatedTransaction.amount,
+      },
+    }).catch((e) => logger.error({ error: e }, "Failed to notify creator of txn edit"));
+  }
+
+  return updatedTransaction;
 }
 
 export async function deleteUserTransaction(
-  ownerId: Types.ObjectId,
+  userId: Types.ObjectId,
   spaceId: string,
   transactionId: string
 ) {
-  const resolvedSpaceId = await resolveSpace(spaceId, ownerId);
+  const { space, role } = await assertSpaceAccess(spaceId, userId);
+  const user = await getUserContext(userId);
 
-  let deleted = await transactionRepository.deleteTransaction(
+  const existingTxn = await transactionRepository.findTransactionById(
     transactionId,
-    resolvedSpaceId
+    space._id
+  );
+
+  if (!existingTxn) {
+    throw new NotFoundError("Transaction");
+  }
+
+  const isCreator =
+    existingTxn.createdBy?.userId &&
+    existingTxn.createdBy.userId.toString() === userId.toString();
+
+  if (role !== "owner" && !isCreator) {
+    throw new ForbiddenError(
+      "You can only delete transactions created by yourself"
+    );
+  }
+
+  const deleted = await transactionRepository.deleteTransaction(
+    transactionId,
+    space._id
   );
 
   if (!deleted) {
-    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
-    const spaceIds = spaces.map((s) => s._id);
-    const existing = await transactionRepository.findTransactionInSpaces(
-      transactionId,
-      spaceIds
-    );
-    if (existing) {
-      deleted = await transactionRepository.deleteTransaction(
-        transactionId,
-        existing.spaceId
-      );
-    }
+    throw new NotFoundError("Transaction");
   }
 
-  if (!deleted) {
-    throw new NotFoundError("Transaction");
+  // If owner deleted someone else's transaction, notify the creator
+  if (
+    role === "owner" &&
+    existingTxn.createdBy?.userId &&
+    existingTxn.createdBy.userId.toString() !== userId.toString()
+  ) {
+    await notificationService.notify({
+      userId: existingTxn.createdBy.userId,
+      type: "transaction_modified",
+      variant: "deleted",
+      data: {
+        spaceId: String(space._id),
+        spaceName: space.name,
+        actorId: String(userId),
+        actorName: user.name,
+        amount: existingTxn.amount,
+      },
+    }).catch((e) => logger.error({ error: e }, "Failed to notify creator of txn deletion"));
   }
 
   return { id: transactionId };
@@ -195,18 +279,19 @@ export interface ListAllFilters {
 }
 
 export async function listAllUserTransactions(
-  ownerId: Types.ObjectId,
+  userId: Types.ObjectId,
   page = 1,
   pageSize = 20,
   filters: ListAllFilters = {}
 ) {
-  // Narrow to a single owned space when a specific spaceId is requested;
-  // otherwise aggregate across all of the owner's spaces.
   let spaceIds: Types.ObjectId[];
+
   if (filters.spaceId && filters.spaceId !== "all") {
-    spaceIds = [await resolveSpace(filters.spaceId, ownerId)];
+    const { space } = await assertSpaceAccess(filters.spaceId, userId);
+    spaceIds = [space._id];
   } else {
-    const spaces = await spaceRepository.findSpacesByOwner(ownerId);
+    // Union of all spaces where user is owner or member
+    const spaces = await spaceRepository.findSpacesForUser(userId);
     spaceIds = spaces.map((s) => s._id);
   }
 

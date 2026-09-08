@@ -55,6 +55,31 @@ const transactionSchema = new Schema(
       default: "manual",
       index: true,
     },
+    createdBy: {
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+        index: true,
+      },
+      name: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      email: {
+        type: String,
+        required: true,
+        lowercase: true,
+        trim: true,
+      },
+      username: {
+        type: String,
+        default: null,
+        lowercase: true,
+        trim: true,
+      },
+    },
   },
   {
     timestamps: true,
@@ -66,8 +91,16 @@ transactionSchema.index({ spaceId: 1, type: 1, date: -1 });
 transactionSchema.index({ spaceId: 1, source: 1, date: -1 });
 transactionSchema.index({ type: 1, date: -1 });
 
+export interface TransactionCreatedByDoc {
+  userId: Types.ObjectId;
+  name: string;
+  email: string;
+  username?: string | null;
+}
+
 export interface TransactionDoc {
   _id: Types.ObjectId;
+  id?: string;
   spaceId: Types.ObjectId;
   category: string;
   type: TransactionType;
@@ -76,8 +109,13 @@ export interface TransactionDoc {
   date: Date;
   paymentMethod: PaymentMethod | null;
   source: TransactionSource;
+  createdBy?: TransactionCreatedByDoc;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export const TransactionModel = mongoose.models.Transaction || model("Transaction", transactionSchema);
+
+export const TransactionModel =
+  mongoose.models.Transaction ||
+  model<TransactionDoc>("Transaction", transactionSchema);
+
