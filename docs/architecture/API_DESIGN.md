@@ -250,6 +250,24 @@ GET
 
 POST
 
+/push/subscribe
+
+---
+
+DELETE
+
+/push/subscribe
+
+---
+
+GET
+
+/push/vapid-public-key
+
+---
+
+POST
+
 /spaces
 
 ---

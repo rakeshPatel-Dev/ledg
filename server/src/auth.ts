@@ -169,6 +169,20 @@ async function createAuth() {
           },
         },
         delete: {
+          before: async (user) => {
+            const domainUser = await UserModel.findOne({ betterAuthId: user.id }).select("_id").lean();
+            if (domainUser) {
+              const ownedShared = await mongoose.model("Space").countDocuments({
+                ownerId: domainUser._id,
+                isShared: true,
+              });
+              if (ownedShared > 0) {
+                throw new Error(
+                  "Cannot delete account while you own shared spaces with other members. Please transfer ownership or delete those spaces first."
+                );
+              }
+            }
+          },
           after: async (user) => {
             try {
               await deleteUserWithData(user.id);
@@ -177,6 +191,7 @@ async function createAuth() {
             }
           },
         },
+
       },
     },
 

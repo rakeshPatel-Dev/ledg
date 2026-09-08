@@ -10,6 +10,7 @@ interface SwipeableTransactionItemProps {
   currency?: string;
   onClick?: () => void;
   onRequestDelete: () => void;
+  canDelete?: boolean;
 }
 
 export function SwipeableTransactionItem({
@@ -17,6 +18,7 @@ export function SwipeableTransactionItem({
   currency,
   onClick,
   onRequestDelete,
+  canDelete = true,
 }: SwipeableTransactionItemProps) {
   const x = useMotionValue(0);
   const controls = useAnimation();
@@ -25,21 +27,24 @@ export function SwipeableTransactionItem({
 
   return (
     <div className="relative overflow-hidden rounded-3xl">
-      <motion.div
-        style={{ opacity: deleteOpacity }}
-        className="absolute inset-0 flex items-center rounded-3xl bg-destructive"
-      >
-        <span className="ml-5 flex size-10 items-center justify-center rounded-2xl text-destructive-foreground">
-          <Trash2 className="size-5" />
-        </span>
-      </motion.div>
+      {canDelete && (
+        <motion.div
+          style={{ opacity: deleteOpacity }}
+          className="absolute inset-0 flex items-center rounded-3xl bg-destructive"
+        >
+          <span className="ml-5 flex size-10 items-center justify-center rounded-2xl text-destructive-foreground">
+            <Trash2 className="size-5" />
+          </span>
+        </motion.div>
+      )}
 
       <motion.div
         style={{ x }}
         animate={controls}
-        drag="x"
+        drag={canDelete ? "x" : false}
         dragConstraints={{ left: 0, right: 88 }}
         dragElastic={{ left: 0, right: 0.15 }}
+
         dragMomentum={false}
         onDragStart={() => {
           dragged.current = true;

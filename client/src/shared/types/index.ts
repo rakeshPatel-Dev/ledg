@@ -1,8 +1,12 @@
 import type {
   DebtDirection,
   DebtStatus,
+  InvitationStatus,
+  NotificationType,
   PaymentMethod,
+  SpaceRole,
   SpaceType,
+  TransactionActivityMode,
   TransactionSource,
   TransactionType,
 } from "../enums/index.js";
@@ -20,14 +24,33 @@ export interface User {
   updatedAt: string;
 }
 
+export interface SpaceMember {
+  userId: string;
+  email: string;
+  name: string;
+  username: string | null;
+  role: SpaceRole;
+  joinedAt: string;
+}
+
 export interface Space {
   id: string;
   ownerId: string;
   name: string;
   type: SpaceType;
   monthlyBudget?: number | null;
+  isShared: boolean;
+  members: SpaceMember[];
+  role?: SpaceRole;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TransactionCreatedBy {
+  userId: string;
+  name: string;
+  email: string;
+  username?: string | null;
 }
 
 export interface Transaction {
@@ -40,9 +63,69 @@ export interface Transaction {
   date: string;
   paymentMethod: PaymentMethod | null;
   source: TransactionSource;
+  createdBy?: TransactionCreatedBy;
   createdAt: string;
   updatedAt: string;
 }
+
+export interface SpaceInvitation {
+  id: string;
+  spaceId: string;
+  spaceName: string;
+  inviterId: string;
+  inviterName: string;
+  inviterUsername?: string | null;
+  inviterEmail: string;
+  inviteeEmail: string;
+  inviteeId?: string | null;
+  inviteeUsername?: string | null;
+  role: "member";
+  status: InvitationStatus;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvitationPreview {
+  spaceName: string;
+  inviterName: string;
+  inviterUsername?: string | null;
+  inviteeEmail: string;
+  inviteeId?: string | null;
+  inviteeUsername?: string | null;
+  expiresAt: string;
+}
+
+export interface NotificationData {
+  spaceId?: string;
+  spaceName?: string;
+  invitationId?: string;
+  actorId?: string;
+  actorName?: string;
+  transactionId?: string;
+  transactionType?: TransactionType;
+  amount?: number;
+  recipientName?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  data: NotificationData;
+  createdAt: string;
+}
+
+export interface NotificationPreference {
+  userId: string;
+  transactionActivity: TransactionActivityMode;
+  inviteEvents: boolean;
+  memberChanges: boolean;
+}
+
 
 export interface DebtCounterparty {
   name: string;

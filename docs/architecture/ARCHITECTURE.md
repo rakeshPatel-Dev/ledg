@@ -275,6 +275,7 @@ The architecture should support:
 - Offline Synchronization
 - Shared Spaces
 - Notifications
+- Browser Push Notifications (raw Web Push API, depends on Shared Spaces + Notifications)
 - Budget Planning
 - Multi Currency
 - Receipt OCR

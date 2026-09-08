@@ -176,6 +176,15 @@ These are bigger bets that require more infrastructure or external integrations.
 - Notification before auto-deduction
 - **Effort:** Medium (3-4 days)
 
+### 23. Browser Push Notifications
+- Raw Web Push API — no vendor, completely free
+- Service worker receives push events and shows system notifications
+- Push delivery on top of in-app notifications for shared space events
+- VAPID keys for server identity (no account needed)
+- Respects notification preferences (realtime/off/digest)
+- **Depends on:** Shared Spaces + in-app notifications being fully built
+- **Effort:** Medium (4-5 days)
+
 ---
 
 ## Recommended Sprint Order
@@ -189,5 +198,6 @@ These are bigger bets that require more infrastructure or external integrations.
 | Sprint 5 | PWA + Server-Side Search + Command Palette | 5-7 |
 | Sprint 6 | Recurring User-Facing + Daily Streak + Monthly Summary | 6-8 |
 | Sprint 7 | Shared Spaces (Members & Invites) | 7-10 |
+| Sprint 8 | Browser Push Notifications (after Shared Spaces is stable) | 4-5 |
 
-**Total estimated:** 40-54 days (8-11 weeks)
+**Total estimated:** 44-59 days (9-12 weeks)

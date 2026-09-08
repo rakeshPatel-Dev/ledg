@@ -6,15 +6,21 @@ import type {
   DebtSettlementInput,
   DuesQuery,
   DuesSummary,
+  InvitationPreview,
+  NotificationItem,
+  NotificationPreference,
   PaginatedResult,
   Space,
   SpaceInput,
+  SpaceInvitation,
+  SpaceMember,
   SpaceUpdateInput,
   Transaction,
   TransactionInput,
   TransactionQuery,
   TransactionUpdateInput,
 } from "@ledg/shared";
+
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
 
@@ -120,9 +126,14 @@ export function createApi() {
     spaces: {
       list: () =>
         request<{ spaces: Space[] }>("/spaces").then((r) => r.spaces),
-      create: (data: SpaceInput) =>
+      get: (id: string) =>
+        request<{ space: Space }>(`/spaces/${id}`).then((r) => r.space),
+      create: (data: SpaceInput, idempotencyKey?: string) =>
         request<{ space: Space }>("/spaces", {
           method: "POST",
+          headers: idempotencyKey
+            ? { "Idempotency-Key": idempotencyKey }
+            : undefined,
           body: JSON.stringify(data),
         }).then((r) => r.space),
       update: (id: string, data: SpaceUpdateInput) =>
@@ -134,8 +145,117 @@ export function createApi() {
         request<{ id: string }>(`/spaces/${id}`, {
           method: "DELETE",
         }).then((r) => r.id),
+      getMembers: (id: string) =>
+        request<{ members: SpaceMember[] }>(`/spaces/${id}/members`).then(
+          (r) => r.members
+        ),
+      getInvitations: (id: string) =>
+        request<{ invitations: SpaceInvitation[] }>(
+          `/spaces/${id}/invitations`
+        ).then((r) => r.invitations),
+      inviteMember: (id: string, identifier: string) =>
+        request<{ invitation: SpaceInvitation }>(`/spaces/${id}/members/invite`, {
+          method: "POST",
+          body: JSON.stringify({ identifier }),
+        }).then((r) => r.invitation),
+      removeMember: (id: string, userId: string) =>
+        request<{ success: boolean; memberId: string }>(
+          `/spaces/${id}/members/${userId}`,
+          {
+            method: "DELETE",
+          }
+        ),
+      transferOwnership: (id: string, userId: string) =>
+        request<{ space: Space }>(`/spaces/${id}/transfer-ownership`, {
+          method: "POST",
+          body: JSON.stringify({ userId }),
+        }).then((r) => r.space),
+      leave: (id: string) =>
+        request<{ success: boolean; spaceId: string }>(`/spaces/${id}/leave`, {
+          method: "POST",
+        }),
+    },
+    invitations: {
+      getPending: () =>
+        request<{ invitations: SpaceInvitation[] }>("/invitations/pending").then(
+          (r) => r.invitations
+        ),
+      getPreview: (token: string) =>
+        request<{ preview: InvitationPreview }>(
+          `/invitations/by-token/${token}`
+        ).then((r) => r.preview),
+      acceptByToken: (token: string) =>
+        request<{ success: boolean; spaceId: string; spaceName: string }>(
+          "/invitations/by-token/accept",
+          {
+            method: "POST",
+            body: JSON.stringify({ token }),
+          }
+        ),
+      rejectByToken: (token: string) =>
+        request<{ success: boolean }>("/invitations/by-token/reject", {
+          method: "POST",
+          body: JSON.stringify({ token }),
+        }),
+      accept: (id: string) =>
+        request<{ success: boolean; spaceId: string; spaceName: string }>(
+          `/invitations/${id}/accept`,
+          {
+            method: "POST",
+          }
+        ),
+      reject: (id: string) =>
+        request<{ success: boolean }>(`/invitations/${id}/reject`, {
+          method: "POST",
+        }),
+      resend: (id: string) =>
+        request<{ invitation: SpaceInvitation; emailSent: boolean }>(
+          `/invitations/${id}/resend`,
+          {
+            method: "POST",
+          }
+        ),
+      cancel: (id: string) =>
+        request<{ success: boolean; id: string }>(`/invitations/${id}`, {
+          method: "DELETE",
+        }),
+    },
+    notifications: {
+      list: (page = 1, pageSize = 20) =>
+        request<{
+          items: NotificationItem[];
+          total: number;
+          unreadCount: number;
+          page: number;
+          pageSize: number;
+          totalPages: number;
+        }>(`/notifications?page=${page}&pageSize=${pageSize}`),
+      markRead: (id: string) =>
+        request<{ notification: NotificationItem }>(
+          `/notifications/${id}/read`,
+          {
+            method: "PATCH",
+          }
+        ).then((r) => r.notification),
+      markAllRead: () =>
+        request<{ updatedCount: number }>("/notifications/read-all", {
+          method: "POST",
+        }),
+      getPreferences: () =>
+        request<{ preferences: NotificationPreference }>(
+          "/me/notification-preferences"
+        ).then((r) => r.preferences),
+      updatePreferences: (data: Partial<NotificationPreference>) =>
+        request<{ preferences: NotificationPreference }>(
+          "/me/notification-preferences",
+          {
+            method: "PUT",
+            body: JSON.stringify(data),
+          }
+        ).then((r) => r.preferences),
     },
     transactions: {
+
       listAll: (page = 1, pageSize = 20, filters: AllTransactionsFilter = {}) => {
         const params = new URLSearchParams({
           page: String(page),

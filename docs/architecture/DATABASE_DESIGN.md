@@ -205,6 +205,8 @@ Activity Logs
 
 Shared Members
 
+Push Subscriptions
+
 Exchange Rates
 
 Receipt OCR

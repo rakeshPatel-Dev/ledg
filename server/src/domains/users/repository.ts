@@ -1,9 +1,11 @@
 import { Types } from "mongoose";
 
+
 import { RESERVED_USERNAMES } from "../../shared/index.js";
 import { UserModel } from "./model.js";
 import { SpaceModel } from "../spaces/model.js";
 import { TransactionModel } from "../transactions/model.js";
+import { NotificationModel, NotificationPreferenceModel } from "../notifications/model.js";
 
 export interface AuthUser {
   id: string;
@@ -182,9 +184,39 @@ export async function updateUserEmail(
 }
 
 export async function deleteUserWithData(betterAuthId: string): Promise<void> {
-  const user = await UserModel.findOne({ betterAuthId }).select("_id").lean();
+  const user = await UserModel.findOne({ betterAuthId }).lean();
   if (!user) return;
 
+  // Check if user owns any shared space with other members
+  const ownedSharedSpaces = await SpaceModel.find({
+    ownerId: user._id,
+    isShared: true,
+  }).lean();
+
+  if (ownedSharedSpaces.length > 0) {
+    throw new Error(
+      "Cannot delete account while you own shared spaces with other members. Please transfer ownership or delete those spaces first."
+    );
+  }
+
+  // If user is a member of other shared spaces, remove them and notify owners
+  const memberSpaces = await SpaceModel.find({
+    ownerId: { $ne: user._id },
+    "members.userId": user._id,
+  });
+
+  for (const space of memberSpaces) {
+    const updatedMembers = space.members.filter(
+      (m: { userId: { toString: () => string } }) => m.userId.toString() !== user._id.toString()
+    );
+    const isShared = updatedMembers.some((m: { role: string }) => m.role === "member");
+    await SpaceModel.updateOne(
+      { _id: space._id },
+      { $set: { members: updatedMembers, isShared } }
+    );
+  }
+
+  // Delete owned spaces & their transactions
   const spaceIds = await SpaceModel.find({ ownerId: user._id })
     .select("_id")
     .lean();
@@ -195,5 +227,12 @@ export async function deleteUserWithData(betterAuthId: string): Promise<void> {
     await SpaceModel.deleteMany({ _id: { $in: ids } });
   }
 
+  // Cleanup notifications & preferences
+  
+
+  await NotificationModel.deleteMany({ userId: user._id }).catch(() => null);
+  await NotificationPreferenceModel.deleteMany({ userId: user._id }).catch(() => null);
+
   await UserModel.deleteOne({ _id: user._id });
 }
+

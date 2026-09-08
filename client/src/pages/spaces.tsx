@@ -1,6 +1,18 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Wallet, Pencil, Trash2, Search, X, Loader2, Check } from "lucide-react";
+import {
+  Plus,
+  Wallet,
+  Pencil,
+  Trash2,
+  Search,
+  X,
+  Loader2,
+  Check,
+  Users,
+  Shield,
+  User,
+} from "lucide-react";
 import { SPACE_TYPES, spaceSchema, type Space, type SpaceType } from "@ledg/shared";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -20,6 +32,7 @@ import {
 } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 import { useAnalytics } from "@/lib/analytics";
+import { useAuth } from "@/lib/auth-provider";
 import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 import {
@@ -30,19 +43,24 @@ import {
   getBalanceColor,
 } from "@/lib/space-colors";
 
+type TabFilter = "all" | "personal" | "shared";
+
 const TYPE_OPTIONS = SPACE_TYPES.map((t) => ({
   value: t,
   label: t.charAt(0).toUpperCase() + t.slice(1),
 }));
 
 export default function SpacesPage() {
+
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: spaces, isLoading } = useSpaces();
   const analytics = useAnalytics();
   const createSpace = useCreateSpace();
   const updateSpace = useUpdateSpace();
   const deleteSpace = useDeleteSpace();
 
+  const [tab, setTab] = useState<TabFilter>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Space | null>(null);
   const [deletingSpace, setDeletingSpace] = useState<Space | null>(null);
@@ -51,21 +69,44 @@ export default function SpacesPage() {
   const [monthlyBudget, setMonthlyBudget] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter spaces based on search query
+  // Invitee identifier chips state for creation
+  const [inviteIdentifierInput, setInviteIdentifierInput] = useState("");
+  const [inviteIdentifiers, setInviteIdentifiers] = useState<string[]>([]);
+
+  // Filter spaces based on tab and search query
   const filteredSpaces = useMemo(() => {
     if (!spaces) return [];
-    if (!searchQuery.trim()) return spaces;
-    
-    return spaces.filter(space =>
+    let list = spaces;
+
+    if (tab === "personal") {
+      list = list.filter((s) => !s.isShared);
+    } else if (tab === "shared") {
+      list = list.filter((s) => s.isShared);
+    }
+
+    if (!searchQuery.trim()) return list;
+
+    return list.filter((space) =>
       space.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [spaces, searchQuery]);
+  }, [spaces, tab, searchQuery]);
+
+  const personalCount = useMemo(
+    () => (spaces || []).filter((s) => !s.isShared).length,
+    [spaces]
+  );
+  const sharedCount = useMemo(
+    () => (spaces || []).filter((s) => s.isShared).length,
+    [spaces]
+  );
 
   const openCreate = () => {
     setEditing(null);
     setName("");
     setType("personal");
     setMonthlyBudget("");
+    setInviteIdentifierInput("");
+    setInviteIdentifiers([]);
     setSheetOpen(true);
   };
 
@@ -82,6 +123,63 @@ export default function SpacesPage() {
 
   const handleSpaceClick = (space: Space) => {
     navigate(`/spaces/${space.id}`);
+  };
+
+  const handleAddInviteChip = () => {
+    const raw = inviteIdentifierInput.trim();
+    if (!raw) return;
+
+    const isUsername = raw.startsWith("@") || !raw.includes("@");
+    let identifierToSave = "";
+
+    if (isUsername) {
+      const cleanUsername = (raw.startsWith("@") ? raw.slice(1) : raw).toLowerCase();
+      if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
+        toast.error("Usernames must be 3-30 letters, numbers, or underscores");
+        return;
+      }
+      if (user?.username && cleanUsername === user.username.toLowerCase()) {
+        toast.error("You cannot invite yourself");
+        return;
+      }
+      identifierToSave = `@${cleanUsername}`;
+    } else {
+      const normalizedEmail = raw.toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        toast.error("Please enter a valid email address or @username");
+        return;
+      }
+      if (user?.email && normalizedEmail === user.email.toLowerCase()) {
+        toast.error("You are already the owner of this space");
+        return;
+      }
+      identifierToSave = normalizedEmail;
+    }
+
+    if (inviteIdentifiers.includes(identifierToSave)) {
+      toast.error("Already added to invite list");
+      return;
+    }
+
+    if (inviteIdentifiers.length >= 10) {
+      toast.error("Maximum 10 invitations per space");
+      return;
+    }
+
+    setInviteIdentifiers((prev) => [...prev, identifierToSave]);
+    setInviteIdentifierInput("");
+  };
+
+  const handleInviteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      handleAddInviteChip();
+    }
+  };
+
+
+  const handleRemoveInviteChip = (identifierToRemove: string) => {
+    setInviteIdentifiers((prev) => prev.filter((i) => i !== identifierToRemove));
   };
 
   const submit = async () => {
@@ -101,6 +199,7 @@ export default function SpacesPage() {
       name: trimmed,
       type,
       monthlyBudget: parsedBudget,
+      inviteeIdentifiers: !editing && inviteIdentifiers.length > 0 ? inviteIdentifiers : undefined,
     });
 
     if (!parsed.success) {
@@ -115,12 +214,20 @@ export default function SpacesPage() {
       if (editing) {
         await updateSpace.mutateAsync({
           id: editing.id,
-          data: parsed.data,
+          data: {
+            name: parsed.data.name,
+            type: parsed.data.type,
+            monthlyBudget: parsed.data.monthlyBudget,
+          },
         });
         toast.success("Space updated");
       } else {
         await createSpace.mutateAsync(parsed.data);
-        toast.success("Space created");
+        toast.success(
+          inviteIdentifiers.length > 0
+            ? "Space created and invitations sent!"
+            : "Space created"
+        );
       }
       setSheetOpen(false);
     } catch (error) {
@@ -167,6 +274,19 @@ export default function SpacesPage() {
         </header>
       </FadeInItem>
 
+      {/* Tabs Segmentation */}
+      <FadeInItem>
+        <Segmented
+          options={[
+            { value: "all", label: `All (${(spaces || []).length})` },
+            { value: "personal", label: `Personal (${personalCount})` },
+            { value: "shared", label: `Shared (${sharedCount})` },
+          ]}
+          value={tab}
+          onChange={(v) => setTab(v as TabFilter)}
+        />
+      </FadeInItem>
+
       {/* Search Bar */}
       <FadeInItem>
         <div className="relative">
@@ -199,17 +319,25 @@ export default function SpacesPage() {
           <Card className="rounded-4xl p-2 border border-border/60">
             <EmptyState
               icon={<Wallet className="size-7" />}
-              title={searchQuery ? "No results found" : "No spaces yet"}
+              title={
+                searchQuery
+                  ? "No results found"
+                  : tab === "shared"
+                    ? "No shared spaces yet"
+                    : "No spaces yet"
+              }
               description={
                 searchQuery
                   ? `No spaces match "${searchQuery}"`
-                  : "Create a space like Personal, Trip or Business to start tracking money there."
+                  : tab === "shared"
+                    ? "Invite friends or family to collaborate on a shared space."
+                    : "Create a space like Personal, Trip or Business to start tracking money there."
               }
               action={
                 !searchQuery ? (
                   <Button onClick={openCreate} className="rounded-full">
                     <Plus className="size-4 mr-2" />
-                    Create your first space
+                    Create a space
                   </Button>
                 ) : (
                   <Button
@@ -235,6 +363,8 @@ export default function SpacesPage() {
             const summary = summaryFor(space.id);
             const balance = summary?.balance ?? 0;
             const balanceColor = getBalanceColor(balance);
+            const isOwner = space.role === "owner" || (!space.role && space.ownerId === user?.id);
+            const members = space.members || [];
 
             return (
               <FadeInItem key={space.id}>
@@ -248,13 +378,14 @@ export default function SpacesPage() {
                     className={cn(
                       "flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
                       "cursor-pointer hover:border-primary/20",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      space.isShared && "border-primary/20 bg-primary/2 dark:bg-primary/5"
                     )}
                   >
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-3 w-full">
                       <span
                         className={cn(
-                          "flex size-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                          "flex size-11 shrink-0 items-center justify-center rounded-2xl transition-colors",
                           typeBg,
                           typeText
                         )}
@@ -263,10 +394,30 @@ export default function SpacesPage() {
                       </span>
 
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold text-foreground text-sm">
-                          {space.name}
-                        </p>
-                        <div className="flex items-center gap-1 mt-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-bold text-foreground text-sm">
+                            {space.name}
+                          </p>
+                          {space.isShared && (
+                            <>
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                                {isOwner ? (
+                                  <span className="inline-flex items-center text-primary font-semibold">
+                                    <Shield className="size-3 mr-0.5" />
+                                    Owner
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center text-muted-foreground">
+                                    <User className="size-3 mr-0.5" />
+                                    Member
+                                  </span>
+                                )}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <span
                             className={cn(
                               "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
@@ -275,11 +426,48 @@ export default function SpacesPage() {
                           >
                             {space.type}
                           </span>
+
                           <span className="text-xs text-muted-foreground/60">·</span>
-                          <span className="text-xs truncate w-25 text-muted-foreground">
-                            {summary?.transactionCount ?? 0} {(summary?.transactionCount ?? 0) !== 1 ? "transactions" : "transaction"}
+                          <span className="text-xs text-muted-foreground">
+                            {summary?.transactionCount ?? 0}{" "}
+                            {(summary?.transactionCount ?? 0) !== 1
+                              ? "txns"
+                              : "txn"}
                           </span>
                         </div>
+
+                        {/* Member Avatar Stack on Shared Space Cards */}
+                        {space.isShared && members.length > 0 && (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <div className="flex -space-x-2 overflow-hidden">
+                              {members.slice(0, 4).map((member, idx) => {
+                                const initials = (member.name || "U")
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .slice(0, 2)
+                                  .join("")
+                                  .toUpperCase();
+                                return (
+                                  <div
+                                    key={member.userId || idx}
+                                    title={`${member.name} (${member.role})`}
+                                    className="inline-flex size-6 items-center justify-center rounded-full ring-2 ring-card bg-primary/20 text-[10px] font-bold text-primary shadow-xs"
+                                  >
+                                    {initials}
+                                  </div>
+                                );
+                              })}
+                              {members.length > 4 && (
+                                <div className="inline-flex size-6 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[9px] font-bold text-muted-foreground">
+                                  +{members.length - 4}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-medium text-muted-foreground">
+                              {members.length} {members.length === 1 ? "member" : "members"}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -292,27 +480,29 @@ export default function SpacesPage() {
                           {formatCurrency(balance)}
                         </p>
 
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={(e) => openEdit(e, space)}
-                            aria-label={`Edit ${space.name}`}
-                            className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingSpace(space);
-                            }}
-                            aria-label={`Delete ${space.name}`}
-                            className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95 cursor-pointer"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
+                        {isOwner && (
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => openEdit(e, space)}
+                              aria-label={`Edit ${space.name}`}
+                              className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
+                            >
+                              <Pencil className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingSpace(space);
+                              }}
+                              aria-label={`Delete ${space.name}`}
+                              className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95 cursor-pointer"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -320,7 +510,6 @@ export default function SpacesPage() {
                       const spent = summary?.monthExpense ?? 0;
                       const budget = space.monthlyBudget;
                       const isOver = spent > budget;
-                      // Zero budget: any positive spending is over; avoid division by zero
                       const percent = budget > 0
                         ? Math.round((spent / budget) * 100)
                         : isOver ? 100 : 0;
@@ -398,7 +587,11 @@ export default function SpacesPage() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title={editing ? "Edit space" : "New space"}
-        description="Give this space a name and purpose."
+        description={
+          editing
+            ? "Update space settings and monthly budget."
+            : "Give this space a name, purpose, and optionally invite members."
+        }
       >
         <div className="flex flex-col gap-5 pt-2">
           <div className="space-y-1.5">
@@ -408,7 +601,7 @@ export default function SpacesPage() {
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Personal, Goa Trip"
+              placeholder="e.g. Personal, Goa Trip, Family Budget"
               maxLength={100}
               autoFocus
             />
@@ -442,6 +635,62 @@ export default function SpacesPage() {
             />
           </div>
 
+          {/* Invitee Identifier Chips Input for New Spaces */}
+          {!editing && (
+            <div className="space-y-2 border-t border-border/50 pt-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Users className="size-3.5 text-primary" />
+                  Invite Collaborators (Optional)
+                </p>
+                <span className="text-[11px] text-muted-foreground">
+                  {inviteIdentifiers.length}/10
+                </span>
+              </div>
+
+              <div className="flex items-center relative w-full gap-2">
+                <Input
+                  type="text"
+                  value={inviteIdentifierInput}
+                  onChange={(e) => setInviteIdentifierInput(e.target.value)}
+                  onKeyDown={handleInviteKeyDown}
+                  placeholder="name@email.com or @username "
+                  className="z-0 w-full rounded-2xl pr-20"
+                />
+
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddInviteChip}
+                  disabled={!inviteIdentifierInput.trim()}
+                  className="rounded-2xl absolute right-2 z-10 shrink-0"
+                >
+                  Add
+                </Button>
+              </div>
+
+              {inviteIdentifiers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {inviteIdentifiers.map((identifier) => (
+                    <span
+                      key={identifier}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary border border-primary/20"
+                    >
+                      {identifier}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveInviteChip(identifier)}
+                        className="rounded-full hover:bg-primary/20 p-0.5 text-primary/70 hover:text-primary transition-colors"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <Button
             size="lg"
             className="mt-2 w-full rounded-full text-base font-semibold"
@@ -450,7 +699,7 @@ export default function SpacesPage() {
           >
             {createSpace.isPending || updateSpace.isPending ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin mr-2" />
                 {editing ? "Saving…" : "Creating…"}
               </>
             ) : editing ? (
@@ -473,9 +722,13 @@ export default function SpacesPage() {
         open={!!deletingSpace}
         onOpenChange={(open) => !open && setDeletingSpace(null)}
         title="Delete Space"
-        description={deletingSpace
-          ? `This will permanently delete "${deletingSpace.name}" and all ${summaryFor(deletingSpace.id)?.transactionCount ?? 0} transaction${(summaryFor(deletingSpace.id)?.transactionCount ?? 0) === 1 ? "" : "s"} in it.`
-          : undefined}
+        description={
+          deletingSpace
+            ? deletingSpace.isShared
+              ? `This will permanently delete the shared space "${deletingSpace.name}" for all members and remove all transactions.`
+              : `This will permanently delete "${deletingSpace.name}" and all ${summaryFor(deletingSpace.id)?.transactionCount ?? 0} transactions in it.`
+            : undefined
+        }
       >
         <div className="flex flex-col gap-3 pt-3">
           <Button
@@ -487,7 +740,7 @@ export default function SpacesPage() {
           >
             {deleteSpace.isPending ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin mr-2" />
                 Deleting…
               </>
             ) : (
