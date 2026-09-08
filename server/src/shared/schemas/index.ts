@@ -5,21 +5,67 @@ import {
   DEBT_STATUSES,
   PAYMENT_METHODS,
   SPACE_TYPES,
+  TRANSACTION_ACTIVITY_MODES,
   TRANSACTION_SOURCES,
   TRANSACTION_TYPES,
 } from "../enums/index.js";
+
+const inviteIdentifierSchema = z
+  .string()
+  .trim()
+  .min(1, "Email or username is required")
+  .max(255, "Identifier is too long");
 
 export const spaceSchema = z.object({
   name: z.string().trim().min(1).max(100),
   type: z.enum(SPACE_TYPES).default("personal"),
   monthlyBudget: z.number().nonnegative().nullable().optional(),
+  inviteeIdentifiers: z
+    .array(inviteIdentifierSchema)
+    .max(10, "Cannot invite more than 10 members at once")
+    .optional(),
 });
 
 export type SpaceInput = z.infer<typeof spaceSchema>;
 
-export const spaceUpdateSchema = spaceSchema.partial();
+export const spaceUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  type: z.enum(SPACE_TYPES).optional(),
+  monthlyBudget: z.number().nonnegative().nullable().optional(),
+});
 
 export type SpaceUpdateInput = z.infer<typeof spaceUpdateSchema>;
+
+export const spaceMemberInviteSchema = z.object({
+  identifier: inviteIdentifierSchema,
+});
+
+export type SpaceMemberInviteInput = z.infer<typeof spaceMemberInviteSchema>;
+
+
+export const spaceTransferOwnershipSchema = z.object({
+  userId: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid user id"),
+});
+
+export type SpaceTransferOwnershipInput = z.infer<typeof spaceTransferOwnershipSchema>;
+
+export const inviteAcceptByTokenSchema = z.object({
+  token: z.string().trim().min(1, "Token is required"),
+});
+
+export type InviteAcceptByTokenInput = z.infer<typeof inviteAcceptByTokenSchema>;
+
+export const notificationPreferencesSchema = z.object({
+  transactionActivity: z.enum(TRANSACTION_ACTIVITY_MODES).optional(),
+  inviteEvents: z.boolean().optional(),
+  memberChanges: z.boolean().optional(),
+});
+
+export type NotificationPreferencesInput = z.infer<typeof notificationPreferencesSchema>;
+
 
 const dateStringSchema = z
   .string()
