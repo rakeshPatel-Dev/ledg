@@ -12,6 +12,8 @@ export interface AuthRequest extends Request {
     id: string;
     name: string;
     username?: string | null;
+    /** App User `_id` — the id that transactions and spaces reference. */
+    userId?: string | null;
     email: string;
     image?: string | null;
     emailVerified?: boolean;

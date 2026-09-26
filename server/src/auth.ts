@@ -106,13 +106,15 @@ async function createAuth() {
 
     plugins: [
       customSession(async ({ user, session }) => {
+        // The app's User `_id` is what transactions and spaces reference, so the
+        // session carries it next to the Better Auth id; the client needs it to
+        // tell "my" transactions from a member's.
+        const domainUser = await UserModel.findOne({ betterAuthId: user.id })
+          .select("_id username")
+          .lean() as { _id: mongoose.Types.ObjectId; username?: string | null } | null;
+
         let username = (user as unknown as { username?: string | null }).username;
         if (!username) {
-          // Look up in UserModel first
-          const domainUser = await UserModel.findOne({ betterAuthId: user.id })
-            .select("username")
-            .lean() as { username?: string } | null;
-
           if (domainUser?.username) {
             username = domainUser.username;
           } else {
@@ -136,6 +138,7 @@ async function createAuth() {
           user: {
             ...user,
             username,
+            userId: domainUser?._id.toString() ?? null,
           },
           session,
         };
