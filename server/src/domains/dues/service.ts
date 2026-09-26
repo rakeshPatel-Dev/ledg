@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 
 import { BadRequestError, ConflictError, NotFoundError } from "../../common/errors/index.js";
 import { TransactionModel } from "../transactions/model.js";
+import { getUserContext } from "../transactions/user-context.js";
 import * as spaceRepository from "../spaces/repository.js";
 import * as duesRepository from "./repository.js";
 import type { DebtDoc, DebtSettlementDoc } from "./model.js";
@@ -79,6 +80,7 @@ export async function createDue(
   input: DebtCreateInput
 ): Promise<Debt> {
   const spaceId = await resolveUserSpace(userId, input.spaceId);
+  const user = await getUserContext(userId);
 
   const txnDate = new Date(input.date);
   const isLent = input.direction === "lent";
@@ -99,6 +101,12 @@ export async function createDue(
     paymentMethod: input.paymentMethod ?? null,
     note: input.note?.trim() || defaultNote,
     source: "dues",
+    createdBy: {
+      userId: user.userId,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+    },
   });
 
   const debtDoc = await duesRepository.createDebt({
@@ -184,6 +192,7 @@ export async function settleDue(
 
   const settleDate = new Date(input.date);
   const isLent = debt.direction === "lent";
+  const user = await getUserContext(userId);
 
   // Auto-create linked ledger transaction:
   // When 'lent' is settled -> cash returns (income)
@@ -203,6 +212,12 @@ export async function settleDue(
     paymentMethod: input.paymentMethod ?? null,
     note: input.note?.trim() || defaultNote,
     source: "dues",
+    createdBy: {
+      userId: user.userId,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+    },
   });
 
   const settlementDoc = await duesRepository.createSettlement({

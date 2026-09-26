@@ -7,21 +7,10 @@ import {
 import * as spaceRepository from "../spaces/repository.js";
 import * as transactionRepository from "./repository.js";
 import { assertSpaceAccess } from "../spaces/access.js";
-import { UserModel } from "../users/model.js";
+import { getUserContext } from "./user-context.js";
 import * as notificationService from "../notifications/service.js";
 import { logger } from "../../config/logger.js";
 
-
-async function getUserContext(userId: Types.ObjectId) {
-  const user = await UserModel.findById(userId).lean();
-  if (!user) throw new NotFoundError("User");
-  return {
-    userId: user._id,
-    name: user.name || "Ledg User",
-    email: user.email,
-    username: user.username ?? null,
-  };
-}
 
 export async function createUserTransaction(
   userId: Types.ObjectId,
