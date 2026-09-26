@@ -5,6 +5,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type {
   Debt,
   DebtCreateInput,
@@ -132,6 +133,16 @@ export function useSpaces() {
     queryFn: () => getApi().spaces.list(),
     staleTime: 60_000,
   });
+}
+
+/** Spaces keyed by id, for resolving a transaction's space from a list row. */
+export function useSpaceLookup(): Map<string, Space> {
+  const { data } = useSpaces();
+
+  return useMemo(
+    () => new Map((data ?? []).map((space) => [space.id, space])),
+    [data]
+  );
 }
 
 export function useCreateSpace() {

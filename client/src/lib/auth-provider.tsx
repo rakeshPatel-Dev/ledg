@@ -4,6 +4,11 @@ import { authClient } from "./auth-client";
 
 export interface AuthUser {
   id: string;
+  /**
+   * App user id (the `User` document `_id`). This is the id transactions and
+   * spaces reference, unlike `id` which is the Better Auth id.
+   */
+  userId?: string | null;
   name: string;
   username?: string | null;
   email: string;

@@ -17,12 +17,12 @@ import {
   ReceiptText,
   SearchX,
   Users,
-  ShieldCheck,
   UserMinus,
   Mail,
   RotateCw,
   LogOut,
   MoreVertical,
+  UserShield,
 } from "lucide-react";
 import type { Transaction, TransactionType } from "@ledg/shared";
 import { toast } from "sonner";
@@ -735,8 +735,8 @@ export default function SpaceDetailPage() {
                   {items.map((t) => {
                     const isCreator = Boolean(
                       t.createdBy?.userId &&
-                        user?.id &&
-                        t.createdBy.userId === user.id
+                      user?.userId &&
+                      t.createdBy.userId === user.userId
                     );
                     const canEdit = isOwner || isCreator;
                     const canDelete = isOwner || isCreator;
@@ -875,7 +875,7 @@ export default function SpaceDetailPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         {isMemberOwner ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                            <ShieldCheck className="size-3" />
+                            <UserShield className="size-3" />
                             Owner
                           </span>
                         ) : (

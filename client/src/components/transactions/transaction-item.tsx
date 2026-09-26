@@ -1,10 +1,11 @@
 import type { Transaction } from "@ledg/shared";
 import { motion } from "framer-motion";
-import { ArrowDownLeft, ArrowUpRight, User } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, User, UserShield } from "lucide-react";
 
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency } from "@/lib/format";
 import { useAuth } from "@/lib/auth-provider";
+import { useSpaceLookup } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 interface TransactionItemProps {
@@ -21,15 +22,24 @@ export function TransactionItem({
   showAttribution = true,
 }: TransactionItemProps) {
   const { user } = useAuth();
+  const spaces = useSpaceLookup();
   const meta = getCategoryMeta(transaction.category);
   const Icon = meta.icon;
   const isIncome = transaction.type === "income";
 
-  const isOtherCreator =
+  const creator = transaction.createdBy;
+  const space = spaces.get(transaction.spaceId);
+  // Attribution only carries meaning where several people add transactions —
+  // a personal space has a single author, which is always you.
+  const isSharedSpace = Boolean(space?.isShared);
+  const isOtherCreator = Boolean(
     showAttribution &&
-    transaction.createdBy?.userId &&
-    user?.id &&
-    transaction.createdBy.userId !== user.id;
+      isSharedSpace &&
+      creator?.userId &&
+      user?.userId &&
+      creator.userId !== user.userId
+  );
+  const creatorIsOwner = Boolean(space && creator && space.ownerId === creator.userId);
 
   return (
     <motion.button
@@ -57,14 +67,16 @@ export function TransactionItem({
               <span>{transaction.paymentMethod.replace("_", " ")}</span>
             </>
           )}
-          {isOtherCreator && (
+          {isOtherCreator && creator && (
             <>
               <span className="text-muted-foreground/60">·</span>
               <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.2 rounded-md">
-                <User className="size-2.5" />
-                {transaction.createdBy?.username
-                  ? `@${transaction.createdBy.username}`
-                  : transaction.createdBy?.name || "Member"}
+                {creatorIsOwner ? (
+                  <UserShield className="size-2.5" />
+                ) : (
+                  <User className="size-2.5" />
+                )}
+                {creator.username ? `@${creator.username}` : creator.name || "Member"}
               </span>
             </>
           )}
