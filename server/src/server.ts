@@ -6,6 +6,7 @@ import { APP_NAME } from "./shared/index.js";
 
 import app from "./app.js";
 import { connectDatabase, disconnectDatabase } from "./database/index.js";
+import { warmRedis } from "./config/redis.js";
 
 export default app;
 
@@ -13,6 +14,11 @@ async function startLocalServer() {
   validateEnv();
   await connectDatabase();
   logger.info("Database connected successfully");
+
+  // Fire-and-forget so a slow/unreachable Redis never delays startup.
+  void warmRedis().then((ok) => {
+    if (ok) logger.info("Redis connection warmed");
+  });
 
   const port = Number(process.env.PORT ?? 3000);
   const server = app.listen(port, () => {

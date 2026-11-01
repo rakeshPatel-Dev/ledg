@@ -5,6 +5,7 @@ import { TransactionModel } from "../transactions/model.js";
 import { getUserContext } from "../transactions/user-context.js";
 import * as spaceRepository from "../spaces/repository.js";
 import * as duesRepository from "./repository.js";
+import { invalidateDashboardCache } from "../analytics/cache.js";
 import type { DebtDoc, DebtSettlementDoc } from "./model.js";
 import type {
   Debt,
@@ -54,6 +55,18 @@ function toSettlementDto(doc: DebtSettlementDoc): DebtSettlement {
     transactionId: doc.transactionId ? String(doc.transactionId) : undefined,
     createdAt: doc.createdAt.toISOString(),
   };
+}
+
+/**
+ * Dues writes also create/delete ledger transactions, so the dashboard totals
+ * change for every member of the affected space — not just the actor.
+ */
+async function invalidateDuesDashboards(
+  userId: Types.ObjectId,
+  spaceId: Types.ObjectId
+): Promise<void> {
+  const memberIds = await spaceRepository.findMemberUserIds(spaceId);
+  await invalidateDashboardCache([String(userId), ...memberIds]);
 }
 
 async function resolveUserSpace(
@@ -128,6 +141,8 @@ export async function createDue(
     status: "open",
     settledAmount: 0,
   });
+
+  await invalidateDuesDashboards(userId, spaceId);
 
   return toDebtDto(debtDoc);
 }
@@ -243,6 +258,8 @@ export async function settleDue(
     status: newStatus,
   });
 
+  await invalidateDuesDashboards(userId, debt.spaceId);
+
   return {
     settlement: toSettlementDto(settlementDoc),
     debt: toDebtDto(updatedDebt ?? debt, settlements),
@@ -293,6 +310,8 @@ export async function undoSettlement(
     status: newStatus,
   });
 
+  await invalidateDuesDashboards(userId, debt.spaceId);
+
   return toDebtDto(updatedDebt ?? debt, remainingSettlements);
 }
 
@@ -318,6 +337,8 @@ export async function deleteDue(
   }
 
   await duesRepository.deleteDebt(debtId, userId);
+
+  await invalidateDuesDashboards(userId, debt.spaceId);
 
   return { id: debtId };
 }

@@ -9,6 +9,7 @@ import * as transactionRepository from "./repository.js";
 import { assertSpaceAccess } from "../spaces/access.js";
 import { getUserContext } from "./user-context.js";
 import * as notificationService from "../notifications/service.js";
+import { invalidateDashboardCache } from "../analytics/cache.js";
 import { logger } from "../../config/logger.js";
 
 
@@ -55,6 +56,11 @@ export async function createUserTransaction(
       }).catch((e) => logger.error({ error: e }, "Failed to notify on transaction added"));
     }
   }
+
+  await invalidateDashboardCache([
+    String(userId),
+    ...(space.members ?? []).map((m) => String(m.userId)),
+  ]);
 
   return transaction;
 }
@@ -199,6 +205,17 @@ export async function updateUserTransaction(
     }).catch((e) => logger.error({ error: e }, "Failed to notify creator of txn edit"));
   }
 
+  const affectedUsers = new Set<string>([
+    String(userId),
+    ...(sourceAccess.space.members ?? []).map((m) => String(m.userId)),
+  ]);
+  if (isMove) {
+    for (const memberId of await spaceRepository.findMemberUserIds(spaceId)) {
+      affectedUsers.add(memberId);
+    }
+  }
+  await invalidateDashboardCache([...affectedUsers]);
+
   return updatedTransaction;
 }
 
@@ -258,6 +275,11 @@ export async function deleteUserTransaction(
     }).catch((e) => logger.error({ error: e }, "Failed to notify creator of txn deletion"));
   }
 
+  await invalidateDashboardCache([
+    String(userId),
+    ...(space.members ?? []).map((m) => String(m.userId)),
+  ]);
+
   return { id: transactionId };
 }
 
@@ -280,8 +302,7 @@ export async function listAllUserTransactions(
     spaceIds = [space._id];
   } else {
     // Union of all spaces where user is owner or member
-    const spaces = await spaceRepository.findSpacesForUser(userId);
-    spaceIds = spaces.map((s) => s._id);
+    spaceIds = await spaceRepository.findSpaceIdsForUser(userId);
   }
 
   const { items, total } = await transactionRepository.findAllTransactionsByOwner(

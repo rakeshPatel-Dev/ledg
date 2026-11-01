@@ -11,6 +11,7 @@ import { assertSpaceAccess, assertSpaceOwner } from "./access.js";
 import { UserModel } from "../users/model.js";
 import { inviteMember } from "../invitations/service.js";
 import * as notificationService from "../notifications/service.js";
+import { invalidateDashboardCache } from "../analytics/cache.js";
 import { logger } from "../../config/logger.js";
 
 export interface UserContext {
@@ -61,6 +62,12 @@ export async function createUserSpace(
   // Refresh space to include updated isShared or members
   const freshSpace = await spaceRepository.findSpaceById(spaceId, owner.userId);
 
+  await invalidateDashboardCache([
+    String(owner.userId),
+    ...(freshSpace?.members ?? space.members ?? []).map((m) =>
+      String(m.userId)
+    ),
+  ]);
 
   return {
     space: freshSpace || space,
@@ -152,6 +159,11 @@ export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) 
     throw err;
   }
 
+  await invalidateDashboardCache([
+    String(ownerId),
+    ...(space.members ?? []).map((m) => String(m.userId)),
+  ]);
+
   return { id: spaceId };
 }
 
@@ -213,6 +225,12 @@ export async function removeMember(
       actorName: owner.name,
     },
   }).catch((e) => logger.error({ error: e }, "Failed to notify removed member"));
+
+  await invalidateDashboardCache([
+    String(owner.userId),
+    String(targetMember.userId),
+    ...(freshSpace?.members ?? []).map((m) => String(m.userId)),
+  ]);
 
   return { success: true, memberId: targetUserId };
 }
@@ -334,6 +352,11 @@ export async function leaveSpace(user: UserContext, spaceId: string) {
       },
     }).catch((e) => logger.error({ error: e }, "Failed to notify members of departure"));
   }
+
+  await invalidateDashboardCache([
+    String(user.userId),
+    ...(freshSpace?.members ?? []).map((m) => String(m.userId)),
+  ]);
 
   return { success: true, spaceId };
 }

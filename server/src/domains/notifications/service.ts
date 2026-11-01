@@ -11,6 +11,7 @@ import { renderNotification } from "../../shared/index.js";
 import type { NotificationType } from "../../shared/index.js";
 import { NotFoundError, BadRequestError } from "../../common/errors/index.js";
 import { redis } from "../../config/redis.js";
+import { logger } from "../../config/logger.js";
 
 const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
 
@@ -41,28 +42,41 @@ async function isSpamSuppressed(
   const windowStart = now - SPAM_WINDOW_MS;
 
   if (redis) {
-    // Sorted-set sliding window: drop timestamps older than the window, count
-    // what remains, then (if under threshold) add the current timestamp with
-    // a TTL so the key self-expires.
-    const member = `${now}-${Math.random().toString(36).slice(2)}`;
-    const pipeline = redis
-      .pipeline()
-      .zremrangebyscore(key, 0, windowStart)
-      .zcard(key)
-      .zadd(key, { score: now, member })
-      .expire(key, Math.ceil(SPAM_WINDOW_MS / 1000) + 60);
+    try {
+      // Sorted-set sliding window: drop timestamps older than the window, count
+      // what remains, then (if under threshold) add the current timestamp with
+      // a TTL so the key self-expires.
+      const member = `${now}-${Math.random().toString(36).slice(2)}`;
+      const pipeline = redis
+        .pipeline()
+        .zremrangebyscore(key, 0, windowStart)
+        .zcard(key)
+        .zadd(key, { score: now, member })
+        .expire(key, Math.ceil(SPAM_WINDOW_MS / 1000) + 60);
 
-    const [, count] = await pipeline.exec<Array<number | null>>();
+      const [, count] = await pipeline.exec<Array<number | null>>();
 
-    if ((count ?? 0) >= SPAM_THRESHOLD) {
-      // Over threshold — this notification is suppressed. The timestamp was
-      // already added; the next call within the window reflects it.
-      return true;
+      if ((count ?? 0) >= SPAM_THRESHOLD) {
+        // Over threshold — this notification is suppressed. The timestamp was
+        // already added; the next call within the window reflects it.
+        return true;
+      }
+      return false;
+    } catch (error) {
+      // The window is best-effort. A Redis outage must not drop the
+      // notification, so fall through to the per-process window instead.
+      logger.warn(
+        { err: error },
+        "Notification spam window unavailable, using local fallback"
+      );
     }
-    return false;
   }
 
-  // Per-process fallback (local dev without Upstash env vars).
+  return localSpamCheck(key, now);
+}
+
+// Per-process fallback (local dev, or when Upstash is unreachable).
+function localSpamCheck(key: string, now: number): boolean {
   const timestamps = (spamWindow.get(key) || []).filter(
     (t) => now - t < SPAM_WINDOW_MS
   );

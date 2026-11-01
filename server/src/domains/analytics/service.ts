@@ -7,6 +7,7 @@ import type {
   PaymentMethodBreakdown,
   RecentTransaction,
 } from "./repository.js";
+import { getCachedDashboard, setCachedDashboard } from "./cache.js";
 import { assertSpaceAccess } from "../spaces/access.js";
 import { logger } from "../../config/logger.js";
 
@@ -333,6 +334,10 @@ export async function getAnalyticsRecurring(
 // ─── Dashboard Summary (single endpoint for all dashboard data) ────────────
 
 export async function getDashboardSummary(ownerId: Types.ObjectId) {
+  const cacheKey = String(ownerId);
+  const cached = await getCachedDashboard<DashboardSummary>(cacheKey);
+  if (cached) return cached;
+
   const resolvedSpaceIds = await spaceRepository.findSpaceIdsForUser(ownerId);
 
   if (resolvedSpaceIds.length === 0) {
@@ -368,6 +373,8 @@ export async function getDashboardSummary(ownerId: Types.ObjectId) {
     recentTransactions: data.recentTransactions,
     transactionCount: data.allTime.count,
   };
+
+  await setCachedDashboard(cacheKey, payload);
 
   return payload;
 }
