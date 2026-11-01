@@ -38,6 +38,51 @@ function getTrustedOrigins(): string[] {
   return [...origins];
 }
 
+/**
+ * Write fields onto the Better Auth `user` document. These are the fields the
+ * cookie cache serialises, so keeping them in sync is what lets `customSession`
+ * avoid a Mongo lookup on every request.
+ */
+async function syncAuthUserFields(
+  betterAuthId: string,
+  fields: Record<string, unknown>
+): Promise<void> {
+  try {
+    const db = mongoose.connection
+      .getClient()
+      .db(process.env.MONGODB_DB_NAME);
+    await db
+      .collection("user")
+      .updateOne(authUserFilter(betterAuthId), { $set: fields });
+  } catch (error) {
+    logger.warn({ error }, "Failed to sync auth user fields");
+  }
+}
+
+/**
+ * Generate a unique username, persist it on the app User, and mirror it onto
+ * the auth user so subsequent sessions can read it from the cookie cache.
+ */
+async function allocateAndPersistUsername(
+  user: { id: string; email?: string | null; name?: string | null },
+  domainUserId?: mongoose.Types.ObjectId
+): Promise<string> {
+  const emailPrefix =
+    (user.email ?? "").split("@")[0] || user.name || "user";
+  const username = await generateUsername(emailPrefix);
+
+  if (domainUserId) {
+    await UserModel.updateOne(
+      { _id: domainUserId },
+      { $set: { username } }
+    ).catch(() => null);
+  }
+
+  await syncAuthUserFields(user.id, { username });
+
+  return username;
+}
+
 async function createAuth() {
   await connectDatabase();
 
@@ -98,6 +143,16 @@ async function createAuth() {
           defaultValue: null,
           input: true,
         },
+        // The app User `_id` that transactions and spaces reference. Written by
+        // the database hooks below, never accepted from the client. Keeping it
+        // on the auth user means the cookie cache carries it, so `customSession`
+        // can skip a DB lookup on the hot path.
+        userId: {
+          type: "string",
+          required: false,
+          defaultValue: null,
+          input: false,
+        },
       },
       deleteUser: {
         enabled: true,
@@ -109,36 +164,44 @@ async function createAuth() {
         // The app's User `_id` is what transactions and spaces reference, so the
         // session carries it next to the Better Auth id; the client needs it to
         // tell "my" transactions from a member's.
-        const domainUser = await UserModel.findOne({ betterAuthId: user.id })
-          .select("_id username")
-          .lean() as { _id: mongoose.Types.ObjectId; username?: string | null } | null;
+        //
+        // Both fields are additional fields on the auth user, so once they are
+        // populated the cookie cache supplies them and this callback never
+        // touches Mongo. The lookup below is the self-healing fallback for
+        // users created before those fields existed.
+        const sessionUser = user as unknown as {
+          username?: string | null;
+          userId?: string | null;
+        };
 
-        let username = (user as unknown as { username?: string | null }).username;
-        if (!username) {
-          if (domainUser?.username) {
-            username = domainUser.username;
-          } else {
-            const emailPrefix = (user.email ?? "").split("@")[0] || user.name || "user";
-            username = await generateUsername(emailPrefix);
-            await UserModel.updateOne(
-              { betterAuthId: user.id },
-              { $set: { username } }
-            ).catch(() => null);
+        let username = sessionUser.username ?? null;
+        let userId = sessionUser.userId ?? null;
+
+        if (!username || !userId) {
+          const domainUser = await UserModel.findOne({ betterAuthId: user.id })
+            .select("_id username")
+            .lean() as {
+            _id: mongoose.Types.ObjectId;
+            username?: string | null;
+          } | null;
+
+          if (!username) {
+            username =
+              domainUser?.username ??
+              (await allocateAndPersistUsername(user, domainUser?._id));
           }
 
-          // Backfill to Better Auth user collection
-          const db = mongoose.connection.getClient().db(process.env.MONGODB_DB_NAME);
-          await db
-            .collection("user")
-            .updateOne(authUserFilter(user.id), { $set: { username } })
-            .catch(() => null);
+          if (!userId && domainUser?._id) {
+            userId = domainUser._id.toString();
+            await syncAuthUserFields(user.id, { userId });
+          }
         }
 
         return {
           user: {
             ...user,
             username,
-            userId: domainUser?._id.toString() ?? null,
+            userId,
           },
           session,
         };
@@ -147,6 +210,14 @@ async function createAuth() {
 
     session: {
       freshAge: 0,
+      // Serve the session from a signed cookie for 5 minutes instead of
+      // hitting Mongo on every request. Revocations become visible within the
+      // cache window, which is an acceptable trade for the latency win.
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60,
+        strategy: "compact",
+      },
     },
 
     trustedOrigins: getTrustedOrigins(),
@@ -156,7 +227,12 @@ async function createAuth() {
         create: {
           after: async (user) => {
             try {
-              await upsertUserFromAuth(user as unknown as AuthUser & { username?: string | null });
+              const domainUserId = await upsertUserFromAuth(
+                user as unknown as AuthUser & { username?: string | null }
+              );
+              await syncAuthUserFields(user.id, {
+                userId: String(domainUserId),
+              });
             } catch (error) {
               logger.error({ error }, "Failed to sync app user on create");
             }
@@ -165,7 +241,12 @@ async function createAuth() {
         update: {
           after: async (user) => {
             try {
-              await upsertUserFromAuth(user as unknown as AuthUser & { username?: string | null });
+              const domainUserId = await upsertUserFromAuth(
+                user as unknown as AuthUser & { username?: string | null }
+              );
+              await syncAuthUserFields(user.id, {
+                userId: String(domainUserId),
+              });
             } catch (error) {
               logger.error({ error }, "Failed to sync app user on update");
             }

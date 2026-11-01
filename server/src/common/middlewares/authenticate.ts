@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 
 import { UnauthorizedError } from "../errors/index.js";
 import { getAuth } from "../../auth.js";
@@ -20,6 +20,20 @@ export interface AuthRequest extends Request {
   };
 }
 
+/**
+ * `customSession` already resolves the app User `_id` and puts it on the
+ * session, which is also what gets stored in Better Auth's cookie cache.
+ * Prefer that value and only fall back to a DB lookup when it is missing
+ * (first request for a user created before this field existed).
+ */
+function domainUserIdFromSession(
+  sessionUser: { userId?: string | null }
+): Types.ObjectId | null {
+  const raw = sessionUser.userId;
+  if (!raw || !Types.ObjectId.isValid(raw)) return null;
+  return new Types.ObjectId(raw);
+}
+
 export async function authenticate(
   req: AuthRequest,
   _res: Response,
@@ -35,7 +49,10 @@ export async function authenticate(
       throw new UnauthorizedError("Invalid or missing session");
     }
 
-    const userId = await resolveUserIdFromAuth(session.user);
+    const userId =
+      domainUserIdFromSession(session.user) ??
+      (await resolveUserIdFromAuth(session.user));
+
     req.userId = userId;
     req.user = session.user;
     next();
@@ -57,7 +74,9 @@ export async function optionalAuthenticate(
 
     if (session?.user) {
       req.user = session.user;
-      const userId = await resolveUserIdFromAuth(session.user).catch(() => undefined);
+      const userId =
+        domainUserIdFromSession(session.user) ??
+        (await resolveUserIdFromAuth(session.user).catch(() => undefined));
       req.userId = userId;
     }
     next();
