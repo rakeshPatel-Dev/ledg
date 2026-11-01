@@ -2,14 +2,41 @@ import type { Types } from "mongoose";
 
 import * as spaceRepository from "../spaces/repository.js";
 import * as analyticsRepository from "./repository.js";
+import type {
+  CategoryBreakdown,
+  PaymentMethodBreakdown,
+  RecentTransaction,
+} from "./repository.js";
 import { assertSpaceAccess } from "../spaces/access.js";
+import { logger } from "../../config/logger.js";
+
+export interface DashboardSummary {
+  totalBalance: number;
+  monthIncome: number;
+  monthSpend: number;
+  byCategory: CategoryBreakdown[];
+  byIncomeCategory: CategoryBreakdown[];
+  byPaymentMethod: PaymentMethodBreakdown[];
+  recentTransactions: RecentTransaction[];
+  transactionCount: number;
+}
+
+const EMPTY_DASHBOARD: DashboardSummary = {
+  totalBalance: 0,
+  monthIncome: 0,
+  monthSpend: 0,
+  byCategory: [],
+  byIncomeCategory: [],
+  byPaymentMethod: [],
+  recentTransactions: [],
+  transactionCount: 0,
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function resolveSpaceIds(spaceId: string, userId: Types.ObjectId): Promise<Types.ObjectId[]> {
   if (spaceId === "all") {
-    const spaces = await spaceRepository.findSpacesForUser(userId);
-    return spaces.map((s) => s._id);
+    return spaceRepository.findSpaceIdsForUser(userId);
   }
   const access = await assertSpaceAccess(spaceId, userId);
   return [access.space._id];
@@ -230,14 +257,19 @@ export async function getAnalyticsSummary(
   const range = dateRangeForPeriod(period, options);
   const prevRange = prevDateRangeForPeriod(period, options);
 
-  const [current, previous, currentExpCats, prevExpCats, currentIncCats] =
-    await Promise.all([
-      analyticsRepository.getSpaceSummary(resolvedSpaceIds, range),
-      analyticsRepository.getSpaceSummary(resolvedSpaceIds, prevRange),
-      analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "expense", range),
-      analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "expense", prevRange),
-      analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "income", range),
-    ]);
+  const data = await analyticsRepository.getAnalyticsSummaryData(
+    resolvedSpaceIds,
+    range,
+    prevRange
+  );
+
+  const {
+    current,
+    previous,
+    currentExpenseCategories: currentExpCats,
+    previousExpenseCategories: prevExpCats,
+    currentIncomeCategories: currentIncCats,
+  } = data;
 
   const insights = buildInsights(
     current,
@@ -301,49 +333,42 @@ export async function getAnalyticsRecurring(
 // ─── Dashboard Summary (single endpoint for all dashboard data) ────────────
 
 export async function getDashboardSummary(ownerId: Types.ObjectId) {
-  const resolvedSpaceIds = await resolveSpaceIds("all", ownerId);
+  const resolvedSpaceIds = await spaceRepository.findSpaceIdsForUser(ownerId);
 
   if (resolvedSpaceIds.length === 0) {
-    return {
-      totalBalance: 0,
-      monthIncome: 0,
-      monthSpend: 0,
-      byCategory: [],
-      byIncomeCategory: [],
-      byPaymentMethod: [],
-      recentTransactions: [],
-      transactionCount: 0,
-    };
+    return EMPTY_DASHBOARD;
   }
 
   const now = zonedParts(new Date());
   const monthStart = zonedBoundary(now.y, now.m, 1);
 
-  const [
-    allTimeSummary,
-    monthSummary,
-    expenseCategories,
-    incomeCategories,
-    expensePaymentMethods,
-    recentTransactions,
-  ] = await Promise.all([
-    analyticsRepository.getSpaceSummary(resolvedSpaceIds),
-    analyticsRepository.getSpaceSummary(resolvedSpaceIds, { from: monthStart }),
-    analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "expense", { from: monthStart }),
-    analyticsRepository.getCategoryBreakdown(resolvedSpaceIds, "income", { from: monthStart }),
-    analyticsRepository.getPaymentMethodBreakdown(resolvedSpaceIds, "expense", { from: monthStart }),
-    analyticsRepository.getRecentTransactions(resolvedSpaceIds, 5),
-  ]);
+  const startedAt = Date.now();
+  const data = await analyticsRepository.getDashboardData(
+    resolvedSpaceIds,
+    monthStart
+  );
+  const elapsedMs = Date.now() - startedAt;
 
-  return {
-    totalBalance: allTimeSummary.totalIncome - allTimeSummary.totalExpense,
-    monthIncome: monthSummary.totalIncome,
-    monthSpend: monthSummary.totalExpense,
-    byCategory: expenseCategories,
-    byIncomeCategory: incomeCategories,
-    byPaymentMethod: expensePaymentMethods,
-    recentTransactions,
-    transactionCount: allTimeSummary.count,
+  // Surface the aggregation separately from the request total so a slow cache
+  // or a slow query can be told apart in the logs.
+  if (elapsedMs > 250) {
+    logger.warn(
+      { elapsedMs, spaces: resolvedSpaceIds.length },
+      "Dashboard aggregation slow"
+    );
+  }
+
+  const payload: DashboardSummary = {
+    totalBalance: data.allTime.totalIncome - data.allTime.totalExpense,
+    monthIncome: data.month.totalIncome,
+    monthSpend: data.month.totalExpense,
+    byCategory: data.expenseCategories,
+    byIncomeCategory: data.incomeCategories,
+    byPaymentMethod: data.paymentMethods,
+    recentTransactions: data.recentTransactions,
+    transactionCount: data.allTime.count,
   };
+
+  return payload;
 }
 

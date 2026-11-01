@@ -62,6 +62,34 @@ export async function findSpacesForUser(
   });
 }
 
+/**
+ * Ids only — used by analytics, which needs to scope a query but not the
+ * full space documents (members, settings, etc.).
+ */
+export async function findSpaceIdsForUser(
+  userId: Types.ObjectId
+): Promise<Types.ObjectId[]> {
+  const docs = await SpaceModel.find({
+    status: { $ne: "deleting" },
+    $or: [{ ownerId: userId }, { "members.userId": userId }],
+  })
+    .select("_id")
+    .lean<{ _id: Types.ObjectId }[]>();
+
+  return docs.map((doc) => doc._id);
+}
+
+/** Member ids of a space, used to invalidate each member's dashboard cache. */
+export async function findMemberUserIds(
+  spaceId: string | Types.ObjectId
+): Promise<string[]> {
+  const doc = await SpaceModel.findById(spaceId)
+    .select("members.userId")
+    .lean<{ members?: { userId: Types.ObjectId }[] } | null>();
+
+  return (doc?.members ?? []).map((member) => String(member.userId));
+}
+
 export async function findSpacesByOwner(
   ownerId: Types.ObjectId
 ): Promise<SpaceDoc[]> {
