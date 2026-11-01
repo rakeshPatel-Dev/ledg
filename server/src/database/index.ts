@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+// Local profiling aid: log every Mongo operation and its duration.
+if (process.env.MONGOOSE_DEBUG === "true") {
+  mongoose.set("debug", true);
+}
+
 let cached: Promise<typeof mongoose> | null = null;
 
 export function connectDatabase() {

@@ -69,7 +69,10 @@ app.use(
         };
       },
       res(res) {
-        return { statusCode: res.statusCode };
+        return {
+          statusCode: res.statusCode,
+          responseTime: res.responseTime,
+        };
       },
     },
   })
