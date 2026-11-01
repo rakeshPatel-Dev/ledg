@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "seed": "tsx src/scripts/seed-demo-data.ts"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.6.29",

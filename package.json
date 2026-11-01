@@ -21,7 +21,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
     "build": "npm run build:client && npm run build:server",
     "start:server": "npm --prefix server run start",
-    "typecheck": "npm run typecheck:client && npm run typecheck:server"
+    "typecheck": "npm run typecheck:client && npm run typecheck:server",
+    "seed": "npm run sync-shared && npm --prefix server run seed --"
   },
   "license": "ISC",
   "type": "module"
