@@ -67,12 +67,14 @@ export async function findTransactions(
     ];
   }
 
-  const total = await TransactionModel.countDocuments(filter);
-  const items = await TransactionModel.find(filter)
-    .sort({ date: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .lean();
+  const [total, items] = await Promise.all([
+    TransactionModel.countDocuments(filter),
+    TransactionModel.find(filter)
+      .sort({ date: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean(),
+  ]);
 
   return { items: items.map(toTransactionDto), total };
 }
@@ -169,12 +171,14 @@ export async function findAllTransactionsByOwner(
     ];
   }
 
-  const total = await TransactionModel.countDocuments(filter);
-  const docs = await TransactionModel.find(filter)
-    .sort({ date: -1, _id: 1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .lean();
+  const [total, docs] = await Promise.all([
+    TransactionModel.countDocuments(filter),
+    TransactionModel.find(filter)
+      .sort({ date: -1, _id: 1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean(),
+  ]);
 
   return { items: docs.map(toTransactionDto), total };
 }
