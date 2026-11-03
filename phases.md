@@ -6,16 +6,20 @@ Migration to PostgreSQL is explicitly **out of scope**. The measured problem is
 round trips + cold starts, not query execution, and the existing compound
 indexes already cover the dashboard queries.
 
+Part 2 (below) covers the approved feature wave. Everything still deferred lives
+in `Remainingplan.md`.
+
 ## Status
 
-| Phase | What | Status |
-|---|---|---|
-| 1 | Dashboard 6 queries → 1 `$facet` | done |
-| 2 | Analytics page 5 queries → 1 `$facet` | done |
-| 3 | Redis cache for dashboard + write invalidation | done |
-| 4 | Auth: cookie cache + drop redundant user lookup | done |
-| 5 | Parallelize list count + page | done |
-| 6 | Connection pool + response-time logging | done |
+| Phase | What                                            | Status |
+| ----- | ----------------------------------------------- | ------ |
+| 1     | Dashboard 6 queries → 1 `$facet`                | done   |
+| 2     | Analytics page 5 queries → 1 `$facet`           | done   |
+| 3     | Redis cache for dashboard + write invalidation  | done   |
+| 4     | Auth: cookie cache + drop redundant user lookup | done   |
+| 5     | Parallelize list count + page                   | done   |
+| 6     | Connection pool + response-time logging         | done   |
+| 7     | Feature wave: 6 approved items (Part 2)         | done   |
 
 Files added: `server/src/domains/analytics/cache.ts`.
 Files changed: `analytics/{repository,service}.ts`, `spaces/{repository,service}.ts`,
@@ -39,6 +43,7 @@ the earlier ones.
 them (`getSpaceSummary` with no date range) scan the user's entire history.
 
 **Change.**
+
 - Add `getDashboardData(spaceIds, monthStart)` in
   `server/src/domains/analytics/repository.ts` using a single `$facet`
   pipeline: `allTime`, `month`, `expenseCategories`, `incomeCategories`,
@@ -65,6 +70,7 @@ categories) via `Promise.all` — parallel, but still five round trips and five
 scans.
 
 **Change.**
+
 - Add `getAnalyticsSummaryData(spaceIds, range, prevRange)` using `$facet`
   with `current`, `previous`, `currentExpenseCategories`,
   `previousExpenseCategories`, `currentIncomeCategories`.
@@ -81,6 +87,7 @@ scans.
 (`config/redis.ts`) but only used for notification spam windows.
 
 **Change.**
+
 - New `server/src/domains/analytics/cache.ts`:
   - `getCachedDashboard(userId)` / `setCachedDashboard(userId, data)`
   - 60s TTL, key `dash:v1:{userId}`
@@ -107,6 +114,7 @@ path is ever missed, the 60s TTL is the backstop.
 the dashboard request open for ~15s. The client's default is 5 retries with
 exponential backoff (`Math.exp(n) * 50`), so a dead endpoint cost ~9.7s on the
 read and ~5.1s on the write. Fixes:
+
 - `config/redis.ts`: `retries: 0` and a per-request `AbortSignal.timeout`.
 - `analytics/cache.ts`: after 3 consecutive failures, skip the cache for 30s
   (per-process circuit) so requests stop paying even the timeout.
@@ -148,12 +156,14 @@ Mongo rather than the cache.
 ## Phase 4 — Auth: stop paying 3 DB queries per request
 
 **Problem.** Every authenticated request currently does:
+
 1. `auth.api.getSession()` → session lookup in Mongo
 2. `customSession` plugin → `UserModel.findOne` for the domain user
-3. `resolveUserIdFromAuth` in `authenticate` → the *same* `UserModel.findOne`
+3. `resolveUserIdFromAuth` in `authenticate` → the _same_ `UserModel.findOne`
    again
 
 **Change.**
+
 - Enable Better Auth's cookie cache (`session.cookieCache`, 5 min, `compact`).
   Step 1 becomes a signed-cookie read on the hot path.
 - Add `userId` (domain `_id`) as a Better Auth `additionalFields` entry and sync
@@ -191,6 +201,7 @@ index-backed sort and still halve the latency.
 ## Phase 6 — Connection + visibility
 
 **Change.**
+
 - `database/index.ts`: explicit pool settings (`maxPoolSize`, `minPoolSize`,
   `serverSelectionTimeoutMS`, `maxIdleTimeMS`) so warm serverless instances
   reuse connections instead of opening new ones.
@@ -218,8 +229,134 @@ and cannot be fixed from the repository.
 ## Verification
 
 After each phase:
+
 1. `npm run typecheck` (root — covers client + server)
 2. `npm run lint`
 3. Hit `GET /api/v1/dashboard/summary` twice and compare `responseTime` in the
    logs. The second call should be a cache hit (Phase 3+).
 4. Confirm `GET /health` reports `db.readyState: 1`.
+
+---
+
+# Part 2 — Feature Wave (2026-11)
+
+**Scope:** 6 of the 29 remaining items in `Remainingplan.md`, chosen because
+they either fix a broken promise, remove daily friction, or are required to
+launch safely. The other 23 stay deferred. **No PostgreSQL migration** — this
+wave stays on MongoDB/Mongoose.
+
+| Item | What shipped                                   | Status |
+| ---- | ---------------------------------------------- | ------ |
+| P0.2 | Removed the dead `daily_digest` option         | done   |
+| P0.4 | Focused Vitest suite + GitHub Actions CI       | done   |
+| P1.5 | Payment-method breakdown on the analytics page | done   |
+| P2.1 | Hand-rolled SVG spending trend chart           | done   |
+| P3.1 | "Repeat a recent transaction" chips            | done   |
+| P5.5 | Opt-in Sentry error tracking (server + client) | done   |
+
+## P0.2 — Remove `daily_digest`
+
+The settings sheet offered "Daily Digest", but `notify()` dropped every
+transaction notification unless the preference was `"realtime"`. Choosing the
+digest silently disabled alerts — the UI promised something the backend never
+did.
+
+- Removed `"daily_digest"` from `TRANSACTION_ACTIVITY_MODES`
+  (`client/src/shared/enums`, synced to the server).
+- Removed the option from the settings UI.
+- `getPreferences()` maps any legacy stored value to `"off"` and heals the row
+  in place. `"off"` matches what those users actually experienced.
+
+No scheduler, digest queue, or email delivery was added. If digest delivery is
+ever wanted, it starts from `Remainingplan.md` P0.1/P0.2 as a real feature.
+
+## P0.4 — Tests + CI
+
+Focused coverage, not exhaustive coverage. Four files, 14 tests:
+
+| File                                              | Covers                                                                                                                       |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `server/src/domains/analytics/period.test.ts`     | Asia/Kathmandu period boundaries (the UTC+05:45 cases), custom ranges, previous ranges                                       |
+| `server/src/domains/analytics/repository.test.ts` | `$facet` totals, previous totals, category/payment-method breakdowns, day/month trend buckets, dues + cross-space exclusions |
+| `server/src/domains/analytics/cache.test.ts`      | Versioned key, cache hit, circuit breaker after 3 failures, deduped invalidation                                             |
+| `server/src/common/utils/session.test.ts`         | `domainUserIdFromSession` valid/invalid ids                                                                                  |
+
+- Runner: Vitest 5 in `server/` (`npm --prefix server test`). Vite is a dev
+  dependency because Vitest 5 declares it as a peer.
+- The repository test uses a real Mongo database
+  (`MONGODB_TEST_URI`, default `mongodb://localhost:27017/ledg_test`) and drops
+  it before/after. `fileParallelism: false` keeps the shared DB deterministic.
+- `server/tsconfig.build.json` excludes `*.test.ts` so tests never land in
+  `dist/`; `tsc --noEmit` still typechecks them.
+- `.github/workflows/ci.yml` runs `npm ci` for root/server/client, syncs shared
+  types, then typecheck → lint → test against a `mongo:7` service container.
+- Root `npm test` proxies to the server suite.
+
+## P1.5 — Payment methods on analytics
+
+The dashboard already computed `byPaymentMethod`, but the analytics page never
+showed it.
+
+- Added a `paymentMethods` bucket to the existing analytics `$facet` (expenses
+  only, `source !== "dues"`, null → `cash`), so no extra round trip.
+- `getAnalyticsSummary` returns `byPaymentMethod`.
+- `/analytics` renders a "Payment methods" card with icon, amount, share bar,
+  and transaction count.
+
+## P2.1 — Spending trend chart
+
+No chart library was added. The chart is hand-rolled SVG, matching the existing
+`SavingsRing` approach and keeping the bundle small.
+
+- Server: a `trend` bucket in the same `$facet` groups by
+  `$dateToString` in `+05:45`, returning `{ key, income, expense }`.
+- Granularity rule: today → hour, month/3M → day, year/all → month,
+  custom → day when the span is ≤ 92 days, otherwise month.
+- The service fills missing buckets so the x-axis is continuous (skipped for
+  "all time", where the start is unknown).
+- Client: `client/src/components/analytics/spending-trend-chart.tsx` draws
+  income and expense lines, an expense area, grid lines, x-axis ticks, and
+  native `<title>` tooltips per point. The SVG has a `role="img"` summary for
+  screen readers.
+
+## P3.1 — Repeat a recent transaction
+
+No `Template` model, no management UI. The form reuses
+`useDashboardSummary().recentTransactions`.
+
+- Up to 3 deduplicated chips appear when adding (not editing) a transaction.
+- Tapping one fills type, category, amount, note, payment method, and space,
+  then sets the date to today.
+- The dashboard query is already cached, so this adds no request.
+
+## P5.5 — Error tracking
+
+Opt-in, no-op without a DSN.
+
+- Server: `server/src/config/error-tracking.ts` initialises at module load
+  (`app.ts`) so Vercel picks it up, and captures unhandled errors in
+  `error-handler.ts`, `uncaughtException`/`unhandledRejection`, and startup
+  failures.
+- Client: `client/src/lib/error-tracking.ts` initialises in `main.tsx`;
+  `ErrorBoundary.componentDidCatch` reports the error and component stack.
+- Env: `SENTRY_DSN` (server) and `VITE_SENTRY_DSN` (client), both optional and
+  documented in the `.env.example` files.
+- `tracesSampleRate: 0` — errors only. Performance tracing can be turned on
+  later without touching call sites.
+
+## Verification
+
+- `npm run typecheck` — client + server, clean.
+- `npm run lint` — 0 errors (only pre-existing warnings).
+- `npm --prefix server test` — 4 files, 14 tests passed.
+- `npm run build:server` — clean; no `*.test.js` in `dist/`.
+- `npm run seed` — demo data now includes six recent-day transactions so the
+  trend chart has multiple points even when seeded early in a month.
+
+## Deliberately not built
+
+The scheduler and everything that depends on it (due reminders, monthly email,
+recurring auto-create), accounts, custom categories, PWA/offline, command
+palette, savings goals, per-category budgets, anomaly detection, forecast,
+streak, roles, API versioning, shared-package migration, and DB ping. See
+`Remainingplan.md` for the full list and the trigger for each.
