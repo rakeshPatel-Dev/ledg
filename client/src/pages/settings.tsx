@@ -92,7 +92,6 @@ export default function SettingsPage() {
 
   const notifActivityModeOptions: { value: TransactionActivityMode; label: string }[] = [
     { value: "realtime", label: "Realtime" },
-    { value: "daily_digest", label: "Daily Digest" },
     { value: "off", label: "Off" },
   ];
 

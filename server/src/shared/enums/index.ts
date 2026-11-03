@@ -56,7 +56,6 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const TRANSACTION_ACTIVITY_MODES = [
   "realtime",
-  "daily_digest",
   "off",
 ] as const;
 export type TransactionActivityMode = (typeof TRANSACTION_ACTIVITY_MODES)[number];

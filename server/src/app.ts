@@ -12,6 +12,7 @@ import { toNodeHandler } from "better-auth/node";
 import apiRoutes from "./routes.js";
 import { getAuth } from "./auth.js";
 import { logger } from "./config/logger.js";
+import { initErrorTracking } from "./config/error-tracking.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -20,6 +21,12 @@ import { connectDatabase } from "./database/index.js";
 import { csrfProtection } from "./common/middlewares/csrf.js";
 
 validateEnv();
+
+// Initialise at module load so serverless entry points (Vercel imports this
+// module directly) get error tracking without running startLocalServer().
+if (initErrorTracking()) {
+  logger.info("Error tracking enabled");
+}
 
 // helmet and express-rate-limit are dual ESM/CJS packages whose type
 // declarations resolve to different files depending on the module

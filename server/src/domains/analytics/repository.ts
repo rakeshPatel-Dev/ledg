@@ -64,9 +64,25 @@ export interface AnalyticsSummaryData {
   currentExpenseCategories: CategoryBreakdown[];
   previousExpenseCategories: CategoryBreakdown[];
   currentIncomeCategories: CategoryBreakdown[];
+  paymentMethods: PaymentMethodBreakdown[];
+  trend: TrendPoint[];
+}
+
+export type TrendGranularity = "hour" | "day" | "month";
+
+export interface TrendPoint {
+  /** Bucket key in the app timezone: `YYYY-MM-DDTHH:00`, `YYYY-MM-DD`, or `YYYY-MM`. */
+  key: string;
+  income: number;
+  expense: number;
 }
 
 const ZERO_TOTALS: SummaryTotals = { totalIncome: 0, totalExpense: 0, count: 0 };
+
+// Fixed app timezone (Asia/Kathmandu, UTC+05:45, no DST). Kept as a string so
+// Mongo's `$dateToString` buckets align with the JS boundary helpers in the
+// analytics service.
+const APP_TZ = "+05:45";
 
 // ─── Pipeline fragments ──────────────────────────────────────────────────────
 //
@@ -131,6 +147,63 @@ function categoryGroupStages(): PipelineStage.FacetPipelineStage[] {
         category: "$_id",
         amount: 1,
         count: 1,
+      },
+    },
+  ];
+}
+
+function paymentMethodGroupStages(): PipelineStage.FacetPipelineStage[] {
+  return [
+    {
+      $group: {
+        _id: { $ifNull: ["$paymentMethod", "cash"] },
+        amount: { $sum: "$amount" },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { amount: -1 } },
+    {
+      $project: {
+        _id: 0,
+        method: "$_id",
+        amount: 1,
+        count: 1,
+      },
+    },
+  ];
+}
+
+function trendGroupStages(
+  granularity: TrendGranularity
+): PipelineStage.FacetPipelineStage[] {
+  const format =
+    granularity === "hour"
+      ? "%Y-%m-%dT%H:00"
+      : granularity === "month"
+        ? "%Y-%m"
+        : "%Y-%m-%d";
+
+  return [
+    {
+      $group: {
+        _id: {
+          $dateToString: { format, date: "$date", timezone: APP_TZ },
+        },
+        income: {
+          $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] },
+        },
+        expense: {
+          $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] },
+        },
+      },
+    },
+    { $sort: { _id: 1 } },
+    {
+      $project: {
+        _id: 0,
+        key: "$_id",
+        income: 1,
+        expense: 1,
       },
     },
   ];
@@ -204,22 +277,7 @@ export async function getDashboardData(
         ],
         paymentMethods: [
           { $match: { ...monthLedgerMatch, type: "expense" } },
-          {
-            $group: {
-              _id: { $ifNull: ["$paymentMethod", "cash"] },
-              amount: { $sum: "$amount" },
-              count: { $sum: 1 },
-            },
-          },
-          { $sort: { amount: -1 } },
-          {
-            $project: {
-              _id: 0,
-              method: "$_id",
-              amount: 1,
-              count: 1,
-            },
-          },
+          ...paymentMethodGroupStages(),
         ],
         recentTransactions: recentTransactionStages(5),
       },
@@ -244,7 +302,8 @@ export async function getDashboardData(
 export async function getAnalyticsSummaryData(
   spaceIds: Types.ObjectId[],
   range: DateRange,
-  previousRange: DateRange
+  previousRange: DateRange,
+  granularity: TrendGranularity = "day"
 ): Promise<AnalyticsSummaryData> {
   const currentMatch = dateMatch(range);
   const previousMatch = dateMatch(previousRange);
@@ -255,6 +314,8 @@ export async function getAnalyticsSummaryData(
     currentExpenseCategories: CategoryBreakdown[];
     previousExpenseCategories: CategoryBreakdown[];
     currentIncomeCategories: CategoryBreakdown[];
+    paymentMethods: PaymentMethodBreakdown[];
+    trend: TrendPoint[];
   }>([
     { $match: spaceMatch(spaceIds) },
     {
@@ -291,6 +352,25 @@ export async function getAnalyticsSummaryData(
           },
           ...categoryGroupStages(),
         ],
+        paymentMethods: [
+          {
+            $match: {
+              ...currentMatch,
+              type: "expense",
+              source: { $ne: "dues" },
+            },
+          },
+          ...paymentMethodGroupStages(),
+        ],
+        trend: [
+          {
+            $match: {
+              ...currentMatch,
+              source: { $ne: "dues" },
+            },
+          },
+          ...trendGroupStages(granularity),
+        ],
       },
     },
   ]);
@@ -301,6 +381,8 @@ export async function getAnalyticsSummaryData(
     currentExpenseCategories: result?.currentExpenseCategories ?? [],
     previousExpenseCategories: result?.previousExpenseCategories ?? [],
     currentIncomeCategories: result?.currentIncomeCategories ?? [],
+    paymentMethods: result?.paymentMethods ?? [],
+    trend: result?.trend ?? [],
   };
 }
 

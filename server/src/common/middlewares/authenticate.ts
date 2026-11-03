@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 import { UnauthorizedError } from "../errors/index.js";
 import { getAuth } from "../../auth.js";
 import { resolveUserIdFromAuth } from "../../domains/users/repository.js";
+import { domainUserIdFromSession } from "../utils/session.js";
 
 export interface AuthRequest extends Request {
   userId?: Types.ObjectId;
@@ -26,14 +27,6 @@ export interface AuthRequest extends Request {
  * Prefer that value and only fall back to a DB lookup when it is missing
  * (first request for a user created before this field existed).
  */
-function domainUserIdFromSession(
-  sessionUser: { userId?: string | null }
-): Types.ObjectId | null {
-  const raw = sessionUser.userId;
-  if (!raw || !Types.ObjectId.isValid(raw)) return null;
-  return new Types.ObjectId(raw);
-}
-
 export async function authenticate(
   req: AuthRequest,
   _res: Response,

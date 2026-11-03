@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { PaymentMethod, Space, TransactionInput } from "@ledg/shared";
+import type { PaymentMethod, Space, Transaction, TransactionInput } from "@ledg/shared";
 import {
   PAYMENT_LABELS,
   PAYMENT_METHODS,
@@ -17,6 +17,7 @@ import {
   Loader2,
   Check,
   Plus,
+  RotateCcw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,10 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getCategoriesByType } from "@/lib/categories";
+import { getCategoriesByType, getCategoryMeta } from "@/lib/categories";
+import { formatCurrency, localDateKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   useCreateTransaction,
+  useDashboardSummary,
   useUpdateTransaction,
 } from "@/lib/queries";
 import { useTransactionForm } from "@/lib/transaction-form";
@@ -71,6 +74,32 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
 
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
+  const dashboardQ = useDashboardSummary();
+
+  // "Repeat last" reuses the dashboard's recent transactions — no template
+  // collection, no extra request. Deduplicate so the chips stay useful.
+  const repeatCandidates = useMemo(() => {
+    const recent = dashboardQ.data?.recentTransactions ?? [];
+    const seen = new Set<string>();
+    const candidates: Transaction[] = [];
+
+    for (const tx of recent) {
+      const fingerprint = [
+        tx.type,
+        tx.category,
+        tx.amount,
+        tx.note,
+        tx.paymentMethod ?? "",
+        tx.spaceId,
+      ].join("|");
+      if (seen.has(fingerprint)) continue;
+      seen.add(fingerprint);
+      candidates.push(tx);
+      if (candidates.length === 3) break;
+    }
+
+    return candidates;
+  }, [dashboardQ.data]);
 
   const safeSpaces = spaces.length > 0 ? spaces : [];
   const defaultSpaceId =
@@ -138,6 +167,19 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     if (!available.some((c) => c.name === category)) {
       setCategory(available[0]?.name ?? "Other");
     }
+  };
+
+  const repeatTransaction = (tx: Transaction) => {
+    setType(tx.type);
+    setCategory(tx.category);
+    setAmount(String(tx.amount));
+    setNote(tx.note ?? "");
+    setPaymentMethod(tx.paymentMethod ?? "cash");
+    if (safeSpaces.some((s) => s.id === tx.spaceId)) {
+      setSpace(tx.spaceId);
+    }
+    // A repeat is a new entry, so always log it against today.
+    setDate(localDateKey(new Date()));
   };
 
   const submit = async () => {
@@ -220,6 +262,40 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
             onChange={handleTypeChange}
           />
         </div>
+
+        {!editing && repeatCandidates.length > 0 && (
+          <div>
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <RotateCcw className="size-3.5" />
+              Repeat a recent transaction
+            </p>
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {repeatCandidates.map((tx) => {
+                const meta = getCategoryMeta(tx.category, tx.type);
+                const Icon = meta.icon;
+
+                return (
+                  <button
+                    key={tx.id}
+                    type="button"
+                    onClick={() => repeatTransaction(tx)}
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-card/75 px-3 py-2 text-left transition-colors hover:bg-accent/60 cursor-pointer"
+                  >
+                    <Icon className="size-4 shrink-0" style={{ color: meta.color }} />
+                    <span className="min-w-0">
+                      <span className="block max-w-[9rem] truncate text-xs font-semibold">
+                        {tx.note || tx.category}
+                      </span>
+                      <span className="block text-[10px] text-muted-foreground tabular-nums">
+                        {formatCurrency(tx.amount)} · {tx.category}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="rounded-4xl bg-muted/70 p-5">
           <label htmlFor="amount" className="sr-only">

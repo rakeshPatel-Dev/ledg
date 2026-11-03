@@ -22,6 +22,7 @@
     "build": "npm run build:client && npm run build:server",
     "start:server": "npm --prefix server run start",
     "typecheck": "npm run typecheck:client && npm run typecheck:server",
+    "test": "npm --prefix server run test",
     "seed": "npm run sync-shared && npm --prefix server run seed --"
   },
   "license": "ISC",

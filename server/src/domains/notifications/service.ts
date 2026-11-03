@@ -7,8 +7,11 @@ import {
   type NotificationDataDoc,
   type NotificationPreferenceDoc,
 } from "./model.js";
-import { renderNotification } from "../../shared/index.js";
-import type { NotificationType } from "../../shared/index.js";
+import { renderNotification, TRANSACTION_ACTIVITY_MODES } from "../../shared/index.js";
+import type {
+  NotificationType,
+  TransactionActivityMode,
+} from "../../shared/index.js";
 import { NotFoundError, BadRequestError } from "../../common/errors/index.js";
 import { redis } from "../../config/redis.js";
 import { logger } from "../../config/logger.js";
@@ -128,6 +131,21 @@ export async function getPreferences(
     { returnDocument: "after", upsert: true, runValidators: true }
   ).lean();
 
+  // `daily_digest` was removed from TRANSACTION_ACTIVITY_MODES. Rows written
+  // before that removal are treated as "off" — the old mode never delivered
+  // anything, so "off" matches the behaviour users actually experienced. Heal
+  // the row so the next write is valid again.
+  const activity = prefs!.transactionActivity as string;
+  if (!(TRANSACTION_ACTIVITY_MODES as readonly string[]).includes(activity)) {
+    prefs!.transactionActivity = "off";
+    await NotificationPreferenceModel.updateOne(
+      { _id: prefs!._id },
+      { $set: { transactionActivity: "off" } }
+    ).catch((error: unknown) => {
+      logger.warn({ err: error }, "Failed to heal legacy notification preference");
+    });
+  }
+
   return {
     ...prefs!,
     id: String(prefs!._id),
@@ -137,7 +155,7 @@ export async function getPreferences(
 export async function updatePreferences(
   userId: Types.ObjectId,
   updates: {
-    transactionActivity?: "realtime" | "daily_digest" | "off";
+    transactionActivity?: TransactionActivityMode;
     inviteEvents?: boolean;
     memberChanges?: boolean;
   }

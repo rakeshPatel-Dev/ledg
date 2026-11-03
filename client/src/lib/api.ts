@@ -63,6 +63,9 @@ export interface AnalyticsSummary {
   };
   byExpenseCategory: { category: string; amount: number; count: number }[];
   byIncomeCategory: { category: string; amount: number; count: number }[];
+  byPaymentMethod: { method: string; amount: number; count: number }[];
+  trend: { key: string; income: number; expense: number }[];
+  trendGranularity: "hour" | "day" | "month";
   insights: string[];
 }
 

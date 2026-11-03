@@ -6,6 +6,8 @@ import type {
   CategoryBreakdown,
   PaymentMethodBreakdown,
   RecentTransaction,
+  TrendGranularity,
+  TrendPoint,
 } from "./repository.js";
 import { getCachedDashboard, setCachedDashboard } from "./cache.js";
 import { assertSpaceAccess } from "../spaces/access.js";
@@ -54,9 +56,10 @@ interface DateRangeOptions {
 // All calendar periods ("today", "month", ...) are computed in a fixed app
 // timezone instead of the server's local clock (UTC on Vercel). Without this,
 // users in UTC+05:45 see transactions land in the wrong day/month bucket.
-const APP_TZ_OFFSET_MINUTES = 345; // Asia/Kathmandu (UTC+05:45), no DST
+export const APP_TZ_OFFSET_MINUTES = 345; // Asia/Kathmandu (UTC+05:45), no DST
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-function zonedParts(date: Date): { y: number; m: number; d: number } {
+export function zonedParts(date: Date): { y: number; m: number; d: number } {
   const shifted = new Date(date.getTime() + APP_TZ_OFFSET_MINUTES * 60_000);
   return {
     y: shifted.getUTCFullYear(),
@@ -65,7 +68,7 @@ function zonedParts(date: Date): { y: number; m: number; d: number } {
   };
 }
 
-function zonedBoundary(
+export function zonedBoundary(
   y: number,
   m: number,
   d: number,
@@ -92,7 +95,7 @@ function firstOfZonedMonth(monthOffset: number): Date {
   return zonedBoundary(shifted.getUTCFullYear(), shifted.getUTCMonth(), 1);
 }
 
-function dateRangeForPeriod(
+export function dateRangeForPeriod(
   period: Period,
   options?: DateRangeOptions
 ): { from?: Date; to?: Date } {
@@ -132,7 +135,7 @@ function dateRangeForPeriod(
   return { from: zonedBoundary(y, 0, 1) }; // year
 }
 
-function prevDateRangeForPeriod(
+export function prevDateRangeForPeriod(
   period: Period,
   options?: DateRangeOptions
 ): { from?: Date; to?: Date } {
@@ -164,6 +167,92 @@ function prevDateRangeForPeriod(
     from: zonedBoundary(y - 1, 0, 1),
     to: new Date(zonedBoundary(y, 0, 1).getTime() - 1),
   };
+}
+
+// ─── Trend buckets ───────────────────────────────────────────────────────────
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function zonedDayKey(date: Date): string {
+  const { y, m, d } = zonedParts(date);
+  return `${y}-${pad2(m + 1)}-${pad2(d)}`;
+}
+
+/**
+ * Pick the chart resolution from the period. Small windows get fine-grained
+ * buckets; anything wider than a quarter switches to months so the chart never
+ * has hundreds of unreadable points.
+ */
+function trendGranularityForPeriod(
+  period: Period,
+  range: { from?: Date; to?: Date }
+): TrendGranularity {
+  if (period === "today") return "hour";
+  if (period === "month" || period === "3months") return "day";
+  if (period === "year" || period === "all") return "month";
+
+  if (!range.from || !range.to) return "day";
+  const spanDays = Math.ceil((range.to.getTime() - range.from.getTime()) / DAY_MS);
+  return spanDays <= 92 ? "day" : "month";
+}
+
+/**
+ * Build the full list of expected bucket keys so the chart has a continuous
+ * x-axis instead of collapsing empty days/months. Returns an empty list for
+ * "all time", where filling from an unknown start would be meaningless.
+ */
+function trendBucketKeys(
+  range: { from?: Date; to?: Date },
+  granularity: TrendGranularity,
+  now: Date
+): string[] {
+  if (!range.from) return [];
+
+  const from = range.from;
+  const to = range.to ?? now;
+  if (to < from) return [];
+
+  if (granularity === "hour") {
+    const { y, m, d } = zonedParts(from);
+    return Array.from(
+      { length: 24 },
+      (_, h) => `${y}-${pad2(m + 1)}-${pad2(d)}T${pad2(h)}:00`
+    );
+  }
+
+  if (granularity === "day") {
+    const startParts = zonedParts(from);
+    const start = zonedBoundary(startParts.y, startParts.m, startParts.d);
+    const keys: string[] = [];
+    // The app timezone has no DST, so a fixed 24h step is exact.
+    for (let t = start.getTime(); t <= to.getTime(); t += DAY_MS) {
+      keys.push(zonedDayKey(new Date(t)));
+    }
+    return keys;
+  }
+
+  const start = zonedParts(from);
+  const end = zonedParts(to);
+  const keys: string[] = [];
+  let y = start.y;
+  let m = start.m;
+  while (y < end.y || (y === end.y && m <= end.m)) {
+    keys.push(`${y}-${pad2(m + 1)}`);
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return keys;
+}
+
+function fillTrend(points: TrendPoint[], keys: string[]): TrendPoint[] {
+  if (keys.length === 0) return points;
+  const byKey = new Map(points.map((point) => [point.key, point]));
+  return keys.map((key) => byKey.get(key) ?? { key, income: 0, expense: 0 });
 }
 
 // ─── Generate Quick Insights ──────────────────────────────────────────────────
@@ -257,11 +346,13 @@ export async function getAnalyticsSummary(
 
   const range = dateRangeForPeriod(period, options);
   const prevRange = prevDateRangeForPeriod(period, options);
+  const granularity = trendGranularityForPeriod(period, range);
 
   const data = await analyticsRepository.getAnalyticsSummaryData(
     resolvedSpaceIds,
     range,
-    prevRange
+    prevRange,
+    granularity
   );
 
   const {
@@ -271,6 +362,8 @@ export async function getAnalyticsSummary(
     previousExpenseCategories: prevExpCats,
     currentIncomeCategories: currentIncCats,
   } = data;
+
+  const trend = fillTrend(data.trend, trendBucketKeys(range, granularity, new Date()));
 
   const insights = buildInsights(
     current,
@@ -317,6 +410,9 @@ export async function getAnalyticsSummary(
     },
     byExpenseCategory: currentExpCats,
     byIncomeCategory: currentIncCats,
+    byPaymentMethod: data.paymentMethods,
+    trend,
+    trendGranularity: granularity,
     insights,
   };
 }

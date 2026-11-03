@@ -4,6 +4,10 @@ import "./global.css";
 
 import App from "./app/App";
 import { AuthProvider } from "./lib/auth-provider";
+import { initErrorTracking } from "./lib/error-tracking";
+
+// No-op unless VITE_SENTRY_DSN was set at build time.
+initErrorTracking();
 
 const root = document.getElementById("root");
 

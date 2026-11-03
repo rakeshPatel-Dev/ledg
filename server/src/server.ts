@@ -7,6 +7,7 @@ import { APP_NAME } from "./shared/index.js";
 import app from "./app.js";
 import { connectDatabase, disconnectDatabase } from "./database/index.js";
 import { warmRedis } from "./config/redis.js";
+import { captureException, flushErrorTracking } from "./config/error-tracking.js";
 
 export default app;
 
@@ -49,8 +50,20 @@ async function startLocalServer() {
 }
 
 if (!process.env.VERCEL) {
+  process.on("unhandledRejection", (reason) => {
+    logger.error({ error: reason }, "Unhandled promise rejection");
+    captureException(reason);
+  });
+
+  process.on("uncaughtException", (error) => {
+    logger.error({ error }, "Uncaught exception");
+    captureException(error);
+    void flushErrorTracking().finally(() => process.exit(1));
+  });
+
   startLocalServer().catch((error) => {
     logger.error({ error }, "Failed to start server");
-    process.exit(1);
+    captureException(error);
+    void flushErrorTracking().finally(() => process.exit(1));
   });
 }

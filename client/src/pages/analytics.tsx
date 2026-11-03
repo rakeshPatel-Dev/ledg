@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { ArrowDownLeft, ArrowUpRight, Calendar as CalendarIcon, PieChart, TrendingDown, TrendingUp } from "lucide-react";
-import { DEFAULT_CURRENCY } from "@ledg/shared";
+import { ArrowDownLeft, ArrowUpRight, Banknote, Calendar as CalendarIcon, CreditCard, Landmark, PieChart, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { DEFAULT_CURRENCY, PAYMENT_LABELS, type PaymentMethod } from "@ledg/shared";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import type { AnalyticsPeriod } from "@/lib/api";
 import { InsightsCard } from "@/components/analytics/insights-card";
 import { CategoryDrilldownSheet } from "@/components/analytics/category-drilldown-sheet";
 import { RecurringCard } from "@/components/analytics/recurring-card";
+import { SpendingTrendChart } from "@/components/analytics/spending-trend-chart";
 import { cn } from "@/lib/utils";
 
 // ─── Period selector options ──────────────────────────────────────────────────
@@ -26,6 +27,13 @@ const PERIOD_OPTIONS: { value: AnalyticsPeriod; label: string }[] = [
   { value: "all", label: "All" },
   { value: "custom", label: "Custom" },
 ];
+
+const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
+  cash: Banknote,
+  card: CreditCard,
+  bank_transfer: Landmark,
+  wallet: Wallet,
+};
 
 // ─── Delta badge ──────────────────────────────────────────────────────────────
 
@@ -402,6 +410,14 @@ export default function AnalyticsPage() {
             </div>
           </Card>
 
+          {/* ── Spending trend ── */}
+          {summary && (
+            <SpendingTrendChart
+              points={summary.trend}
+              granularity={summary.trendGranularity}
+            />
+          )}
+
           {/* ── Quick Insights ── */}
           {summary && summary.insights.length > 0 && (
             <InsightsCard insights={summary.insights} />
@@ -507,6 +523,53 @@ export default function AnalyticsPage() {
                                 width: `${Math.min(percentage, 100)}%`,
                                 backgroundColor: meta.color,
                               }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-medium text-muted-foreground tabular-nums shrink-0">
+                            {Math.round(percentage)}%
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {count} transaction{count === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </Card>
+            </section>
+          )}
+
+          {/* ── Payment methods ── */}
+          {(summary?.byPaymentMethod.length ?? 0) > 0 && (
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Payment methods
+              </h2>
+              <Card className="flex flex-col gap-4 p-5">
+                {summary!.byPaymentMethod.map(({ method, amount, count }) => {
+                  const key = method as PaymentMethod;
+                  const Icon = PAYMENT_ICONS[key] ?? Wallet;
+                  const label = PAYMENT_LABELS[key] ?? method;
+                  const percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+
+                  return (
+                    <div key={method} className="flex items-center gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Icon className="size-4.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-sm font-medium truncate">{label}</p>
+                          <p className="text-sm font-semibold tabular-nums shrink-0">
+                            {formatCurrency(amount, currency)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all duration-1000"
+                              style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                           </div>
                           <span className="text-[10px] font-medium text-muted-foreground tabular-nums shrink-0">

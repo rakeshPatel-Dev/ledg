@@ -163,6 +163,17 @@ const LAST_YEAR_TX: TxSeed[] = [
   { space: "household", type: "expense", category: "Shopping", amount: 4000, note: "Winter clothes", paymentMethod: "card", at: 0.80 },
 ];
 
+// Anchored to "N days ago" instead of a fraction of the current month, so the
+// spending trend has several points even when the demo is seeded on the 1st.
+const RECENT_DAYS_TX: Array<{ daysAgo: number; seed: TxSeed }> = [
+  { daysAgo: 1, seed: { space: "household", type: "expense", category: "Food", amount: 480, note: "Lunch at Thamel", paymentMethod: "wallet", at: 1 } },
+  { daysAgo: 2, seed: { space: "household", type: "expense", category: "Transport", amount: 220, note: "Pathao ride", paymentMethod: "wallet", at: 1 } },
+  { daysAgo: 3, seed: { space: "household", type: "expense", category: "Groceries", amount: 2650, note: "Bhatbhateni", paymentMethod: "card", at: 1 } },
+  { daysAgo: 4, seed: { space: "household", type: "expense", category: "Bills", amount: 1100, note: "Water bill", paymentMethod: "bank_transfer", at: 1 } },
+  { daysAgo: 5, seed: { space: "hustle", type: "income", category: "Freelance", amount: 3500, note: "Landing page", paymentMethod: "bank_transfer", at: 1 } },
+  { daysAgo: 6, seed: { space: "trip", type: "expense", category: "Food", amount: 950, note: "Cafe lunch", paymentMethod: "cash", at: 1 } },
+];
+
 // ─── Dues ────────────────────────────────────────────────────────────────────
 
 interface DueSeed {
@@ -326,6 +337,7 @@ async function main() {
       toDoc(seed, previousMonthAt(seed.at))
     ),
     ...LAST_YEAR_TX.map((seed) => toDoc(seed, lastYearAt(seed.at))),
+    ...RECENT_DAYS_TX.map(({ daysAgo, seed }) => toDoc(seed, addDays(now, -daysAgo))),
     // A couple dated right now so the "Today" period is populated too.
     toDoc(
       {
