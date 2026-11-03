@@ -210,9 +210,12 @@ index-backed sort and still halve the latency.
 - Optional: `MONGOOSE_DEBUG=true` logs every query + duration for local
   profiling.
 
-**Deployment action (not code).** Put the Mongo cluster and the Vercel
-functions in the same region. This is often the single largest remaining cost
-and cannot be fixed from the repository.
+**Deployment action (now done in code).** Put the Mongo cluster and the Vercel
+functions in the same region. `server/vercel.json` pins the function to
+`bom1` (Mumbai) because the Atlas cluster lives there; leaving it on the
+`iad1` default meant every API call crossed the Atlantic. The Upstash database
+must live in `ap-south-1` too — a cross-region cache read costs more than the
+query it replaces.
 
 ---
 
