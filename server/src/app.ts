@@ -24,9 +24,10 @@ validateEnv();
 
 // Initialise at module load so serverless entry points (Vercel imports this
 // module directly) get error tracking without running startLocalServer().
-if (initErrorTracking()) {
-  logger.info("Error tracking enabled");
-}
+// The SDK loads lazily, so a deployment without SENTRY_DSN never pays for it.
+void initErrorTracking().then((enabled) => {
+  if (enabled) logger.info("Error tracking enabled");
+});
 
 // helmet and express-rate-limit are dual ESM/CJS packages whose type
 // declarations resolve to different files depending on the module
