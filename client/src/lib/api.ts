@@ -99,7 +99,12 @@ export interface AllTransactionsFilter {
 export function createApi() {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers);
-    headers.set("Content-Type", "application/json");
+    // Only declare a JSON body when there is one. Setting Content-Type on a
+    // GET/DELETE makes it a non-simple CORS request, which forces a preflight
+    // OPTIONS round trip for every call.
+    if (init?.body != null) {
+      headers.set("Content-Type", "application/json");
+    }
 
     const response = await fetch(`${BASE_URL}${path}`, {
       ...init,
