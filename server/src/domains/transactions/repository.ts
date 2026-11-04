@@ -24,6 +24,64 @@ export async function createTransaction(
   return toTransactionDto(doc.toObject());
 }
 
+/**
+ * Insert many transactions in chunks. `ordered: false` lets valid rows land
+ * even if one document fails validation; the caller reports the shortfall.
+ */
+export async function createManyTransactions(
+  docs: Record<string, unknown>[]
+): Promise<number> {
+  if (docs.length === 0) return 0;
+
+  const CHUNK_SIZE = 500;
+  let inserted = 0;
+
+  for (let i = 0; i < docs.length; i += CHUNK_SIZE) {
+    const chunk = docs.slice(i, i + CHUNK_SIZE);
+    try {
+      const result = await TransactionModel.insertMany(chunk, {
+        ordered: false,
+      });
+      inserted += result.length;
+    } catch (error) {
+      // BulkWriteError carries how many documents made it in before the
+      // failures; keep those and let the caller report the rest.
+      const bulk = error as { result?: { insertedCount?: number } };
+      inserted += bulk.result?.insertedCount ?? 0;
+    }
+  }
+
+  return inserted;
+}
+
+/**
+ * Minimal projection used to detect duplicates before an import. Scoped to a
+ * date range so a large space is not loaded wholesale.
+ */
+export async function findTransactionsForDedupe(
+  spaceIds: Types.ObjectId[],
+  from: Date,
+  to: Date
+): Promise<
+  Array<{
+    spaceId: Types.ObjectId;
+    type: string;
+    amount: number;
+    category: string;
+    note: string;
+    date: Date;
+  }>
+> {
+  if (spaceIds.length === 0) return [];
+
+  return TransactionModel.find({
+    spaceId: { $in: spaceIds },
+    date: { $gte: from, $lte: to },
+  })
+    .select({ spaceId: 1, type: 1, amount: 1, category: 1, note: 1, date: 1 })
+    .lean();
+}
+
 export async function findTransactions(
   query: TransactionQuery
 ): Promise<{ items: TransactionDoc[]; total: number }> {

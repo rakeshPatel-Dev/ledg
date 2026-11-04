@@ -9,6 +9,7 @@ import invitationRoutes from "./domains/invitations/routes.js";
 import notificationRoutes, {
   notificationPreferencesRouter,
 } from "./domains/notifications/routes.js";
+import importRoutes from "./domains/import/routes.js";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/invitations", invitationRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/me/notification-preferences", notificationPreferencesRouter);
 router.use("/me", userRoutes);
+router.use("/import", importRoutes);
 
 export default router;
