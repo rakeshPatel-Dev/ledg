@@ -93,6 +93,46 @@ export const transactionUpdateSchema = transactionSchema
 
 export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
 
+/**
+ * One row of an import. The client normalises CSV/JSON into this shape, but the
+ * server validates each row independently so a single bad line does not reject
+ * the whole file.
+ */
+export const importTransactionRowSchema = z.object({
+  spaceId: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid space id")
+    .optional(),
+  spaceName: z.string().trim().min(1).max(100).optional(),
+  category: z.string().trim().min(1).max(100),
+  type: z.enum(TRANSACTION_TYPES),
+  amount: z.number().positive(),
+  note: z.string().trim().max(500).default(""),
+  date: dateStringSchema.or(z.date()),
+  paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+});
+
+export type ImportTransactionRow = z.infer<typeof importTransactionRowSchema>;
+
+export const importSchema = z.object({
+  // When set, every row lands in this space and per-row space fields are
+  // ignored. Otherwise each row must carry a spaceId or spaceName.
+  targetSpaceId: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid space id")
+    .optional(),
+  // Create any space named in the file that the user does not already have.
+  createSpaces: z.boolean().default(false),
+  // Skip rows that match an existing transaction on space, type, amount,
+  // category, note and local day.
+  skipDuplicates: z.boolean().default(true),
+  transactions: z.array(z.unknown()).min(1).max(5000),
+});
+
+export type ImportInput = z.infer<typeof importSchema>;
+
 export const idParamsSchema = z.object({
   id: z
     .string()

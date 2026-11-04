@@ -68,6 +68,20 @@ export interface Transaction {
   updatedAt: string;
 }
 
+export interface ImportRowError {
+  /** Zero-based index into the submitted `transactions` array. */
+  index: number;
+  message: string;
+}
+
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  failed: number;
+  spacesCreated: number;
+  errors: ImportRowError[];
+}
+
 export interface SpaceInvitation {
   id: string;
   spaceId: string;
