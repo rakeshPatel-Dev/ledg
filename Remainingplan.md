@@ -32,7 +32,7 @@ Keep this list in mind so nothing below is built twice.
 
 | Area               | Shipped                                                                                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Transactions**   | Create, edit, delete, move between spaces, type/space/keyword filters, pagination, server-side search (debounced), CSV + JSON export                                     |
+| **Transactions**   | Create, edit, delete, move between spaces, type/space/keyword filters, pagination, server-side search (debounced), CSV + JSON export, CSV + JSON import with duplicate skipping |
 | **Spaces**         | Personal/shared, owner/member roles, invites by email or `@username`, token invite landing, resend/cancel, transfer ownership, remove member, leave space, 10-member cap |
 | **Dues**           | Lent/borrowed, partial settlements, undo settlement, overdue tracking, ledger-linked transactions, group-by-person and flat views                                        |
 | **Dashboard**      | Balance, month income/spend, expense + income categories, payment-method breakdown, recent transactions, dues summary                                                    |

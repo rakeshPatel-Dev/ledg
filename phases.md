@@ -363,3 +363,39 @@ recurring auto-create), accounts, custom categories, PWA/offline, command
 palette, savings goals, per-category budgets, anomaly detection, forecast,
 streak, roles, API versioning, shared-package migration, and DB ping. See
 `Remainingplan.md` for the full list and the trigger for each.
+
+---
+
+# Part 3 — Data Portability (2026-11)
+
+Export already shipped: CSV from the Activity page, and CSV + JSON in Settings →
+Data & Backup. This wave adds the other half — import.
+
+## Import
+
+- `POST /api/v1/import` accepts up to 5,000 normalised rows and validates each
+  one independently, so a single bad line does not reject the file.
+- Duplicate rows are matched on space, type, amount, category, note and local
+  day. That is the coarsest key a CSV export can round-trip, since the export
+  carries only a date and time. Duplicate skipping is on by default and can be
+  turned off.
+- Destination is either one chosen space, or the spaces named in the file. In
+  the latter case missing spaces are created, up to the existing 10-space cap.
+- Rows are inserted in chunks of 500 with `ordered: false`, and dashboard caches
+  are invalidated for every member of every affected space.
+- Imports do not emit per-row notifications. Restoring a backup should not spam
+  the other members of a shared space.
+- The client parser accepts the app's own CSV export (Date, Time, Type,
+  Category, Amount (NPR), Note, Payment Method, Space), a flexible header map,
+  the JSON backup shape (`{ spaces, transactions }`), or a bare transaction
+  array.
+- UI: Settings → Data & Backup → Import Transactions. The preview shows the row
+  count, date range, spaces, and skipped-row errors before anything is written.
+
+## Verification
+
+- `npm run typecheck` — client + server, clean.
+- `npm run lint` — 0 errors (12 pre-existing warnings).
+- `npm --prefix server test` — 5 files, 20 tests passed (6 new import tests).
+- Client parser checked against the real CSV export, quoted commas, escaped
+  quotes, bad rows, and the JSON backup shape.
