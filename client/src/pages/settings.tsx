@@ -12,6 +12,7 @@ import {
   Waves,
   Loader2,
   Download,
+  Upload,
   Database,
   Bell,
   Check,
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Segmented } from "@/components/ui/segmented";
 import { RequestFeatureForm } from "@/components/features/request-feature-form";
+import { ImportTransactionsSheet } from "@/components/settings/import-transactions-sheet";
 import { useTheme } from "@/lib/theme-provider";
 import { useMotion } from "@/lib/animation-provider";
 import { useAuth } from "@/lib/auth-provider";
@@ -50,6 +52,7 @@ export default function SettingsPage() {
   const [requestSheetOpen, setRequestSheetOpen] = useState(false);
   const [motionSheetOpen, setMotionSheetOpen] = useState(false);
   const [notifSheetOpen, setNotifSheetOpen] = useState(false);
+  const [importSheetOpen, setImportSheetOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const [userProfile, setUserProfile] = useState<{
@@ -277,6 +280,25 @@ export default function SettingsPage() {
             </span>
             <ChevronRight className="size-4 text-muted-foreground" />
           </button>
+
+          <div className="mx-4 my-1 h-px bg-border/60" />
+
+          <button
+            type="button"
+            onClick={() => setImportSheetOpen(true)}
+            className="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left transition-colors hover:bg-muted/50 active:scale-[0.99] cursor-pointer"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Upload className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Import Transactions</span>
+              <span className="block text-xs font-medium text-muted-foreground">
+                Restore a backup or load a CSV spreadsheet
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
         </Card>
       </div>
 
@@ -355,6 +377,11 @@ export default function SettingsPage() {
       <Sheet open={requestSheetOpen} onOpenChange={setRequestSheetOpen}>
         <RequestFeatureForm />
       </Sheet>
+
+      <ImportTransactionsSheet
+        open={importSheetOpen}
+        onOpenChange={setImportSheetOpen}
+      />
 
       {/* Theme Picker Sheet */}
       <Sheet

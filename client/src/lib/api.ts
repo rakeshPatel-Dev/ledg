@@ -6,6 +6,8 @@ import type {
   DebtSettlementInput,
   DuesQuery,
   DuesSummary,
+  ImportInput,
+  ImportResult,
   InvitationPreview,
   NotificationItem,
   NotificationPreference,
@@ -374,6 +376,13 @@ export function createApi() {
         request<{ id: string }>(`/dues/${id}`, {
           method: "DELETE",
         }).then((r) => r.id),
+    },
+    importer: {
+      transactions: (data: ImportInput) =>
+        request<ImportResult>("/import", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
     },
     me: {
       getProvider: () =>

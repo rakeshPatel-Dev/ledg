@@ -13,6 +13,7 @@ import type {
   DebtSettlementInput,
   DuesQuery,
   DuesSummary,
+  ImportInput,
   PaginatedResult,
   Space,
   SpaceInput,
@@ -1000,6 +1001,25 @@ export function useUpdateNotificationPreferences() {
       getApi().notifications.updatePreferences(data),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.notificationPreferences, updated);
+    },
+  });
+}
+
+/**
+ * Import transactions from a CSV or JSON file. Everything the user can see is
+ * derived from these queries, so invalidate the broad roots rather than trying
+ * to patch every cached page.
+ */
+export function useImportTransactions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ImportInput) => getApi().importer.transactions(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
     },
   });
 }

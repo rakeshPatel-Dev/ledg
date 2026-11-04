@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, SlidersHorizontal, Download, Plus, ReceiptText, SearchX, X } from "lucide-react";
+import { Search, SlidersHorizontal, Download, Upload, Plus, ReceiptText, SearchX, X } from "lucide-react";
 import { DEFAULT_CURRENCY, type TransactionType, type Transaction } from "@ledg/shared";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
+import { ImportTransactionsSheet } from "@/components/settings/import-transactions-sheet";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import {
@@ -61,6 +62,7 @@ export default function TransactionsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const [importSheetOpen, setImportSheetOpen] = useState(false);
 
   // Server-side search: debounce raw input before it hits the query key
   useEffect(() => {
@@ -135,6 +137,16 @@ export default function TransactionsPage() {
               className="rounded-full"
             >
               <Download className="size-4" />
+            </Button>
+            <Button
+              aria-label="Import transactions"
+              title="Import transactions"
+              variant="outline"
+              size="icon"
+              onClick={() => setImportSheetOpen(true)}
+              className="rounded-full"
+            >
+              <Upload className="size-4" />
             </Button>
             <Button
               aria-label="Show Filters"
@@ -364,6 +376,11 @@ export default function TransactionsPage() {
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
+      />
+
+      <ImportTransactionsSheet
+        open={importSheetOpen}
+        onOpenChange={setImportSheetOpen}
       />
     </FadeInStagger>
   );
