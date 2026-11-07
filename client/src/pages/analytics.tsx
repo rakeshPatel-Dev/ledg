@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Segmented } from "@/components/ui/segmented";
 import { DatePicker } from "@/components/ui/date-picker";
 import { getCategoryMeta } from "@/lib/categories";
@@ -141,7 +142,8 @@ export default function AnalyticsPage() {
   const recurringQ = useAnalyticsRecurring(selectedSpaceId);
 
   // Raw transactions (needed for drill-down sheet)
-  const { transactions } = useAllData();
+  const allData = useAllData();
+  const { transactions } = allData;
 
   const isLoading = spacesQuery.isLoading || summaryQ.isLoading;
   const summary = summaryQ.data;
@@ -200,9 +202,32 @@ export default function AnalyticsPage() {
     );
   }
 
-  const totalIncome = summary?.current.totalIncome ?? 0;
-  const totalExpense = summary?.current.totalExpense ?? 0;
-  const transactionCount = summary?.current.transactionCount ?? 0;
+  if (!summary) {
+    return (
+      <div className="flex flex-col gap-5">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight">Insights</h1>
+          <p className="text-sm text-muted-foreground">
+            Income, spending and savings · loans excluded
+          </p>
+        </div>
+
+        <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
+
+        <ErrorState
+          title="Couldn't load insights"
+          description="No totals are shown because the request did not finish. Your data is still there."
+          error={summaryQ.error}
+          onRetry={summaryQ.refetch}
+          isRetrying={summaryQ.isFetching}
+        />
+      </div>
+    );
+  }
+
+  const totalIncome = summary.current.totalIncome;
+  const totalExpense = summary.current.totalExpense;
+  const transactionCount = summary.current.transactionCount;
   const savingsRate =
     totalIncome > 0
       ? Math.max(0, ((totalIncome - totalExpense) / totalIncome) * 100)
@@ -221,6 +246,18 @@ export default function AnalyticsPage() {
           </p>
         </div>
       </div>
+
+      {spacesQuery.isError ? (
+        <ErrorState
+          contained={false}
+          className="py-2"
+          title="Couldn't load your spaces"
+          description="The space filter is unavailable, but totals for all spaces are still shown."
+          error={spacesQuery.error}
+          onRetry={spacesQuery.refetch}
+          isRetrying={spacesQuery.isFetching}
+        />
+      ) : null}
 
       {/* ── Space selector (if user has spaces) ── */}
       {spaces.length > 0 && (
@@ -591,7 +628,19 @@ export default function AnalyticsPage() {
           )}
 
           {/* ── Recurring Transactions ── */}
-          {!recurringQ.isLoading && <RecurringCard groups={recurring} />}
+          {recurringQ.isError ? (
+            <ErrorState
+              contained={false}
+              className="rounded-4xl border border-border/60 py-4"
+              title="Couldn't load recurring transactions"
+              description="The rest of this page is unaffected."
+              error={recurringQ.error}
+              onRetry={recurringQ.refetch}
+              isRetrying={recurringQ.isFetching}
+            />
+          ) : !recurringQ.isLoading ? (
+            <RecurringCard groups={recurring} />
+          ) : null}
         </>
       )}
 
@@ -601,6 +650,8 @@ export default function AnalyticsPage() {
         onOpenChange={(open) => { if (!open) setDrillCategory(null); }}
         category={drillCategory}
         transactions={filteredTransactions}
+        error={allData.error}
+        onRetry={allData.refetch}
       />
     </div>
   );

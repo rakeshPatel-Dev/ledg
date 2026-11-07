@@ -20,6 +20,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDeleteDue, useDue, useUndoSettlement } from "@/lib/queries";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatCurrency, formatDate, formatRelativeCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,14 @@ export function DueDetailSheet({
   dueId,
   onOpenSettle,
 }: DueDetailSheetProps) {
-  const { data: due, isLoading } = useDue(dueId || "");
+  const {
+    data: due,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useDue(dueId || "");
   const undoMutation = useUndoSettlement();
   const deleteMutation = useDeleteDue();
   const [undoingId, setUndoingId] = useState<string | null>(null);
@@ -116,7 +124,15 @@ export function DueDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {isLoading || !due ? (
+      {isError ? (
+        <ErrorState
+          contained={false}
+          title="Couldn't load this due"
+          error={error}
+          onRetry={refetch}
+          isRetrying={isFetching}
+        />
+      ) : isLoading || !due ? (
         <div className="flex min-h-48 items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="size-7 animate-spin text-primary" />

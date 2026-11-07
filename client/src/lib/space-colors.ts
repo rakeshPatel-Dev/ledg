@@ -36,7 +36,7 @@ export const SPACE_TYPE_BORDER: Record<SpaceType, string> = {
   business: "border-amber-500/30",
 };
 
-export function getBalanceColor(balance: number): string {
+export function getBalanceColor(balance: number | null | undefined): string {
   if (balance > 0) return "text-emerald-600 dark:text-emerald-400";
   if (balance < 0) return "text-rose-600 dark:text-rose-400";
   return "text-foreground";

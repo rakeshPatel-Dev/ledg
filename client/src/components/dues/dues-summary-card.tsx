@@ -7,6 +7,8 @@ import {
   HandCoins,
 } from "lucide-react";
 
+import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
 import { useDuesSummary } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -16,9 +18,28 @@ interface DuesSummaryCardProps {
 }
 
 export function DuesSummaryCard({ className }: DuesSummaryCardProps) {
-  const { data: summary, isLoading } = useDuesSummary();
+  const { data: summary, isLoading, isError, error, refetch, isFetching } =
+    useDuesSummary();
 
-  if (isLoading || !summary) return null;
+  if (isLoading) return null;
+
+  if (isError) {
+    return (
+      <Card className="rounded-4xl border border-border/60 p-2">
+        <ErrorState
+          contained={false}
+          className="py-4"
+          title="Couldn't load dues"
+          description="Your dues totals are hidden until this request succeeds."
+          error={error}
+          onRetry={refetch}
+          isRetrying={isFetching}
+        />
+      </Card>
+    );
+  }
+
+  if (!summary) return null;
 
   const hasDues = summary.activeCount > 0 || summary.owedToMe > 0 || summary.iOwe > 0;
   if (!hasDues) return null;

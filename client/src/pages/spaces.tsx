@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
@@ -54,7 +55,14 @@ export default function SpacesPage() {
 
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: spaces, isLoading } = useSpaces();
+  const {
+    data: spaces,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useSpaces();
   const analytics = useAnalytics();
   const createSpace = useCreateSpace();
   const updateSpace = useUpdateSpace();
@@ -252,6 +260,7 @@ export default function SpacesPage() {
 
   const summaryFor = (id: string) =>
     analytics.bySpace.find((s) => s.space.id === id);
+  const deletingSummary = deletingSpace ? summaryFor(deletingSpace.id) : undefined;
 
   return (
     <FadeInStagger className="flex flex-col gap-5">
@@ -275,19 +284,22 @@ export default function SpacesPage() {
       </FadeInItem>
 
       {/* Tabs Segmentation */}
-      <FadeInItem>
-        <Segmented
-          options={[
-            { value: "all", label: `All (${(spaces || []).length})` },
-            { value: "personal", label: `Personal (${personalCount})` },
-            { value: "shared", label: `Shared (${sharedCount})` },
-          ]}
-          value={tab}
-          onChange={(v) => setTab(v as TabFilter)}
-        />
-      </FadeInItem>
+      {!isLoading && !isError ? (
+        <FadeInItem>
+          <Segmented
+            options={[
+              { value: "all", label: `All (${(spaces || []).length})` },
+              { value: "personal", label: `Personal (${personalCount})` },
+              { value: "shared", label: `Shared (${sharedCount})` },
+            ]}
+            value={tab}
+            onChange={(v) => setTab(v as TabFilter)}
+          />
+        </FadeInItem>
+      ) : null}
 
       {/* Search Bar */}
+      {!isLoading && !isError ? (
       <FadeInItem>
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -307,6 +319,7 @@ export default function SpacesPage() {
           )}
         </div>
       </FadeInItem>
+      ) : null}
 
       {isLoading ? (
         <div className="grid gap-3">
@@ -314,7 +327,33 @@ export default function SpacesPage() {
             <Skeleton key={i} className="h-28 w-full rounded-4xl" />
           ))}
         </div>
-      ) : !filteredSpaces || filteredSpaces.length === 0 ? (
+      ) : isError ? (
+        <FadeInItem>
+          <ErrorState
+            title="Couldn't load your spaces"
+            description="Your spaces and their balances are hidden until the request succeeds. Nothing has been deleted."
+            error={error}
+            onRetry={refetch}
+            isRetrying={isFetching}
+          />
+        </FadeInItem>
+      ) : (
+        <>
+          {analytics.error ? (
+            <FadeInItem>
+              <ErrorState
+                contained={false}
+                className="rounded-4xl border border-border/60 py-4"
+                title="Couldn't load balances"
+                description="Your spaces are shown, but balances, transaction counts and budgets are unavailable."
+                error={analytics.error}
+                onRetry={analytics.refetch}
+                isRetrying={analytics.fetching}
+              />
+            </FadeInItem>
+          ) : null}
+
+          {!filteredSpaces || filteredSpaces.length === 0 ? (
         <FadeInItem>
           <Card className="rounded-4xl p-2 border border-border/60">
             <EmptyState
@@ -361,7 +400,7 @@ export default function SpacesPage() {
             const typeText = SPACE_TYPE_TEXT[space.type];
             const typeBadge = SPACE_TYPE_BADGE[space.type];
             const summary = summaryFor(space.id);
-            const balance = summary?.balance ?? 0;
+            const balance = summary?.balance;
             const balanceColor = getBalanceColor(balance);
             const isOwner = space.role === "owner" || (!space.role && space.ownerId === user?.id);
             const members = space.members || [];
@@ -429,10 +468,11 @@ export default function SpacesPage() {
 
                           <span className="text-xs text-muted-foreground/60">·</span>
                           <span className="text-xs text-muted-foreground">
-                            {summary?.transactionCount ?? 0}{" "}
-                            {(summary?.transactionCount ?? 0) !== 1
-                              ? "txns"
-                              : "txn"}
+                            {summary
+                              ? `${summary.transactionCount} ${
+                                  summary.transactionCount !== 1 ? "txns" : "txn"
+                                }`
+                              : "—"}
                           </span>
                         </div>
 
@@ -483,7 +523,7 @@ export default function SpacesPage() {
                             balanceColor
                           )}
                         >
-                          {formatCurrency(balance)}
+                          {balance != null ? formatCurrency(balance) : "—"}
                         </p>
 
                         {isOwner && (
@@ -513,8 +553,22 @@ export default function SpacesPage() {
                     </div>
 
                     {space.monthlyBudget != null && space.monthlyBudget > 0 ? (() => {
-                      const spent = summary?.monthExpense ?? 0;
+                      const spent = summary?.monthExpense;
                       const budget = space.monthlyBudget;
+                      if (spent == null) {
+                        return (
+                          <div className="mt-3 w-full space-y-1.5 border-t border-border/40 pt-2.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-muted-foreground">
+                                Monthly budget
+                              </span>
+                              <span className="font-bold tabular-nums text-muted-foreground">
+                                — / {formatCurrency(budget)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
                       const isOver = spent > budget;
                       const percent = budget > 0
                         ? Math.round((spent / budget) * 100)
@@ -586,6 +640,8 @@ export default function SpacesPage() {
             );
           })}
         </div>
+          )}
+        </>
       )}
 
       {/* Edit / Create Sheet */}
@@ -732,7 +788,9 @@ export default function SpacesPage() {
           deletingSpace
             ? deletingSpace.isShared
               ? `This will permanently delete the shared space "${deletingSpace.name}" for all members and remove all transactions.`
-              : `This will permanently delete "${deletingSpace.name}" and all ${summaryFor(deletingSpace.id)?.transactionCount ?? 0} transactions in it.`
+              : deletingSummary
+                ? `This will permanently delete "${deletingSpace.name}" and all ${deletingSummary.transactionCount} transactions in it.`
+                : `This will permanently delete "${deletingSpace.name}" and all of its transactions.`
             : undefined
         }
       >

@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -94,16 +95,42 @@ export default function SpaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: spaces, isLoading: loadingSpaces } = useSpaces();
-  const { transactions, loading: loadingTransactions } = useAllData();
+  const {
+    data: spaces,
+    isLoading: loadingSpaces,
+    isError: spacesError,
+    error: spacesErrorDetail,
+    refetch: refetchSpaces,
+    isFetching: fetchingSpaces,
+  } = useSpaces();
+  const {
+    transactions,
+    loading: loadingTransactions,
+    error: transactionsError,
+    refetch: refetchTransactions,
+    fetching: fetchingTransactions,
+  } = useAllData();
   const { openCreate, openEdit: openTransactionEdit } = useTransactionForm();
 
   const updateSpace = useUpdateSpace();
   const deleteSpace = useDeleteSpace();
 
   // Member management mutations & queries
-  const { data: spaceMembers, isLoading: loadingMembers } = useSpaceMembers(id);
-  const { data: spaceInvitations } = useSpaceInvitations(id);
+  const {
+    data: spaceMembers,
+    isLoading: loadingMembers,
+    isError: membersError,
+    error: membersErrorDetail,
+    refetch: refetchMembers,
+    isFetching: fetchingMembers,
+  } = useSpaceMembers(id);
+  const {
+    data: spaceInvitations,
+    isError: invitationsError,
+    error: invitationsErrorDetail,
+    refetch: refetchInvitations,
+    isFetching: fetchingInvitations,
+  } = useSpaceInvitations(id);
   const inviteMemberMutation = useInviteMember();
   const removeMemberMutation = useRemoveMember();
   const transferOwnershipMutation = useTransferOwnership();
@@ -395,6 +422,28 @@ export default function SpaceDetailPage() {
     );
   }
 
+  if (spacesError) {
+    return (
+      <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={() => navigate("/spaces")}
+          className="group flex items-center gap-2 self-start text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" />
+          Back
+        </button>
+        <ErrorState
+          title="Couldn't load this space"
+          description="The space and its balance are hidden until the request succeeds. Nothing has been deleted."
+          error={spacesErrorDetail}
+          onRetry={refetchSpaces}
+          isRetrying={fetchingSpaces}
+        />
+      </div>
+    );
+  }
+
   if (!space) {
     return (
       <EmptyState
@@ -415,7 +464,8 @@ export default function SpaceDetailPage() {
   const typeBg = SPACE_TYPE_BG[space.type];
   const typeText = SPACE_TYPE_TEXT[space.type];
   const typeBadge = SPACE_TYPE_BADGE[space.type];
-  const balanceColor = getBalanceColor(analytics.balance);
+  const transactionsUnavailable = Boolean(transactionsError);
+  const balanceColor = getBalanceColor(transactionsUnavailable ? undefined : analytics.balance);
   const members = spaceMembers || space.members || [];
 
   return (
@@ -443,7 +493,7 @@ export default function SpaceDetailPage() {
             >
               <Users className="size-3.5 text-primary" />
               <span>Members</span>
-              {members.length > 0 && (
+              {!loadingMembers && !membersError && members.length > 0 && (
                 <span className="ml-0.5 rounded-full bg-primary/10 px-1.5 py-0.2 text-[10px] font-bold text-primary">
                   {members.length}
                 </span>
@@ -548,7 +598,9 @@ export default function SpaceDetailPage() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {analytics.count} transaction{analytics.count !== 1 ? "s" : ""}
+                  {transactionsUnavailable
+                    ? "Transactions unavailable"
+                    : `${analytics.count} transaction${analytics.count !== 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>
@@ -574,7 +626,7 @@ export default function SpaceDetailPage() {
                 Net saved
               </p>
               <p className={`text-base font-black tabular-nums mt-0.5 ${balanceColor}`}>
-                {formatCurrency(analytics.balance)}
+                {transactionsUnavailable ? "—" : formatCurrency(analytics.balance)}
               </p>
             </div>
 
@@ -585,7 +637,7 @@ export default function SpaceDetailPage() {
                 <TrendingUp className="size-3 text-emerald-500" /> Income
               </p>
               <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
-                +{formatCurrency(analytics.income)}
+                {transactionsUnavailable ? "—" : `+${formatCurrency(analytics.income)}`}
               </p>
             </div>
 
@@ -594,13 +646,28 @@ export default function SpaceDetailPage() {
                 <TrendingDown className="size-3 text-rose-500" /> Expenses
               </p>
               <p className="text-sm font-bold tabular-nums text-rose-600 dark:text-rose-400 mt-0.5">
-                -{formatCurrency(analytics.expense)}
+                {transactionsUnavailable ? "—" : `-${formatCurrency(analytics.expense)}`}
               </p>
             </div>
 
             {space.monthlyBudget && space.monthlyBudget > 0 ? (() => {
-              const spent = analytics.monthExpense;
+              const spent = transactionsUnavailable ? null : analytics.monthExpense;
               const budget = space.monthlyBudget;
+              if (spent == null) {
+                return (
+                  <>
+                    <div className="my-0.5 h-px bg-border/40" />
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <PieChart className="size-3 text-primary" /> Month Budget
+                      </span>
+                      <span className="font-bold tabular-nums text-muted-foreground">
+                        — / {formatCurrency(budget)}
+                      </span>
+                    </div>
+                  </>
+                );
+              }
               const isOver = spent > budget;
               const percent = Math.round((spent / budget) * 100);
               const overAmount = spent - budget;
@@ -685,7 +752,17 @@ export default function SpaceDetailPage() {
       </FadeInItem>
 
       {/* Transactions List */}
-      {filteredTransactions.length === 0 ? (
+      {transactionsUnavailable ? (
+        <FadeInItem>
+          <ErrorState
+            title="Couldn't load transactions"
+            description="The balance and this list are hidden until the request succeeds. Your transactions are still there."
+            error={transactionsError}
+            onRetry={refetchTransactions}
+            isRetrying={fetchingTransactions}
+          />
+        </FadeInItem>
+      ) : filteredTransactions.length === 0 ? (
         <FadeInItem>
           <Card className="rounded-4xl p-2 border border-border/60">
             <EmptyState
@@ -839,6 +916,15 @@ export default function SpaceDetailPage() {
                   <Loader2 className="size-4 animate-spin inline mr-2" />
                   Loading members...
                 </div>
+              ) : membersError ? (
+                <ErrorState
+                  contained={false}
+                  className="py-4"
+                  title="Couldn't load members"
+                  error={membersErrorDetail}
+                  onRetry={refetchMembers}
+                  isRetrying={fetchingMembers}
+                />
               ) : (
                 members.map((m) => {
                   const isCurrent = m.userId === user?.id;
@@ -973,13 +1059,26 @@ export default function SpaceDetailPage() {
           )}
 
           {/* Owner Only: Pending Invitations List */}
-          {isOwner && spaceInvitations && spaceInvitations.length > 0 && (
+          {isOwner && (invitationsError || (spaceInvitations && spaceInvitations.length > 0)) && (
             <div className="space-y-2 border-t border-border/50 pt-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Pending Invitations ({spaceInvitations.length})
+                Pending Invitations
+                {!invitationsError && spaceInvitations
+                  ? ` (${spaceInvitations.length})`
+                  : ""}
               </p>
+              {invitationsError ? (
+                <ErrorState
+                  contained={false}
+                  className="py-4"
+                  title="Couldn't load invitations"
+                  error={invitationsErrorDetail}
+                  onRetry={refetchInvitations}
+                  isRetrying={fetchingInvitations}
+                />
+              ) : (
               <div className="flex flex-col gap-2">
-                {spaceInvitations.map((inv) => (
+                {spaceInvitations?.map((inv) => (
                   <div
                     key={inv.id}
                     className="flex items-center justify-between gap-2 rounded-2xl bg-muted/30 p-2.5 border border-border/30"
@@ -1017,6 +1116,7 @@ export default function SpaceDetailPage() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           )}
 
@@ -1218,7 +1318,11 @@ export default function SpaceDetailPage() {
         open={deleting}
         onOpenChange={setDeleting}
         title="Delete Space"
-        description={`This will permanently delete "${space.name}" and all ${analytics.count} transaction${analytics.count === 1 ? "" : "s"} in it.`}
+        description={`This will permanently delete "${space.name}" and ${
+          transactionsUnavailable
+            ? "all of its transactions"
+            : `all ${analytics.count} transaction${analytics.count === 1 ? "" : "s"} in it`
+        }.`}
       >
         <div className="flex flex-col gap-3 pt-3">
           <Button

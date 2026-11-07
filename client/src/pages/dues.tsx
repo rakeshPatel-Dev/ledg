@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -20,7 +20,10 @@ import type { Debt, DebtDirection, DebtStatus } from "@ledg/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { useDues, useDuesSummary } from "@/lib/queries";
+import { captureException } from "@/lib/error-tracking";
+import { getUserFacingError } from "@/lib/errors";
 import { formatCurrency, formatRelativeCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
@@ -77,7 +80,14 @@ export default function DuesPage() {
   const [viewMode, setViewMode] = useState<"person" | "list">("person");
   const [expandedPeople, setExpandedPeople] = useState<Record<string, boolean>>({});
 
-  const { data: duesSummary, isLoading: summaryLoading } = useDuesSummary();
+  const summaryQuery = useDuesSummary();
+  const {
+    data: duesSummary,
+    isLoading: summaryLoading,
+    isError: summaryError,
+    error: summaryErrorDetail,
+    isFetching: summaryFetching,
+  } = summaryQuery;
 
   const queryParams = useMemo(() => {
     if (activeTab === "settled") return { status: "settled" as DebtStatus, pageSize: 50 };
@@ -86,7 +96,15 @@ export default function DuesPage() {
     return { pageSize: 50 };
   }, [activeTab]);
 
-  const { data: duesResult, isLoading: duesLoading } = useDues(queryParams);
+  const duesQuery = useDues(queryParams);
+  const {
+    data: duesResult,
+    isLoading: duesLoading,
+    isError: duesError,
+    error: duesErrorDetail,
+    refetch: refetchDues,
+    isFetching: duesFetching,
+  } = duesQuery;
 
   const filteredDues = useMemo(() => {
     let list = duesResult?.items ?? [];
@@ -142,8 +160,14 @@ export default function DuesPage() {
     setDetailOpen(true);
   };
 
+  useEffect(() => {
+    if (summaryError) {
+      captureException(summaryErrorDetail, { scope: "dues-summary" });
+    }
+  }, [summaryError, summaryErrorDetail]);
+
   const isLoading = summaryLoading || duesLoading;
-  const overdueCount = duesSummary?.overdueCount ?? 0;
+  const overdueCount = summaryError ? 0 : (duesSummary?.overdueCount ?? 0);
 
   return (
     <FadeInStagger className="flex flex-col min-h-screen pb-28">
@@ -191,7 +215,24 @@ export default function DuesPage() {
           </AnimatePresence>
 
           {/* Net amount */}
-          {summaryLoading ? (
+          {summaryError ? (
+            <div className="mb-5 rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md">
+              <p className="text-xs font-semibold text-primary-foreground">
+                Couldn&apos;t load the dues summary.
+              </p>
+              <p className="mt-1 text-[0.68rem] text-primary-foreground/70">
+                {getUserFacingError(summaryErrorDetail)}
+              </p>
+              <button
+                type="button"
+                onClick={() => void summaryQuery.refetch()}
+                disabled={summaryFetching}
+                className="mt-2 text-xs font-bold text-primary-foreground underline underline-offset-2 disabled:opacity-60"
+              >
+                {summaryFetching ? "Trying again…" : "Try again"}
+              </button>
+            </div>
+          ) : summaryLoading ? (
             <div className="space-y-2 mb-5">
               <div className="h-9 w-36 animate-pulse rounded-3xl bg-primary-foreground/20" />
               <div className="h-3 w-24 animate-pulse rounded-full bg-primary-foreground/15" />
@@ -209,6 +250,7 @@ export default function DuesPage() {
           )}
 
           {/* Stats row */}
+          {!summaryError && (
           <div className="grid grid-cols-2 gap-2.5">
             <div className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md">
               <div className="flex items-center gap-1.5 mb-2">
@@ -238,6 +280,7 @@ export default function DuesPage() {
               </p>
             </div>
           </div>
+          )}
 
           {/* Overdue banner */}
           <AnimatePresence>
@@ -323,6 +366,16 @@ export default function DuesPage() {
               <p className="text-xs text-muted-foreground">Loading dues...</p>
             </div>
           </div>
+        ) : duesError ? (
+          <FadeInItem>
+            <ErrorState
+              title="Couldn't load your dues"
+              description="The list is hidden until the request succeeds. Your dues have not been changed."
+              error={duesErrorDetail}
+              onRetry={refetchDues}
+              isRetrying={duesFetching}
+            />
+          </FadeInItem>
         ) : filteredDues.length === 0 ? (
           <FadeInItem>
             <div className="mx-1 mt-4 rounded-4xl border border-dashed border-border/70 py-14 text-center">

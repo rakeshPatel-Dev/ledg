@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { DuesSummaryCard } from "@/components/dues/dues-summary-card";
@@ -28,7 +29,8 @@ const CATEGORY_TABS: { value: CategoryTab; label: string }[] = [
 ];
 
 export default function DashboardPage() {
-  const { data, isPending } = useDashboardSummary();
+  const { data, isPending, isError, error, refetch, isFetching } =
+    useDashboardSummary();
   const { openCreate, openEdit } = useTransactionForm();
   const currency = DEFAULT_CURRENCY;
   const [tab, setTab] = useState<CategoryTab>("expense");
@@ -77,6 +79,7 @@ export default function DashboardPage() {
 
   const isAllEmpty =
     !isPending &&
+    !isError &&
     ((data?.transactionCount ?? 0) === 0 ||
       (recent.length === 0 &&
         byCategory.length === 0 &&
@@ -86,6 +89,17 @@ export default function DashboardPage() {
     <FadeInStagger className="flex flex-col gap-6">
       <Header />
 
+      {isError ? (
+        <FadeInItem>
+          <ErrorState
+            title="Couldn't load your summary"
+            description="Your totals are hidden until the request succeeds, so nothing here looks like a real balance."
+            error={error}
+            onRetry={refetch}
+            isRetrying={isFetching}
+          />
+        </FadeInItem>
+      ) : (
       <FadeInItem>
         <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20">
           <div className="flex items-center justify-between">
@@ -105,7 +119,7 @@ export default function DashboardPage() {
           ) : (
             <>
               <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
-                {formatCurrency(data?.totalBalance ?? 0, currency)}
+                {data ? formatCurrency(data.totalBalance, currency) : "—"}
               </p>
               <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground/70">
                 All-time income minus spending
@@ -125,7 +139,7 @@ export default function DashboardPage() {
                 Income
               </div>
               <p className="mt-2 text-lg font-extrabold tabular-nums">
-                {formatCompact(data?.monthIncome ?? 0, currency)}
+                {data ? formatCompact(data.monthIncome, currency) : "—"}
               </p>
               <p className="text-[0.65rem] font-medium text-primary-foreground/70">
                 this month
@@ -142,7 +156,7 @@ export default function DashboardPage() {
                 Spent
               </div>
               <p className="mt-2 text-lg font-extrabold tabular-nums">
-                {formatCompact(data?.monthSpend ?? 0, currency)}
+                {data ? formatCompact(data.monthSpend, currency) : "—"}
               </p>
               <p className="text-[0.65rem] font-medium text-primary-foreground/70">
                 this month
@@ -151,6 +165,7 @@ export default function DashboardPage() {
           </div>
         </section>
       </FadeInItem>
+      )}
 
       <FadeInItem>
         <DuesSummaryCard />

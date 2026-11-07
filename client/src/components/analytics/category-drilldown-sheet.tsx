@@ -4,6 +4,7 @@ import { DEFAULT_CURRENCY } from "@ledg/shared";
 
 import { Sheet } from "@/components/ui/sheet";
 import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency } from "@/lib/format";
 import type { Transaction } from "@ledg/shared";
@@ -13,6 +14,9 @@ interface CategoryDrilldownSheetProps {
   onOpenChange: (open: boolean) => void;
   category: string | null;
   transactions: Transaction[];
+  /** The drill-down reads from the all-transactions query. */
+  error?: unknown;
+  onRetry?: () => void;
 }
 
 export function CategoryDrilldownSheet({
@@ -20,6 +24,8 @@ export function CategoryDrilldownSheet({
   onOpenChange,
   category,
   transactions,
+  error,
+  onRetry,
 }: CategoryDrilldownSheetProps) {
   const currency = DEFAULT_CURRENCY;
   if (!category) return null;
@@ -36,9 +42,23 @@ export function CategoryDrilldownSheet({
       open={open}
       onOpenChange={onOpenChange}
       title={category}
-      description={`${categoryTxs.length} transaction${categoryTxs.length === 1 ? "" : "s"} · ${formatCurrency(total, currency)} total`}
+      description={
+        error
+          ? "Transactions unavailable"
+          : `${categoryTxs.length} transaction${categoryTxs.length === 1 ? "" : "s"} · ${formatCurrency(total, currency)} total`
+      }
     >
       <div className="flex flex-col gap-3 pt-2">
+        {error ? (
+          <ErrorState
+            contained={false}
+            title="Couldn't load the transactions"
+            description="The category total is hidden until the request succeeds."
+            error={error}
+            onRetry={onRetry}
+          />
+        ) : (
+          <>
         {/* Category icon + total */}
         <div className="flex items-center gap-3 rounded-3xl bg-accent/50 p-4">
           <span
@@ -99,6 +119,8 @@ export function CategoryDrilldownSheet({
               </Link>
             )}
           </div>
+        )}
+          </>
         )}
       </div>
     </Sheet>

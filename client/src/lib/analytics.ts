@@ -26,7 +26,9 @@ export interface AnalyticsData {
   byIncomeCategory: { category: string; amount: number; count: number }[];
   bySpace: SpaceSummary[];
   loading: boolean;
+  fetching: boolean;
   error: unknown;
+  refetch: () => void;
 }
 
 function currentMonthKey(now = new Date()) {
@@ -34,7 +36,7 @@ function currentMonthKey(now = new Date()) {
 }
 
 export function useAnalytics(): AnalyticsData {
-  const { spaces, transactions, loading, error } = useAllData();
+  const { spaces, transactions, loading, fetching, error, refetch } = useAllData();
 
   return useMemo(() => {
     const monthKeyNow = currentMonthKey();
@@ -103,7 +105,10 @@ export function useAnalytics(): AnalyticsData {
       (a, b) => b.amount - a.amount
     );
 
-    const bySpace = spaces.map((space) => {
+    // A failed transactions request means every balance is unknown, not zero.
+    // Leave the per-space summaries empty so cards render placeholders instead
+    // of Rs. 0.
+    const bySpace = error ? [] : spaces.map((space) => {
       const spaceTx = transactions.filter((t) => t.spaceId === space.id);
       const spaceOperatingTx = operatingTransactions.filter(
         (t) => t.spaceId === space.id
@@ -149,7 +154,9 @@ export function useAnalytics(): AnalyticsData {
       byIncomeCategory,
       bySpace,
       loading,
+      fetching,
       error,
+      refetch,
     };
-  }, [spaces, transactions, loading, error]);
+  }, [spaces, transactions, loading, fetching, error, refetch]);
 }

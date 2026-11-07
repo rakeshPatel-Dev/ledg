@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { SwipeableTransactionItem } from "@/components/transactions/swipeable-transaction-item";
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { ImportTransactionsSheet } from "@/components/settings/import-transactions-sheet";
@@ -124,7 +125,11 @@ export default function TransactionsPage() {
               Activity
             </h1>
             <p className="text-sm text-muted-foreground">
-              {total} transaction{total === 1 ? "" : "s"}
+              {transactionsQuery.isPending
+                ? "Loading…"
+                : transactionsQuery.isError
+                  ? "Couldn't load activity"
+                  : `${total} transaction${total === 1 ? "" : "s"}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -240,17 +245,13 @@ export default function TransactionsPage() {
         </div>
       ) : transactionsQuery.isError ? (
         <FadeInItem>
-          <Card className="rounded-4xl p-2 border border-border/60">
-            <EmptyState
-              icon={<SearchX className="size-7" />}
-              title="Couldn't load transactions"
-              description={
-                transactionsQuery.error instanceof Error
-                  ? transactionsQuery.error.message
-                  : "Something went wrong while loading your transactions."
-              }
-            />
-          </Card>
+          <ErrorState
+            title="Couldn't load transactions"
+            description="Your activity is hidden until the request succeeds. Nothing has been deleted."
+            error={transactionsQuery.error}
+            onRetry={transactionsQuery.refetch}
+            isRetrying={transactionsQuery.isFetching}
+          />
         </FadeInItem>
       ) : groups.length === 0 ? (
         <FadeInItem>
