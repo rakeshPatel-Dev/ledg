@@ -8,6 +8,8 @@ interface EmptyStateProps {
   description?: string;
   action?: ReactNode;
   className?: string;
+  /** Use "destructive" for failures so they cannot be mistaken for empty data. */
+  tone?: "default" | "destructive";
 }
 
 export function EmptyState({
@@ -16,6 +18,7 @@ export function EmptyState({
   description,
   action,
   className,
+  tone = "default",
 }: EmptyStateProps) {
   return (
     <div
@@ -25,7 +28,14 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <div className="flex size-14 items-center justify-center rounded-3xl bg-primary/10 text-primary ring-4 ring-primary/5">
+        <div
+          className={cn(
+            "flex size-14 items-center justify-center rounded-3xl ring-4",
+            tone === "destructive"
+              ? "bg-destructive/10 text-destructive ring-destructive/5"
+              : "bg-primary/10 text-primary ring-primary/5"
+          )}
+        >
           {icon}
         </div>
       ) : null}

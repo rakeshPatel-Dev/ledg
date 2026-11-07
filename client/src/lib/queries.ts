@@ -5,7 +5,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type {
   Debt,
   DebtCreateInput,
@@ -563,7 +563,9 @@ export interface AggregatedData {
   spaces: Space[];
   transactions: Transaction[];
   loading: boolean;
+  fetching: boolean;
   error: unknown;
+  refetch: () => void;
 }
 
 export function useAllData(): AggregatedData {
@@ -592,11 +594,20 @@ export function useAllData(): AggregatedData {
     enabled: !!spacesQuery.data,
   });
 
+  const refetchSpaces = spacesQuery.refetch;
+  const refetchTransactions = transactionsQuery.refetch;
+  const refetch = useCallback(() => {
+    void refetchSpaces();
+    void refetchTransactions();
+  }, [refetchSpaces, refetchTransactions]);
+
   return {
     spaces: spacesQuery.data ?? [],
     transactions: transactionsQuery.data?.items ?? [],
     loading: spacesQuery.isLoading || transactionsQuery.isLoading,
+    fetching: spacesQuery.isFetching || transactionsQuery.isFetching,
     error: spacesQuery.error ?? transactionsQuery.error,
+    refetch,
   };
 }
 
