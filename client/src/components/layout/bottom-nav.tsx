@@ -48,12 +48,6 @@ const NAV_ITEMS: NavItem[] = [
 
 const MORE_ITEMS: MoreItem[] = [
   {
-    to: "/settings",
-    label: "Settings",
-    description: "Account, preferences, and data",
-    icon: Settings2,
-  },
-  {
     to: "/analytics",
     label: "Insights",
     description: "Spending trends and breakdowns",
@@ -64,6 +58,12 @@ const MORE_ITEMS: MoreItem[] = [
     label: "Dues",
     description: "Money lent and borrowed",
     icon: HandCoins,
+  },
+  {
+    to: "/settings",
+    label: "Settings",
+    description: "Account, preferences, and data",
+    icon: Settings2,
   },
 ];
 

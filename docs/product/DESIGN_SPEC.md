@@ -348,9 +348,9 @@ Pill container: `rounded-full border-border/50 bg-card/40 backdrop-blur-2xl back
 5. **More** (`Ellipsis`) → opens the More sheet; active on `/dues`, `/analytics`, `/settings` and `/profile`; carries a static destructive overdue count badge.
 
 **More sheet** (`Sheet`, title `More`): grouped list (`Card rounded-4xl p-1.5`, rows divided by `h-px bg-border/60`), each row = icon tile (`size-10 rounded-2xl bg-primary/10 text-primary`) + title `text-sm font-semibold` + subtitle `text-xs muted` + `ChevronRight`; the sheet closes on navigation.
-- **Settings** (`Settings2`) → `/settings` — `Account, preferences, and data`
 - **Insights** (`ChartNoAxesCombined`) → `/analytics` — `Spending trends and breakdowns`
 - **Dues** (`HandCoins`) → `/dues` — `Money lent and borrowed`, with the overdue count badge
+- **Settings** (`Settings2`) → `/settings` — `Account, preferences, and data`
 
 Active link: emerald text + `stroke-[2.5]` icon + sliding rounded pill `bg-primary/10` (`layoutId="activeBottomNavPill"`). Labels `text-[0.55rem] font-semibold`.
 
