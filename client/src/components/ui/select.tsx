@@ -130,13 +130,15 @@ export function SelectTrigger({
   className,
   children,
   disabled: disabledProp,
+  ref,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ComponentPropsWithRef<"button">) {
   const { open, setOpen, disabled: contextDisabled } = useSelectContext();
   const disabled = disabledProp ?? contextDisabled;
 
   return (
     <button
+      ref={ref}
       type="button"
       disabled={disabled}
       onClick={() => !disabled && setOpen(!open)}

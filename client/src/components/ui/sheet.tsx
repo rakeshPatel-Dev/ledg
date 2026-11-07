@@ -9,6 +9,8 @@ interface SheetProps {
   title?: string;
   description?: string;
   children: ReactNode;
+  /** Pinned below the scroll area, so the primary action is always visible. */
+  footer?: ReactNode;
   className?: string;
   scrollClassName?: string;
 }
@@ -19,6 +21,7 @@ export function Sheet({
   title,
   description,
   children,
+  footer,
   className,
   scrollClassName,
 }: SheetProps) {
@@ -57,9 +60,21 @@ export function Sheet({
                 <Drawer.Title className="sr-only">Sheet</Drawer.Title>
               )}
 
-              <div className={cn("flex-1 overflow-y-auto px-5 pb-10", scrollClassName)}>
+              <div
+                className={cn(
+                  "flex-1 overflow-y-auto px-5",
+                  footer ? "pb-4" : "pb-10",
+                  scrollClassName
+                )}
+              >
                 {children}
               </div>
+
+              {footer ? (
+                <div className="shrink-0 border-t border-border/60 bg-card/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
+                  {footer}
+                </div>
+              ) : null}
             </div>
           </Drawer.Popup>
         </Drawer.Viewport>
