@@ -44,7 +44,7 @@ export function Header() {
           <HandCoins className="size-4" />
           <span className="text-xs font-bold">Dues</span>
           {duesSummary && duesSummary.overdueCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[0.55rem] font-bold text-white shadow-sm animate-pulse">
+            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[0.55rem] font-bold text-white shadow-sm">
               {duesSummary.overdueCount}
             </span>
           )}

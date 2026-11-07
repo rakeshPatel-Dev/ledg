@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import type { Debt, DebtDirection, DebtStatus } from "@ledg/shared";
 
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export default function DuesPage() {
 
   const [viewMode, setViewMode] = useState<"person" | "list">("person");
   const [expandedPeople, setExpandedPeople] = useState<Record<string, boolean>>({});
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const summaryQuery = useDuesSummary();
   const {
@@ -149,6 +151,20 @@ export default function DuesPage() {
     setSelectedPerson(person);
     setCreateOpen(true);
   };
+
+  // The global add button lands here as /dues?add=due. Open the create sheet,
+  // then remove the marker so closing the sheet does not reopen it.
+  useEffect(() => {
+    if (searchParams.get("add") !== "due") return;
+
+    setCreateDirection("lent");
+    setSelectedPerson("");
+    setCreateOpen(true);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("add");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleOpenSettle = (due: Debt) => {
     setSelectedDueForSettle(due);
@@ -532,33 +548,6 @@ export default function DuesPage() {
             ))}
           </FadeInStagger>
         )}
-      </div>
-
-      {/* ── Floating action buttons ── */}
-      <div className="fixed bottom-24 right-5 z-20 flex flex-col gap-2.5 items-end">
-        <AnimatePresence>
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 20 }}
-            onClick={() => handleOpenCreate("borrowed")}
-            className="flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2.5 text-white shadow-lg shadow-amber-500/30 active:scale-95 transition-transform"
-          >
-            <ArrowDownLeft className="size-4" />
-            <span className="text-sm font-bold">I Borrowed</span>
-          </motion.button>
-
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            onClick={() => handleOpenCreate("lent")}
-            className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-white shadow-lg shadow-emerald-600/30 active:scale-95 transition-transform"
-          >
-            <ArrowUpRight className="size-4" />
-            <span className="text-sm font-bold">I Lent</span>
-          </motion.button>
-        </AnimatePresence>
       </div>
 
       {/* ── Sheets ── */}
