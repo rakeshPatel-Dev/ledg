@@ -11,7 +11,7 @@
 | **Themes** | Light and dark |
 | **Data** | Seeded review account with 3 spaces, 58 transactions, 5 dues, notifications and pending invitations |
 | **Method** | Full walkthrough of the running app with realistic data, paired with a screen-by-screen review of the rendered interface, copy and interaction behaviour, then source verification of every data and state claim |
-| **Implementation status** | ✅ Items 1 (“Make the money truthful”), 2 (“Make failure visible”) and 3 (“Make the common path short”) of the priority list are implemented as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
+| **Implementation status** | ✅ Items 1 (“Make the money truthful”), 2 (“Make failure visible”), 3 (“Make the common path short”) and 4 (“Make navigation honest”) of the priority list are implemented as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
 
 ---
 
@@ -125,8 +125,8 @@ The table below is the short version. Every row is expanded later.
 | 3 | **High** | ✅ “+ New space…” inside the transaction sheet discards the form | Add transaction | Loses typed data and interrupts the most common task |
 | 4 | **High** | The primary action sits below a long scroll in the add sheet | Add transaction | Adds friction to every single entry |
 | 5 | **High** | A signed-out invitee loses the invitation after sign-in or sign-up | Invite, Sign in, Sign up | Blocks the shared-space onboarding path |
-| 6 | **High** | Dues is not a bottom-nav destination and has no active state | Navigation | A headline feature is effectively hidden |
-| 7 | **High** | The global “+” adds to Personal, even while viewing another space | Space detail, Navigation | Transactions land in the wrong space |
+| 6 | **High** | ✅ Dues is not a bottom-nav destination and has no active state | Navigation | A headline feature is effectively hidden |
+| 7 | **High** | ✅ The global “+” adds to Personal, even while viewing another space | Space detail, Navigation | Transactions land in the wrong space |
 | 8 | **High** | Primary and hero text fail contrast; nav labels are 8.8 px | Accessibility | Core labels are hard to read for low-vision users |
 | 9 | **High** | Space cards are mouse-only; swipe-to-delete has no keyboard path | Spaces, Activity | Keyboard and switch users cannot open or delete |
 | 10 | **High** | ✅ “Total Balance” has no definition and ignores money owed | Home | The headline number is not a balance of anything recognisable |
@@ -144,7 +144,7 @@ The table below is the short version. Every row is expanded later.
 1. ✅ **Make the money truthful.** Separate loan principal and settlement cash-flow from spend/income, or label the ledger entries explicitly and exclude them from budgets and savings. Then define Total Balance.
 2. ✅ **Make failure visible.** Add error states with retry to every query-backed screen. Never substitute zero for unknown.
 3. ✅ **Make the common path short.** Sticky primary action in the add sheet, no data-losing branch, inline validation, and a visible delete alternative.
-4. **Make navigation honest.** Put Dues in the bottom nav or make the header entry persistent, give every route an active state, and make “+” context-aware.
+4. ✅ **Make navigation honest.** Put Dues in the bottom nav or make the header entry persistent, give every route an active state, and make “+” context-aware.
 5. **Make it accessible.** Fix contrast, label sizes, keyboard access, reduced motion and tap targets.
 6. **Then polish.** Desktop layout, copy, empty states, animation restraint.
 
@@ -288,9 +288,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ## 5. Navigation and information architecture
 
-### N1 · Dues is missing from the bottom navigation
+### ✅ N1 · Dues is missing from the bottom navigation
 
 **Severity:** High · **Screens:** All signed-in screens, Dues
+
+**Status:** ✅ Fixed — the bottom bar now has five destinations: Home, Activity, Dues, Spaces and Insights. Dues is marked active on `/dues` and shows a static overdue badge. The create action moved to a floating button above the bar. The Home header keeps its Dues shortcut.
 
 **What the user sees.** The bottom bar has four destinations — Home, Activity, a central “+”, Spaces, Insights — and no Dues. Dues is reachable from a green “Dues” pill in the Home header (`client/src/components/layout/header.tsx:38-53`) and from the dues summary card on Home, which disappears when there are no dues. On Activity, Insights or Spaces, there is no Dues entry at all. When the user does reach `/dues`, no bottom-nav item is highlighted.
 
@@ -302,9 +304,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### N2 · The global “+” ignores the space you are looking at
+### ✅ N2 · The global “+” ignores the space you are looking at
 
 **Severity:** High · **Screens:** Space detail, Dues, Activity, Insights
+
+**Status:** ✅ Fixed — the global add button reads the current route. On a space detail it opens the transaction sheet with that space preselected and locked. On Dues it opens the create-due sheet (with the direction toggle inside). Elsewhere it opens the transaction sheet, where the selected space is visible in the footer before saving.
 
 **What the user sees.** While viewing “Demo · Goa Trip”, the user taps the large central “+” in the bottom nav. The add sheet opens with the space preselected to “Personal” (the first personal space), not Goa Trip. The transaction is saved to Personal. The same “+” on the Dues page opens a transaction form, not a due form, even though the page’s own floating buttons say “I Lent” and “I Borrowed”.
 
@@ -316,9 +320,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### N3 · Secondary screens have no active navigation state
+### ✅ N3 · Secondary screens have no active navigation state
 
 **Severity:** Medium · **Screens:** Dues, Settings, Profile, Notifications
+
+**Status:** ✅ Fixed — Dues is a first-class tab, Space detail keeps Spaces active, and Settings and Profile keep Home active as part of the account section. No protected route shows a nav with nothing selected.
 
 **What the user sees.** On Dues, Settings and Profile, every bottom-nav item is inactive. The nav still works, but nothing tells the user where they are. On Settings and Profile, the bottom nav is present even though these are account screens reached from the avatar; the avatar itself has no selected state.
 
@@ -334,13 +340,13 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 **Severity:** High · **Screens:** All
 
-**What the user sees.** At 1280 × 900, the app is a single `max-w-md` (448 px) column centred in the viewport. The bottom navigation remains a floating phone tab bar pinned to the bottom of the browser window. Cards, sheets and the dues floating buttons stay mobile-sized. The right and left thirds of the screen are empty background. The fixed dues buttons sit at the viewport’s right edge, far from the app column.
+**What the user sees.** At 1280 × 900, the app is a single `max-w-md` (448 px) column centred in the viewport. The bottom navigation remains a floating phone tab bar pinned to the bottom of the browser window. Cards and sheets stay mobile-sized. The right and left thirds of the screen are empty background.
 
-**Why it matters.** Ledg is a web app, and many users will open it on a laptop to review a month or import a CSV. The current layout wastes the screen, makes tables and lists unnecessarily narrow, and looks like a mobile preview rather than a product. The detached floating buttons are especially confusing on desktop.
+**Why it matters.** Ledg is a web app, and many users will open it on a laptop to review a month or import a CSV. The current layout wastes the screen, makes tables and lists unnecessarily narrow, and looks like a mobile preview rather than a product.
 
 **Recommended fix.** Add a responsive shell: a persistent left sidebar or a top navigation at `md` and above, a content max-width of 960–1200 px, and multi-column layouts for Home and Insights. Convert bottom sheets to centred dialogs or side panels on desktop. Anchor floating actions to the content column, not the viewport. Keep the mobile layout as the small-screen case.
 
-**Source.** `client/src/components/layout/app-shell.tsx:11`; `client/src/components/layout/bottom-nav.tsx:43`; `client/src/pages/dues.tsx:485`.
+**Source.** `client/src/components/layout/app-shell.tsx:11`; `client/src/components/layout/bottom-nav.tsx:97`.
 
 ---
 
@@ -358,9 +364,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### N6 · Creation actions are duplicated and inconsistent
+### ◐ N6 · Creation actions are duplicated and inconsistent
 
 **Severity:** Medium · **Screens:** Spaces, Dues, Home
+
+**Status:** ◐ Partly fixed — the two floating Dues pills are gone; the contextual add button now opens the create-due sheet and the empty-state buttons still choose a direction. Spaces still pairs its “New space” button with the global transaction add, and Home keeps its empty-state shortcut; those are intentional per-screen duplicates.
 
 **What the user sees.** On Spaces, a “New space” button sits at the top right, while a floating “+” at the bottom adds a transaction. On Dues, two floating buttons (“I Lent”, “I Borrowed”) duplicate the same actions already offered in the empty state. On Home, the central “+” and the “Add your first transaction” empty-state button do the same thing.
 
@@ -386,9 +394,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### N8 · Overdue dues are only visible on Home
+### ✅ N8 · Overdue dues are only visible on Home
 
 **Severity:** Medium · **Screens:** Home, Dues, other tabs
+
+**Status:** ✅ Fixed — the Dues bottom-nav tab carries the overdue count on every signed-in screen, and the Home header badge no longer pulses indefinitely.
 
 **What the user sees.** The Home header’s Dues pill shows a pulsing red count when something is overdue (`client/src/components/layout/header.tsx:44-51`). Once the user leaves Home, there is no badge anywhere — not on the bottom nav, not on Activity, not on Spaces.
 
