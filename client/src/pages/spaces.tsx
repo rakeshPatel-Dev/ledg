@@ -472,6 +472,12 @@ export default function SpacesPage() {
 
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
                         <p
+                          className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                          title="Income minus spending, excluding loans"
+                        >
+                          Net saved
+                        </p>
+                        <p
                           className={cn(
                             "text-base font-bold tabular-nums",
                             balanceColor

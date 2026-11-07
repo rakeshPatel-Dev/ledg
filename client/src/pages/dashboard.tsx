@@ -90,19 +90,27 @@ export default function DashboardPage() {
         <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
-              Total Balance
+              Net saved
             </p>
-            <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground/90 backdrop-blur-md">
-              Active
+            <span
+              className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground/90 backdrop-blur-md"
+              title="Loan principal and settlements are tracked separately"
+            >
+              Excl. loans
             </span>
           </div>
 
           {isPending ? (
             <Skeleton className="mt-2 h-12 w-48 bg-primary-foreground/20" />
           ) : (
-            <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
-              {formatCurrency(data?.totalBalance ?? 0, currency)}
-            </p>
+            <>
+              <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
+                {formatCurrency(data?.totalBalance ?? 0, currency)}
+              </p>
+              <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground/70">
+                All-time income minus spending
+              </p>
+            </>
           )}
 
           <div className="mt-5 grid grid-cols-2 gap-3">

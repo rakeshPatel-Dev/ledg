@@ -39,16 +39,23 @@ export function useAnalytics(): AnalyticsData {
   return useMemo(() => {
     const monthKeyNow = currentMonthKey();
 
-    const totalIncome = transactions.reduce(
+    // Dues-linked rows are loan principal/settlement movements, not income or
+    // spending. Keep them out of every P&L aggregate; `transactions` and
+    // `transactionCount` still include them for history and empty states.
+    const operatingTransactions = transactions.filter(
+      (t) => t.source !== "dues"
+    );
+
+    const totalIncome = operatingTransactions.reduce(
       (sum, t) => (t.type === "income" ? sum + t.amount : sum),
       0
     );
-    const totalExpense = transactions.reduce(
+    const totalExpense = operatingTransactions.reduce(
       (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
       0
     );
 
-    const monthTransactions = transactions.filter(
+    const monthTransactions = operatingTransactions.filter(
       (t) => currentMonthKey(new Date(t.date)) === monthKeyNow
     );
     const monthIncome = monthTransactions.reduce(
@@ -68,7 +75,7 @@ export function useAnalytics(): AnalyticsData {
       string,
       { category: string; amount: number; count: number }
     >();
-    for (const t of transactions) {
+    for (const t of operatingTransactions) {
       if (t.type === "expense") {
         const entry = categoryMap.get(t.category) ?? {
           category: t.category,
@@ -98,12 +105,15 @@ export function useAnalytics(): AnalyticsData {
 
     const bySpace = spaces.map((space) => {
       const spaceTx = transactions.filter((t) => t.spaceId === space.id);
+      const spaceOperatingTx = operatingTransactions.filter(
+        (t) => t.spaceId === space.id
+      );
       const spaceMonthTx = monthTransactions.filter((t) => t.spaceId === space.id);
-      const income = spaceTx.reduce(
+      const income = spaceOperatingTx.reduce(
         (sum, t) => (t.type === "income" ? sum + t.amount : sum),
         0
       );
-      const expense = spaceTx.reduce(
+      const expense = spaceOperatingTx.reduce(
         (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
         0
       );

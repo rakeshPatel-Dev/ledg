@@ -178,7 +178,10 @@ export default function SpaceDetailPage() {
     let monthExpense = 0;
     const currentMonth = monthKey(new Date());
 
+    // Dues are loan movements, not operating income or spending. They stay in
+    // the transaction list but are excluded from the summary and the budget.
     for (const t of spaceTransactions) {
+      if (t.source === "dues") continue;
       if (t.type === "income") income += t.amount;
       if (t.type === "expense") {
         expense += t.amount;
@@ -564,8 +567,11 @@ export default function SpaceDetailPage() {
           {/* Balance & Analytics breakdown */}
           <div className="flex flex-col gap-2 rounded-2xl bg-muted/40 p-3 border border-border/40">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Balance
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                title="Income minus spending, excluding loans"
+              >
+                Net saved
               </p>
               <p className={`text-base font-black tabular-nums mt-0.5 ${balanceColor}`}>
                 {formatCurrency(analytics.balance)}

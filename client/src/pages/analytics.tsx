@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Insights</h1>
           <p className="text-sm text-muted-foreground">
-            Financial analytics & spending breakdown
+            Income, spending and savings · loans excluded
           </p>
         </div>
       </div>
@@ -382,7 +382,10 @@ export default function AnalyticsPage() {
           <Card className="rounded-4xl p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  title="Savings rate = (income − expenses) ÷ income for the selected period. Loans excluded."
+                >
                   Savings rate
                 </p>
                 <p className="mt-1 text-3xl font-extrabold tabular-nums">
