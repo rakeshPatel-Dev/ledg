@@ -8,7 +8,8 @@ import { DEFAULT_CURRENCY } from "@ledg/shared";
 
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useDeleteTransaction } from "@/lib/queries";
+import { useCreateTransaction, useDeleteTransaction } from "@/lib/queries";
+import { getUserFacingError } from "@/lib/errors";
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency } from "@/lib/format";
 
@@ -23,18 +24,51 @@ export function DeleteTransactionSheet({
 }: DeleteTransactionSheetProps) {
   const [isPending, setIsPending] = useState(false);
   const deleteTransaction = useDeleteTransaction(transaction?.spaceId ?? "");
+  const createTransaction = useCreateTransaction();
   const navigate = useNavigate();
   const isLoan = transaction?.source === "dues";
 
+  const restoreTransaction = async (snapshot: Transaction) => {
+    try {
+      await createTransaction.mutateAsync({
+        spaceId: snapshot.spaceId,
+        data: {
+          type: snapshot.type,
+          category: snapshot.category,
+          amount: snapshot.amount,
+          note: snapshot.note ?? "",
+          date: snapshot.date,
+          paymentMethod: snapshot.paymentMethod ?? undefined,
+          source: snapshot.source ?? "manual",
+        },
+      });
+      toast.success("Transaction restored");
+    } catch (error) {
+      toast.error(
+        getUserFacingError(error, "Couldn't restore the transaction.")
+      );
+    }
+  };
+
   const handleDelete = async () => {
     if (!transaction) return;
+    const snapshot = transaction;
     setIsPending(true);
     try {
-      await deleteTransaction.mutateAsync(transaction.id);
-      toast.success("Transaction deleted");
+      await deleteTransaction.mutateAsync(snapshot.id);
       onOpenChange(false);
+      toast.success("Transaction deleted", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void restoreTransaction(snapshot);
+          },
+        },
+      });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete transaction");
+      toast.error(
+        getUserFacingError(error, "Failed to delete the transaction.")
+      );
     } finally {
       setIsPending(false);
     }

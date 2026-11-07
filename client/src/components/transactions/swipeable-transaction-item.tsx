@@ -1,8 +1,15 @@
-import { useRef } from "react";
-import { motion, useAnimation, useMotionValue, useTransform } from "framer-motion";
-import { Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  motion,
+  useAnimation,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
+import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import type { Transaction } from "@ledg/shared";
 
+import { Button } from "@/components/ui/button";
+import { Sheet } from "@/components/ui/sheet";
 import { TransactionItem } from "./transaction-item";
 
 interface SwipeableTransactionItemProps {
@@ -10,6 +17,7 @@ interface SwipeableTransactionItemProps {
   currency?: string;
   onClick?: () => void;
   onRequestDelete: () => void;
+  canEdit?: boolean;
   canDelete?: boolean;
 }
 
@@ -18,12 +26,16 @@ export function SwipeableTransactionItem({
   currency,
   onClick,
   onRequestDelete,
+  canEdit = true,
   canDelete = true,
 }: SwipeableTransactionItemProps) {
   const x = useMotionValue(0);
   const controls = useAnimation();
   const dragged = useRef(false);
   const deleteOpacity = useTransform(x, [0, 16], [0, 1]);
+  const [actionsOpen, setActionsOpen] = useState(false);
+
+  const canOpenActions = canEdit || canDelete;
 
   return (
     <div className="relative overflow-hidden rounded-3xl">
@@ -44,7 +56,6 @@ export function SwipeableTransactionItem({
         drag={canDelete ? "x" : false}
         dragConstraints={{ left: 0, right: 88 }}
         dragElastic={{ left: 0, right: 0.15 }}
-
         dragMomentum={false}
         onDragStart={() => {
           dragged.current = true;
@@ -62,15 +73,83 @@ export function SwipeableTransactionItem({
           }, 100);
         }}
       >
-        <TransactionItem
-          transaction={transaction}
-          currency={currency}
-          onClick={() => {
-            if (dragged.current) return;
-            onClick?.();
-          }}
-        />
+        <div className="relative">
+          <TransactionItem
+            transaction={transaction}
+            currency={currency}
+            className={canOpenActions ? "pr-12" : undefined}
+            onClick={() => {
+              if (dragged.current) return;
+              onClick?.();
+            }}
+            onRequestDelete={canDelete ? onRequestDelete : undefined}
+          />
+
+          {/* Visible alternative to the swipe gesture. */}
+          {canOpenActions ? (
+            <button
+              type="button"
+              aria-label={`Actions for ${
+                transaction.note || transaction.category
+              }`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => setActionsOpen(true)}
+              className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
+          ) : null}
+        </div>
       </motion.div>
+
+      <Sheet
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        title="Transaction actions"
+        description={transaction.note || transaction.category}
+      >
+        <div className="flex flex-col gap-3 pt-2">
+          {canEdit && onClick ? (
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full justify-start rounded-full"
+              onClick={() => {
+                setActionsOpen(false);
+                onClick();
+              }}
+            >
+              <Pencil className="size-4" />
+              Edit transaction
+            </Button>
+          ) : null}
+
+          {canDelete ? (
+            <Button
+              variant="destructive-solid"
+              size="lg"
+              className="w-full justify-start rounded-full"
+              onClick={() => {
+                setActionsOpen(false);
+                onRequestDelete();
+              }}
+            >
+              <Trash2 className="size-4" />
+              Delete transaction
+            </Button>
+          ) : null}
+
+          <Button
+            variant="ghost"
+            size="lg"
+            className="w-full rounded-full"
+            onClick={() => setActionsOpen(false)}
+          >
+            <X className="size-4" />
+            Cancel
+          </Button>
+        </div>
+      </Sheet>
     </div>
   );
 }

@@ -827,6 +827,7 @@ export default function SpaceDetailPage() {
                       <SwipeableTransactionItem
                         key={t.id}
                         transaction={t}
+                        canEdit={canEdit}
                         canDelete={canDelete}
                         onClick={() => {
                           if (canEdit) {

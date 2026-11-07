@@ -13,6 +13,10 @@ interface TransactionItemProps {
   currency?: string;
   onClick?: () => void;
   showAttribution?: boolean;
+  /** Extra classes, e.g. right padding for a visible actions button. */
+  className?: string;
+  /** Enables the Delete key while the row is focused. */
+  onRequestDelete?: () => void;
 }
 
 export function TransactionItem({
@@ -20,6 +24,8 @@ export function TransactionItem({
   currency,
   onClick,
   showAttribution = true,
+  className,
+  onRequestDelete,
 }: TransactionItemProps) {
   const { user } = useAuth();
   const spaces = useSpaceLookup();
@@ -52,7 +58,16 @@ export function TransactionItem({
       whileTap={{ scale: 0.98 }}
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-3xl border border-white/20 dark:border-white/10 bg-card/75 px-3 py-3 text-left shadow-xs backdrop-blur-md transition-all hover:bg-card/90 hover:shadow-md cursor-pointer select-none"
+      onKeyDown={(e) => {
+        if (e.key === "Delete" && onRequestDelete) {
+          e.preventDefault();
+          onRequestDelete();
+        }
+      }}
+      className={cn(
+        "flex w-full items-center gap-3.5 rounded-3xl border border-white/20 dark:border-white/10 bg-card/75 px-3 py-3 text-left shadow-xs backdrop-blur-md transition-all hover:bg-card/90 hover:shadow-md cursor-pointer select-none",
+        className
+      )}
     >
       <span
         className="flex size-12 shrink-0 items-center justify-center rounded-2xl"
