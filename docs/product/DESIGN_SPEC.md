@@ -201,10 +201,10 @@ Use letter-spaced uppercase micro-labels for anything meta (section titles, fiel
 ## 5. Spacing & layout grid
 
 - Base unit: **4px**, rhythm = **8px**. Page vertical rhythm = `gap-5` (20px) / `gap-6` (24px) between sections.
-- App column: centered `max-w-5` (32rem) column on all breakpoints. `<main className="px-5 pb-36 pt-6">`.
+- App column: centered `max-w-5` (32rem) column on all breakpoints. `<main className="px-5 pb-28 pt-6">`.
 - Standard paddings: card `p-4`/`p-5`, lists rows `px-4 py-3.5`, hero sections `px-5 pb-7 pt-2/4`.
 - Section header rows: title left (eyebrow sections) or `text-sm font-semibold uppercase text-muted-foreground` + optional action link right (`text-primary` "See all").
-- Page bottom clearance: `pb-36` (space for the floating nav and contextual add button).
+- Page bottom clearance: `pb-28` (space for the floating nav).
 - Bottom sheet content: `px-5 pb-10` with internal `gap-5`.
 
 ---
@@ -340,14 +340,17 @@ Right: **Dues pill** (`rounded-full bg-primary px-3.5 py-2.5 text-primary-foregr
 
 ### 11.3 Bottom nav (floating pill)
 Fixed `inset-x-0 bottom-0 z-40`, centered `max-w-md`, `px-4 pb-4`, with a subtle top fade `bg-linear-to-t from-background/60 to-transparent`.
-Pill container: `rounded-full border-border/50 bg-card/40 backdrop-blur-2xl backdrop-saturate-180 shadow-2xl px-1.5 py-0.5`, 5 destinations:
-1. **Home** (`House`) → `/`; also active on `/settings` and `/profile`
+Pill container: `rounded-full border-border/50 bg-card/40 backdrop-blur-2xl backdrop-saturate-180 shadow-2xl px-1.5 py-0.5`, 5 cells:
+1. **Home** (`House`) → `/` (end)
 2. **Activity** (`Wallet`) → `/transactions`
-3. **Dues** (`HandCoins`) → `/dues`, with a static destructive overdue count badge
+3. **Add** — raised `size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30` **Plus** button with pulsing halo ring, inside the pill (not floating above it). It is context-aware: on `/spaces/:id` it opens the transaction sheet with that space preselected and locked; on `/dues` it opens the create-due sheet; elsewhere it opens the transaction sheet. Its accessible label follows the action.
 4. **Spaces** (`Layers`) → `/spaces`; active on `/spaces/:id`
-5. **Insights** (`ChartNoAxesCombined`) → `/analytics`
+5. **More** (`Ellipsis`) → opens the More sheet; active on `/dues`, `/analytics`, `/settings` and `/profile`; carries a static destructive overdue count badge.
 
-A separate raised `size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30` button floats above the bar with a pulsing halo ring. It is context-aware: on `/spaces/:id` it opens the transaction sheet with that space preselected and locked; on `/dues` it opens the create-due sheet; elsewhere it opens the transaction sheet. Its icon is `Plus` except on Dues, where it is `HandCoins`, and its accessible label follows the action.
+**More sheet** (`Sheet`, title `More`): grouped list (`Card rounded-4xl p-1.5`, rows divided by `h-px bg-border/60`), each row = icon tile (`size-10 rounded-2xl bg-primary/10 text-primary`) + title `text-sm font-semibold` + subtitle `text-xs muted` + `ChevronRight`; the sheet closes on navigation.
+- **Settings** (`Settings2`) → `/settings` — `Account, preferences, and data`
+- **Insights** (`ChartNoAxesCombined`) → `/analytics` — `Spending trends and breakdowns`
+- **Dues** (`HandCoins`) → `/dues` — `Money lent and borrowed`, with the overdue count badge
 
 Active link: emerald text + `stroke-[2.5]` icon + sliding rounded pill `bg-primary/10` (`layoutId="activeBottomNavPill"`). Labels `text-[0.55rem] font-semibold`.
 
@@ -494,7 +497,7 @@ Tap → edit (or `toast.info("Only the creator or space owner can edit this tran
    - **Person mode (default):** person cards (`rounded-4xl border-border/50 bg-card/80 backdrop-blur-xl`): header row = gradient initials avatar (`size-11`, §3.8, red `!` bubble when overdue) + name (`font-bold`) + optional `tel:` Phone mini-button + `N dues · N overdue (red)` + right net (`+₹owes you` emerald / `−₹ you owe` amber / `settled` mute) + ChevronDown rotate on expand. Expanded body (AnimatePresence) = `DueRow`s divided by hairline.
    - **DueRow:** direction icon tile (`size-9 rounded-4xl`: settled `bg-muted text-muted-foreground` CheckCircle2; lent emerald `ArrowUpRight`; borrowed amber `ArrowDownLeft`) + name + micro badges (`partial` secondary, `settled` emerald `bg-emerald-600`, `Nd late` destructive w/ AlertTriangle) + date line (`Clock` + `due [relative]` red when overdue) + mini progress bar when partially settled (emerald/amber, % label) + right column: **remaining** `text-sm font-bold tabular-nums` (+ `of ₹principal` when partial, line-through when settled) + round settle `CheckCircle2` button (emerald/amber tint) that opens Settle sheet (stopPropagation).
    - **Flat mode:** same DueRow inside bordered cards.
-4. **Creation:** the contextual global add button (`HandCoins` on this page) opens CreateDue with the direction toggle inside; the empty-state `I Lent` / `I Borrowed` buttons still preselect a direction. No page-level floating action cluster.
+4. **Creation:** the bottom-nav `+` is route-aware and opens CreateDue on this page, with the direction toggle inside; the empty-state `I Lent` / `I Borrowed` buttons still preselect a direction. No page-level floating action cluster.
 5. **Sheets:** CreateDue (§13.3), SettleDue (§13.4), DueDetail (§13.5).
 
 ### 12.10 Insights / Analytics — `/analytics`  (Protected)
@@ -545,7 +548,7 @@ Plain, readable document pages: circular back, title, prose blocks (`text-sm lea
 > Trigger availability, titles, and exact actions. Unless noted, all are bottom sheets (§10.6).
 
 ### 13.1 Add / Edit transaction (global, one instance app-wide)
-- **Trigger:** contextual add button (global, route-aware), page empty-state buttons, tapping a transaction row (edit).
+- **Trigger:** bottom-nav `+` (global, route-aware), page empty-state buttons, tapping a transaction row (edit).
 - **Title:** `Add transaction` / `Edit transaction` · **Description:** `Less than five seconds, promise.`
 - **Body (gap-5, top → bottom):**
   1. `Segmented` **Expense | Income** (switching fixes category list).

@@ -49,7 +49,7 @@ The problems start when a real person tries to use it for a week.
 
 The biggest issue is **trust in the numbers**. Creating a due also creates a normal expense or income transaction. Lending money to a friend therefore appears as spending, borrowing appears as income, and settling a due creates another transaction in the opposite direction. A user who lends Rs. 5,000 sees their monthly spend rise by Rs. 5,000 even though no money was spent on goods or services. Budgets, category breakdowns, savings rate and the home dashboard all inherit the distortion. Across all time the two entries may cancel out, but the months in between are wrong, and the user is never told that a loan is being treated as spending. This is not a cosmetic bug. It makes the core promise of the product unreliable.
 
-The second cluster is **core-flow friction**. Adding a transaction is a long scrolling sheet with the primary button at the very bottom, so the most frequent action in the app requires a scroll every time. Choosing “+ New space…” from inside that sheet closes it and throws away everything typed. Deleting a transaction is hidden behind a swipe with no visible affordance and no keyboard equivalent. Dues, one of the product’s differentiators, is missing from the bottom navigation entirely and has no active state when opened.
+The second cluster is **core-flow friction**. Adding a transaction is a long scrolling sheet with the primary button at the very bottom, so the most frequent action in the app requires a scroll every time. Choosing “+ New space…” from inside that sheet closes it and throws away everything typed. Deleting a transaction is hidden behind a swipe with no visible affordance and no keyboard equivalent. Dues, one of the product’s differentiators, was missing from the bottom navigation and had no active state when opened.
 
 The third cluster is **clarity**. The home screen shows a large “Total Balance” without explaining what it includes. Insights opens “Custom” on a single day, producing an empty chart. The savings ring and its percentage describe the same thing, but the surrounding copy does not explain the formula. An expense decrease displays as a green upward arrow. The settings page is titled “You”, offers “Motion”, “Export Transactions (CSV)” and “Full Data Backup (JSON)” as peer-level items, and puts “Sign out” at the bottom of a long scroll. These are small individually; together they make the app feel like a prototype with a beautiful coat of paint.
 
@@ -125,7 +125,7 @@ The table below is the short version. Every row is expanded later.
 | 3 | **High** | ✅ “+ New space…” inside the transaction sheet discards the form | Add transaction | Loses typed data and interrupts the most common task |
 | 4 | **High** | The primary action sits below a long scroll in the add sheet | Add transaction | Adds friction to every single entry |
 | 5 | **High** | A signed-out invitee loses the invitation after sign-in or sign-up | Invite, Sign in, Sign up | Blocks the shared-space onboarding path |
-| 6 | **High** | ✅ Dues is not a bottom-nav destination and has no active state | Navigation | A headline feature is effectively hidden |
+| 6 | **High** | ✅ Dues was not reachable from every tab and had no active state | Navigation | A headline feature is effectively hidden |
 | 7 | **High** | ✅ The global “+” adds to Personal, even while viewing another space | Space detail, Navigation | Transactions land in the wrong space |
 | 8 | **High** | Primary and hero text fail contrast; nav labels are 8.8 px | Accessibility | Core labels are hard to read for low-vision users |
 | 9 | **High** | Space cards are mouse-only; swipe-to-delete has no keyboard path | Spaces, Activity | Keyboard and switch users cannot open or delete |
@@ -144,7 +144,7 @@ The table below is the short version. Every row is expanded later.
 1. ✅ **Make the money truthful.** Separate loan principal and settlement cash-flow from spend/income, or label the ledger entries explicitly and exclude them from budgets and savings. Then define Total Balance.
 2. ✅ **Make failure visible.** Add error states with retry to every query-backed screen. Never substitute zero for unknown.
 3. ✅ **Make the common path short.** Sticky primary action in the add sheet, no data-losing branch, inline validation, and a visible delete alternative.
-4. ✅ **Make navigation honest.** Put Dues in the bottom nav or make the header entry persistent, give every route an active state, and make “+” context-aware.
+4. ✅ **Make navigation honest.** Keep the original four-cell bar and central “+”, put Settings, Insights and Dues behind a “…” More sheet, give every route an active state, and make “+” context-aware.
 5. **Make it accessible.** Fix contrast, label sizes, keyboard access, reduced motion and tap targets.
 6. **Then polish.** Desktop layout, copy, empty states, animation restraint.
 
@@ -288,19 +288,19 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ## 5. Navigation and information architecture
 
-### ✅ N1 · Dues is missing from the bottom navigation
+### ✅ N1 · Dues had no entry in the bottom navigation
 
 **Severity:** High · **Screens:** All signed-in screens, Dues
 
-**Status:** ✅ Fixed — the bottom bar now has five destinations: Home, Activity, Dues, Spaces and Insights. Dues is marked active on `/dues` and shows a static overdue badge. The create action moved to a floating button above the bar. The Home header keeps its Dues shortcut.
+**Status:** ✅ Fixed — the bottom bar keeps its original shape (Home, Activity, centre “+”, Spaces) and the “…” More button replaces Insights. More opens a sheet with Settings, Insights and Dues on every signed-in screen, stays active on all three destinations, and carries the static overdue count on its icon. This is the More-menu convention the product chose over a fifth tab or a floating add button.
 
-**What the user sees.** The bottom bar has four destinations — Home, Activity, a central “+”, Spaces, Insights — and no Dues. Dues is reachable from a green “Dues” pill in the Home header (`client/src/components/layout/header.tsx:38-53`) and from the dues summary card on Home, which disappears when there are no dues. On Activity, Insights or Spaces, there is no Dues entry at all. When the user does reach `/dues`, no bottom-nav item is highlighted.
+**What the user sees.** At review time, the bottom bar had four destinations — Home, Activity, a central “+”, Spaces, Insights — and no Dues. Dues was reachable from a green “Dues” pill in the Home header (`client/src/components/layout/header.tsx:38-53`) and from the dues summary card on Home, which disappears when there are no dues. On Activity, Insights or Spaces, there was no Dues entry at all. When the user did reach `/dues`, no bottom-nav item was highlighted.
 
 **Why it matters.** Dues is one of the product’s differentiators, and it is treated as a secondary screen. A new user who lands on Activity and wants to record a loan has to know to go Home first. The missing active state makes the app feel like it has lost its place.
 
-**Recommended fix.** Make Dues a first-class destination. Either replace one of the four tabs (Insights is the least frequently used for a new user) or move the central “+” to a floating action and use five tabs: Home, Activity, Dues, Spaces, Insights. Add an overdue badge to the Dues tab. At minimum, keep a persistent Dues link in a shared header on every tab and mark `/dues` active.
+**Recommended fix.** Keep Dues one tap away everywhere: the “…” More sheet contains Settings, Insights and Dues on every signed-in screen, More is marked active on all three, and the overdue count rides on the More button. The centre “+” stays where it was, so the primary action is unchanged.
 
-**Source.** `client/src/components/layout/bottom-nav.tsx:22-28,91-128`; `client/src/components/layout/header.tsx:38-53`.
+**Source.** `client/src/components/layout/bottom-nav.tsx`; `client/src/components/layout/header.tsx:38-53`.
 
 ---
 
@@ -324,13 +324,13 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 **Severity:** Medium · **Screens:** Dues, Settings, Profile, Notifications
 
-**Status:** ✅ Fixed — Dues is a first-class tab, Space detail keeps Spaces active, and Settings and Profile keep Home active as part of the account section. No protected route shows a nav with nothing selected.
+**Status:** ✅ Fixed — More is active on Dues, Insights, Settings and Profile, and Space detail keeps Spaces active. No protected route shows a nav with nothing selected.
 
 **What the user sees.** On Dues, Settings and Profile, every bottom-nav item is inactive. The nav still works, but nothing tells the user where they are. On Settings and Profile, the bottom nav is present even though these are account screens reached from the avatar; the avatar itself has no selected state.
 
 **Why it matters.** Active state is the cheapest orientation cue in a mobile app. Its absence makes deep screens feel like dead ends and weakens the mental model of the five main areas.
 
-**Recommended fix.** Define the nav model: either these are modal/secondary screens (hide the bottom nav and show a back button) or they are part of Home (keep Home active). Do not show a nav with nothing selected. If Dues becomes a tab, this resolves itself for Dues.
+**Recommended fix.** Define the nav model: either these are modal/secondary screens (hide the bottom nav and show a back button) or they belong to a visible section. The More menu now owns Dues, Insights, Settings and Profile, so More stays active on all four. Do not show a nav with nothing selected.
 
 **Source.** `client/src/components/layout/bottom-nav.tsx:91-128`; `client/src/pages/dues.tsx`; `client/src/pages/settings.tsx`; `client/src/pages/profile.tsx`.
 
@@ -368,7 +368,7 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 **Severity:** Medium · **Screens:** Spaces, Dues, Home
 
-**Status:** ◐ Partly fixed — the two floating Dues pills are gone; the contextual add button now opens the create-due sheet and the empty-state buttons still choose a direction. Spaces still pairs its “New space” button with the global transaction add, and Home keeps its empty-state shortcut; those are intentional per-screen duplicates.
+**Status:** ◐ Partly fixed — the two floating Dues pills are gone; the centre “+” now opens the create-due sheet on Dues, and the empty-state buttons still choose a direction. Spaces still pairs its “New space” button with the global transaction add, and Home keeps its empty-state shortcut; those are intentional per-screen duplicates.
 
 **What the user sees.** On Spaces, a “New space” button sits at the top right, while a floating “+” at the bottom adds a transaction. On Dues, two floating buttons (“I Lent”, “I Borrowed”) duplicate the same actions already offered in the empty state. On Home, the central “+” and the “Add your first transaction” empty-state button do the same thing.
 
@@ -398,13 +398,13 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 **Severity:** Medium · **Screens:** Home, Dues, other tabs
 
-**Status:** ✅ Fixed — the Dues bottom-nav tab carries the overdue count on every signed-in screen, and the Home header badge no longer pulses indefinitely.
+**Status:** ✅ Fixed — the More button carries the overdue count on every signed-in screen, the Dues row inside More repeats it, and the Home header badge no longer pulses indefinitely.
 
 **What the user sees.** The Home header’s Dues pill shows a pulsing red count when something is overdue (`client/src/components/layout/header.tsx:44-51`). Once the user leaves Home, there is no badge anywhere — not on the bottom nav, not on Activity, not on Spaces.
 
 **Why it matters.** Overdue money is time-sensitive. A user who spends the session in Activity or Insights never sees the reminder. The pulsing badge is also easy to miss because it is attached to a small pill.
 
-**Recommended fix.** If Dues becomes a bottom-nav tab, put the overdue badge there. Otherwise, add a global badge to the header on every tab, or a small banner on Home that persists until the dues are settled. Avoid an infinite pulse; use a static badge after the first view.
+**Recommended fix.** Put the overdue badge on the global More entry so it is visible on every tab, and repeat the count on the Dues row inside the More sheet. Avoid an infinite pulse; use a static badge after the first view.
 
 **Source.** `client/src/components/layout/header.tsx:38-53`; `client/src/components/layout/bottom-nav.tsx`.
 
@@ -1692,7 +1692,7 @@ The roadmap is ordered by user risk, not by engineering convenience.
 
 **Goal:** The app is fast and predictable for daily use.
 
-7. **Dues in the navigation (N1/N3).** Add it as a tab or a persistent header entry with an active state and overdue badge.
+7. **Dues in the navigation (N1/N3).** Keep the “…” More sheet entry with an active state and overdue badge on every screen.
 8. **Context-aware “+” (N2).** Preselect the current space; on Dues, offer due creation.
 9. **Visible delete and edit actions (Act1).** Add a row menu and undo; keep swipe as a shortcut.
 10. **Inline validation (A3).** Field-level errors, focus management and disabled-until-valid.
