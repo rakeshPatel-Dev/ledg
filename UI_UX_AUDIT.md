@@ -11,7 +11,7 @@
 | **Themes** | Light and dark |
 | **Data** | Seeded review account with 3 spaces, 58 transactions, 5 dues, notifications and pending invitations |
 | **Method** | Full walkthrough of the running app with realistic data, paired with a screen-by-screen review of the rendered interface, copy and interaction behaviour, then source verification of every data and state claim |
-| **Implementation status** | ✅ Item 1 of the priority list (“Make the money truthful”) is implemented in the working tree as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
+| **Implementation status** | ✅ Items 1 (“Make the money truthful”) and 2 (“Make failure visible”) of the priority list are implemented in the working tree as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
 
 ---
 
@@ -121,7 +121,7 @@ The table below is the short version. Every row is expanded later.
 | # | Severity | Finding | Area | Why it comes first |
 |---|---|---|---|---|
 | 1 | **Critical** | ✅ Lending and borrowing are written into the ledger as expense and income | Dues, Home, Insights | Every spending, income, budget and savings number becomes untrustworthy |
-| 2 | **Critical** | Failed requests render as Rs. 0 or an empty state, not an error | Home, Insights, Spaces, Space detail | The user believes their money disappeared, or that they have none |
+| 2 | **Critical** | ✅ Failed requests render as Rs. 0 or an empty state, not an error | Home, Insights, Spaces, Space detail | The user believes their money disappeared, or that they have none |
 | 3 | **High** | “+ New space…” inside the transaction sheet discards the form | Add transaction | Loses typed data and interrupts the most common task |
 | 4 | **High** | The primary action sits below a long scroll in the add sheet | Add transaction | Adds friction to every single entry |
 | 5 | **High** | A signed-out invitee loses the invitation after sign-in or sign-up | Invite, Sign in, Sign up | Blocks the shared-space onboarding path |
@@ -142,7 +142,7 @@ The table below is the short version. Every row is expanded later.
 ### The order to fix things
 
 1. ✅ **Make the money truthful.** Separate loan principal and settlement cash-flow from spend/income, or label the ledger entries explicitly and exclude them from budgets and savings. Then define Total Balance.
-2. **Make failure visible.** Add error states with retry to every query-backed screen. Never substitute zero for unknown.
+2. ✅ **Make failure visible.** Add error states with retry to every query-backed screen. Never substitute zero for unknown.
 3. **Make the common path short.** Sticky primary action in the add sheet, no data-losing branch, inline validation, and a visible delete alternative.
 4. **Make navigation honest.** Put Dues in the bottom nav or make the header entry persistent, give every route an active state, and make “+” context-aware.
 5. **Make it accessible.** Fix contrast, label sizes, keyboard access, reduced motion and tap targets.
@@ -198,9 +198,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### T3 · A failed request looks like Rs. 0 or an empty account
+### ✅ T3 · A failed request looks like Rs. 0 or an empty account
 
 **Severity:** Critical · **Screens:** Home, Insights, Spaces, Space detail
+
+**Status:** ✅ Fixed — Home, Insights, Spaces, Space detail and Dues now branch on `isError` and render a shared `ErrorState` with a human-readable message and “Try again”. Activity’s existing error state gained a retry. Partial failures are shown inline without hiding successful data: spaces still render when balances fail, the summary still renders when recurring analytics fail, and members/invitations have their own retry. A global offline banner appears in the app shell. Transport, HTML and stack-trace messages are replaced with plain language, and the original error is reported to Sentry when configured.
 
 **What the user sees.** If the dashboard, analytics or spaces request fails, the page does not show an error. Home renders **Rs. 0**, “Rs. 0” income and spend, and an empty-state card inviting the user to add their first transaction (`client/src/pages/dashboard.tsx:104,120,137,166-178`). Insights renders zeros and “No data for this period” (`client/src/pages/analytics.tsx:203-207,341-350`). Spaces renders “No spaces yet” and a create button. Space detail can render an empty transaction list and a zero balance, or a “space does not exist” state, depending on which request failed.
 
@@ -934,9 +936,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### S3 · A failed spaces/analytics request looks like an empty account
+### ✅ S3 · A failed spaces/analytics request looks like an empty account
 
 **Severity:** Critical · **Screens:** Spaces, Space detail
+
+**Status:** ✅ Fixed — a failed spaces request now shows “Couldn’t load your spaces” with retry instead of “No spaces yet”. A failed transactions request on Space detail shows “—” placeholders and a retry instead of a zero balance and an empty list. A failed balances request on Spaces keeps the space cards visible and explains that balances and budgets are unavailable.
 
 **What the user sees.** If the spaces query fails, the page shows the “No spaces yet” empty state and a “Create a space” button. If the space detail’s transaction data fails, the balance and list show zero/empty.
 
@@ -1546,9 +1550,11 @@ See I4.
 
 ## 17. Empty, loading and error states
 
-### E1 · Errors are rendered as empty or zero
+### ✅ E1 · Errors are rendered as empty or zero
 
 **Severity:** Critical · **Screens:** Home, Insights, Spaces, Space detail
+
+**Status:** ✅ Fixed — see T3. Every query-backed screen and sheet now has an explicit error branch with retry, and unknown values render as “—” rather than zero.
 
 See T3. This is the most important state bug in the app. Every query-backed screen needs an error branch.
 
@@ -1584,9 +1590,11 @@ See T3. This is the most important state bug in the app. Every query-backed scre
 
 ---
 
-### E4 · No offline or retry affordance
+### ◐ E4 · No offline or retry affordance
 
 **Severity:** Medium · **Screens:** All
+
+**Status:** ◐ Partly fixed — the app shell shows a global offline banner, and every query-backed screen now uses `isError`/`refetch` with a visible retry. Still open: “Last updated” timestamps on Home and Insights.
 
 **What the user sees.** When the network drops, requests fail and the page shows zeros or empty states (T3). There is no offline banner, no “Retry” button on most screens, and no indication that the data is stale.
 
@@ -1655,7 +1663,7 @@ The roadmap is ordered by user risk, not by engineering convenience.
 
 1. ✅ **Fix dues accounting (T1).** Either exclude loan principal/settlements from spend, income, budgets and savings, or introduce a distinct loan transaction type and exclude it by default. Reclassify existing “Due paid” / “Due received” entries.
 2. ✅ **Define Total Balance (T2).** Rename it, add a caption, and show receivables/payables beside it. Remove the “Active” pill. The dues summary card directly below the hero shows receivables and payables.
-3. **Add error states everywhere (T3).** Never render `0` for a failed query. Add retry and an offline banner. Start with Home, Insights, Spaces and Space detail.
+3. ✅ **Add error states everywhere (T3).** Never render `0` for a failed query. Add retry and an offline banner. Start with Home, Insights, Spaces and Space detail.
 4. **Fix the invite redirect (S1).** Preserve `state.from` and the invite token through sign-in, sign-up and email verification.
 5. **Fix the add-transaction data loss (A2).** Nested create-space flow or remove the option.
 6. **Sticky primary action (A1).** Move the button outside the scroll area and collapse optional fields.
