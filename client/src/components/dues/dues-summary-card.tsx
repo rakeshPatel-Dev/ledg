@@ -101,7 +101,12 @@ export function DuesSummaryCard({ className }: DuesSummaryCardProps) {
         {/* Net */}
         {summary.net !== 0 && (
           <div className="flex items-center justify-between rounded-4xl bg-muted/50 border border-border/30 px-3 py-2">
-            <span className="text-[0.65rem] font-semibold text-muted-foreground">Net position</span>
+            <span
+              className="text-[0.65rem] font-semibold text-muted-foreground"
+              title="Owed to you minus what you owe"
+            >
+              Net dues position
+            </span>
             <span
               className={cn(
                 "text-sm font-black tabular-nums",

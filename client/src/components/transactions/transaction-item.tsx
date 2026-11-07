@@ -23,9 +23,15 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const { user } = useAuth();
   const spaces = useSpaceLookup();
-  const meta = getCategoryMeta(transaction.category);
+  const meta = getCategoryMeta(transaction.category, transaction.type);
   const Icon = meta.icon;
   const isIncome = transaction.type === "income";
+  const isLoan = transaction.source === "dues";
+  const displayCategory = isLoan
+    ? isIncome
+      ? "Loan in"
+      : "Loan out"
+    : transaction.category;
 
   const creator = transaction.createdBy;
   const space = spaces.get(transaction.spaceId);
@@ -57,10 +63,15 @@ export function TransactionItem({
 
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold">
-          {transaction.note || transaction.category}
+          {transaction.note || displayCategory}
         </span>
         <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground mt-0.5">
-          <span>{transaction.category}</span>
+          <span>{displayCategory}</span>
+          {isLoan && (
+            <span className="inline-flex items-center rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+              Loan
+            </span>
+          )}
           {transaction.paymentMethod && (
             <>
               <span className="text-muted-foreground/60">·</span>

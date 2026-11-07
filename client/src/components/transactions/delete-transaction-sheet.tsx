@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Trash2, Loader2, X } from "lucide-react";
+import { Trash2, Loader2, X, HandCoins } from "lucide-react";
 import type { Transaction } from "@ledg/shared";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 import { DEFAULT_CURRENCY } from "@ledg/shared";
 
@@ -22,6 +23,8 @@ export function DeleteTransactionSheet({
 }: DeleteTransactionSheetProps) {
   const [isPending, setIsPending] = useState(false);
   const deleteTransaction = useDeleteTransaction(transaction?.spaceId ?? "");
+  const navigate = useNavigate();
+  const isLoan = transaction?.source === "dues";
 
   const handleDelete = async () => {
     if (!transaction) return;
@@ -44,7 +47,11 @@ export function DeleteTransactionSheet({
       open={Boolean(transaction)}
       onOpenChange={onOpenChange}
       title="Delete Transaction"
-      description="This will permanently remove the transaction."
+      description={
+        isLoan
+          ? "This entry is linked to a due. Delete or settle the due instead."
+          : "This will permanently remove the transaction."
+      }
     >
       {transaction && meta ? (
         <div className="flex flex-col gap-4 pt-2">
@@ -77,25 +84,39 @@ export function DeleteTransactionSheet({
           </div>
 
           <div className="flex flex-col gap-3 pt-1">
-            <Button
-              variant="destructive-solid"
-              size="lg"
-              className="w-full rounded-full text-base font-semibold"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Deleting…
-                </>
-              ) : (
-                <>
-                  <Trash2 className="size-4" />
-                  Delete Transaction
-                </>
-              )}
-            </Button>
+            {isLoan ? (
+              <Button
+                size="lg"
+                className="w-full rounded-full text-base font-semibold"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate("/dues");
+                }}
+              >
+                <HandCoins className="size-4 mr-2" />
+                Go to Dues
+              </Button>
+            ) : (
+              <Button
+                variant="destructive-solid"
+                size="lg"
+                className="w-full rounded-full text-base font-semibold"
+                onClick={handleDelete}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Deleting…
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="size-4" />
+                    Delete Transaction
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="lg"

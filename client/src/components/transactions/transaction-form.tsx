@@ -84,6 +84,8 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     const candidates: Transaction[] = [];
 
     for (const tx of recent) {
+      // Loans are not spending/income, so they are not useful repeat templates.
+      if (tx.source === "dues") continue;
       const fingerprint = [
         tx.type,
         tx.category,
@@ -110,7 +112,10 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     "";
   const activeSpaceId = space || defaultSpaceId;
 
-  const activeCategories = useMemo(() => getCategoriesByType(type), [type]);
+  const activeCategories = useMemo(
+    () => getCategoriesByType(type, editing?.source === "dues"),
+    [type, editing]
+  );
 
   const quickDates = useMemo(() => {
     const today = new Date();
@@ -262,6 +267,13 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
             onChange={handleTypeChange}
           />
         </div>
+
+        {editing?.source === "dues" && (
+          <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-3 text-xs leading-relaxed text-amber-800 dark:text-amber-300">
+            This entry came from a due. Changing it here will not update the
+            due. Manage the loan from <span className="font-semibold">Dues</span>.
+          </div>
+        )}
 
         {!editing && repeatCandidates.length > 0 && (
           <div>

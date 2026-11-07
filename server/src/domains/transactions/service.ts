@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 
 import {
+  ConflictError,
   ForbiddenError,
   NotFoundError,
 } from "../../common/errors/index.js";
@@ -243,6 +244,14 @@ export async function deleteUserTransaction(
   if (role !== "owner" && !isCreator) {
     throw new ForbiddenError(
       "You can only delete transactions created by yourself"
+    );
+  }
+
+  // Dues own their ledger entry. Deleting it here would leave the due pointing
+  // at a missing transaction, so the loan must be removed or settled instead.
+  if (existingTxn.source === "dues") {
+    throw new ConflictError(
+      "This transaction is linked to a due. Delete or settle the due instead."
     );
   }
 

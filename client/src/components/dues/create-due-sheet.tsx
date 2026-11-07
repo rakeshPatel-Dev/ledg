@@ -207,7 +207,9 @@ export function CreateDueSheet({
               {isLent ? "Recording money you lent" : "Recording money you borrowed"}
             </p>
             <p className="text-[0.68rem] text-muted-foreground mt-0.5">
-              {isLent ? "They owe you · creates an expense transaction" : "You owe them · creates an income transaction"}
+              {isLent
+                ? "They owe you · tracked as a loan, not spending"
+                : "You owe them · tracked as a loan, not income"}
             </p>
           </div>
         </div>
