@@ -20,7 +20,7 @@ import { logger } from "../../config/logger.js";
  * every request.
  */
 
-const KEY_PREFIX = "dash:v1:";
+const KEY_PREFIX = "dash:v2:";
 const TTL_SECONDS = 60;
 
 const FAILURE_THRESHOLD = 3;

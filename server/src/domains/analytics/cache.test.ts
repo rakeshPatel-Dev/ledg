@@ -35,7 +35,7 @@ describe("dashboard cache", () => {
     const value = await cache.getCachedDashboard("user-1");
 
     expect(value).toEqual({ totalBalance: 42 });
-    expect(redisMock.get).toHaveBeenCalledWith("dash:v1:user-1");
+    expect(redisMock.get).toHaveBeenCalledWith("dash:v2:user-1");
   });
 
   it("opens the circuit after three consecutive failures", async () => {
@@ -58,7 +58,7 @@ describe("dashboard cache", () => {
 
     await cache.invalidateDashboardCache(["a", "a", "b"]);
 
-    expect(redisMock.del).toHaveBeenCalledWith("dash:v1:a", "dash:v1:b");
+    expect(redisMock.del).toHaveBeenCalledWith("dash:v2:a", "dash:v2:b");
   });
 
   it("does nothing when there are no users to invalidate", async () => {

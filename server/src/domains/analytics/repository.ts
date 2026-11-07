@@ -45,6 +45,7 @@ export interface RecentTransaction {
   note: string;
   date: Date;
   paymentMethod: string | null;
+  source: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -111,11 +112,38 @@ function summaryGroupStage(): PipelineStage.FacetPipelineStage[] {
     {
       $group: {
         _id: null,
+        // Dues-linked entries are loan principal/settlement movements, not
+        // operating income or spending. Keep them out of every P&L total so
+        // budgets, savings rate and deltas agree with the category breakdowns
+        // (which already exclude them). `count` still includes every row so
+        // empty states and transaction counts remain accurate.
         totalIncome: {
-          $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] },
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ["$type", "income"] },
+                  { $ne: ["$source", "dues"] },
+                ],
+              },
+              "$amount",
+              0,
+            ],
+          },
         },
         totalExpense: {
-          $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] },
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ["$type", "expense"] },
+                  { $ne: ["$source", "dues"] },
+                ],
+              },
+              "$amount",
+              0,
+            ],
+          },
         },
         count: { $sum: 1 },
       },
@@ -232,6 +260,7 @@ function recentTransactionStages(
         note: 1,
         date: 1,
         paymentMethod: 1,
+        source: 1,
         createdAt: 1,
         updatedAt: 1,
       },

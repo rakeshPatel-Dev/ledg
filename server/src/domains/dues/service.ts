@@ -58,8 +58,10 @@ function toSettlementDto(doc: DebtSettlementDoc): DebtSettlement {
 }
 
 /**
- * Dues writes also create/delete ledger transactions, so the dashboard totals
- * change for every member of the affected space — not just the actor.
+ * Dues writes also create/delete ledger transactions, so cached dashboards
+ * (recent activity and transaction counts) change for every member of the
+ * affected space — not just the actor. P&L totals exclude dues, but the cache
+ * still needs invalidating.
  */
 async function invalidateDuesDashboards(
   userId: Types.ObjectId,

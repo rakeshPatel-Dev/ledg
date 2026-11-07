@@ -14,8 +14,11 @@ import { assertSpaceAccess } from "../spaces/access.js";
 import { logger } from "../../config/logger.js";
 
 export interface DashboardSummary {
+  /** All-time operating income minus operating expenses. Dues/loans excluded. */
   totalBalance: number;
+  /** This month's operating income. Dues/loans excluded. */
   monthIncome: number;
+  /** This month's operating spending. Dues/loans excluded. */
   monthSpend: number;
   byCategory: CategoryBreakdown[];
   byIncomeCategory: CategoryBreakdown[];
