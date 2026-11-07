@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   ArrowDownLeft,
@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateDue, useDuesSummary, useSpaces } from "@/lib/queries";
+import { getUserFacingError } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
 interface CreateDueSheetProps {
@@ -88,6 +89,9 @@ export function CreateDueSheet({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [note, setNote] = useState("");
   const [spaceId, setSpaceId] = useState("");
+  const [errors, setErrors] = useState<{ name?: string; amount?: string }>({});
+  const nameRef = useRef<HTMLInputElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
 
   const { data: spaces = [] } = useSpaces();
   const { data: duesSummary } = useDuesSummary();
@@ -111,6 +115,7 @@ export function CreateDueSheet({
       setDueDate(null);
       setPaymentMethod("cash");
       setNote("");
+      setErrors({});
 
       const personalSpace = spaces.find((s: Space) => s.type === "personal") ?? spaces[0];
       if (personalSpace) setSpaceId(personalSpace.id);
@@ -125,16 +130,27 @@ export function CreateDueSheet({
     e.preventDefault();
 
     const trimmedName = name.trim();
+    const numAmount = parseFloat(amount);
+    const nextErrors: { name?: string; amount?: string } = {};
+
     if (!trimmedName) {
-      toast.error("Please enter a person name");
+      nextErrors.name = "Enter the person's name.";
+    }
+    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      nextErrors.amount = "Enter an amount greater than zero.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      if (nextErrors.amount) {
+        amountRef.current?.focus();
+      } else {
+        nameRef.current?.focus();
+      }
       return;
     }
 
-    const numAmount = parseFloat(amount);
-    if (!amount || isNaN(numAmount) || numAmount <= 0) {
-      toast.error("Please enter a valid amount greater than 0");
-      return;
-    }
+    setErrors({});
 
     try {
       await createMutation.mutateAsync({
@@ -155,8 +171,7 @@ export function CreateDueSheet({
       );
       onOpenChange(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to record due";
-      toast.error(msg);
+      toast.error(getUserFacingError(err, "Failed to record the due."));
     }
   };
 
@@ -167,7 +182,7 @@ export function CreateDueSheet({
       open={open}
       onOpenChange={onOpenChange}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-0">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-0">
         {/* ── Direction toggle (hero pill) ── */}
         <div className="flex gap-2 mb-6 p-1 rounded-3xl bg-muted/50 border border-border/40">
           {([
@@ -229,12 +244,33 @@ export function CreateDueSheet({
               min="0.01"
               placeholder="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              ref={amountRef}
+              aria-invalid={Boolean(errors.amount)}
+              aria-describedby={errors.amount ? "due-amount-error" : undefined}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                if (errors.amount) {
+                  setErrors((prev) => ({ ...prev, amount: undefined }));
+                }
+              }}
               required
               autoFocus
-              className="w-full rounded-2xl border border-border/60 bg-card pl-16 pr-4 py-4 text-3xl font-black tabular-nums tracking-tight outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/30"
+              className={cn(
+                "w-full rounded-2xl border border-border/60 bg-card pl-16 pr-4 py-4 text-3xl font-black tabular-nums tracking-tight outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/30",
+                errors.amount &&
+                  "border-destructive focus:border-destructive focus:ring-destructive/20"
+              )}
             />
           </div>
+          {errors.amount ? (
+            <p
+              id="due-amount-error"
+              role="alert"
+              className="text-xs font-medium text-destructive"
+            >
+              {errors.amount}
+            </p>
+          ) : null}
         </div>
 
         {/* ── Person ── */}
@@ -247,11 +283,31 @@ export function CreateDueSheet({
             <Input
               placeholder="Person's name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="pl-10 h-11 rounded-2xl"
+              ref={nameRef}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? "due-name-error" : undefined}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errors.name) {
+                  setErrors((prev) => ({ ...prev, name: undefined }));
+                }
+              }}
+              className={cn(
+                "pl-10 h-11 rounded-2xl",
+                errors.name && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
+              )}
               required
             />
           </div>
+          {errors.name ? (
+            <p
+              id="due-name-error"
+              role="alert"
+              className="text-xs font-medium text-destructive"
+            >
+              {errors.name}
+            </p>
+          ) : null}
           {/* Recent names */}
           {recentNames.length > 0 && !name && (
             <div className="flex flex-wrap gap-1.5 pt-1">
