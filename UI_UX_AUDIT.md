@@ -11,7 +11,7 @@
 | **Themes** | Light and dark |
 | **Data** | Seeded review account with 3 spaces, 58 transactions, 5 dues, notifications and pending invitations |
 | **Method** | Full walkthrough of the running app with realistic data, paired with a screen-by-screen review of the rendered interface, copy and interaction behaviour, then source verification of every data and state claim |
-| **Implementation status** | ✅ Items 1 (“Make the money truthful”) and 2 (“Make failure visible”) of the priority list are implemented in the working tree as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
+| **Implementation status** | ✅ Items 1 (“Make the money truthful”), 2 (“Make failure visible”) and 3 (“Make the common path short”) of the priority list are implemented as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
 
 ---
 
@@ -122,7 +122,7 @@ The table below is the short version. Every row is expanded later.
 |---|---|---|---|---|
 | 1 | **Critical** | ✅ Lending and borrowing are written into the ledger as expense and income | Dues, Home, Insights | Every spending, income, budget and savings number becomes untrustworthy |
 | 2 | **Critical** | ✅ Failed requests render as Rs. 0 or an empty state, not an error | Home, Insights, Spaces, Space detail | The user believes their money disappeared, or that they have none |
-| 3 | **High** | “+ New space…” inside the transaction sheet discards the form | Add transaction | Loses typed data and interrupts the most common task |
+| 3 | **High** | ✅ “+ New space…” inside the transaction sheet discards the form | Add transaction | Loses typed data and interrupts the most common task |
 | 4 | **High** | The primary action sits below a long scroll in the add sheet | Add transaction | Adds friction to every single entry |
 | 5 | **High** | A signed-out invitee loses the invitation after sign-in or sign-up | Invite, Sign in, Sign up | Blocks the shared-space onboarding path |
 | 6 | **High** | Dues is not a bottom-nav destination and has no active state | Navigation | A headline feature is effectively hidden |
@@ -143,7 +143,7 @@ The table below is the short version. Every row is expanded later.
 
 1. ✅ **Make the money truthful.** Separate loan principal and settlement cash-flow from spend/income, or label the ledger entries explicitly and exclude them from budgets and savings. Then define Total Balance.
 2. ✅ **Make failure visible.** Add error states with retry to every query-backed screen. Never substitute zero for unknown.
-3. **Make the common path short.** Sticky primary action in the add sheet, no data-losing branch, inline validation, and a visible delete alternative.
+3. ✅ **Make the common path short.** Sticky primary action in the add sheet, no data-losing branch, inline validation, and a visible delete alternative.
 4. **Make navigation honest.** Put Dues in the bottom nav or make the header entry persistent, give every route an active state, and make “+” context-aware.
 5. **Make it accessible.** Fix contrast, label sizes, keyboard access, reduced motion and tap targets.
 6. **Then polish.** Desktop layout, copy, empty states, animation restraint.
@@ -476,9 +476,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ## 7. Adding and editing transactions
 
-### A1 · The primary action is below a long scroll
+### ✅ A1 · The primary action is below a long scroll
 
 **Severity:** High · **Screens:** Add transaction, Edit transaction
+
+**Status:** ✅ Fixed — the add/edit sheet now pins its primary action in a footer outside the scroll area. The footer repeats the selected category, space and amount, and shows a short hint when the amount or space is missing, so “Add transaction” is always one tap away.
 
 **What the user sees.** The sheet opens with the amount field focused. Below it: quick-add chips, a 4-column category grid, a note field, a two-column date/space row, payment methods, and only then the “Add transaction” button. At 360 × 640, the first viewport ends around the start of the category grid. The button is several screens down. The sheet itself is capped at `88dvh` and scrolls internally (`client/src/components/ui/sheet.tsx:33,60`).
 
@@ -490,9 +492,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### A2 · “+ New space…” closes the sheet and discards the form
+### ✅ A2 · “+ New space…” closes the sheet and discards the form
 
 **Severity:** High · **Screen:** Add transaction
+
+**Status:** ✅ Fixed — selecting “+ New space…” now opens a nested sheet over the transaction form. Creating the space selects it and returns to the same form with the amount, category, note and date intact. There is no navigation away and no reset.
 
 **What the user sees.** In the Space dropdown, the last option is “+ New space…”. Selecting it closes the add-transaction sheet immediately and navigates to `/spaces`. The amount, category, note and date just entered are gone. There is no confirmation and no way back to the form.
 
@@ -504,9 +508,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### A3 · Validation is a toast, not an inline message
+### ✅ A3 · Validation is a toast, not an inline message
 
 **Severity:** Medium · **Screens:** Add/Edit transaction, Create due, Auth
+
+**Status:** ✅ Fixed — the transaction and create-due forms now show field-level messages under Amount, Name, Category, Note, Date and Space, set `aria-invalid`/`aria-describedby`, focus the first invalid field, and clear the message as soon as the field is edited. The primary button is disabled until an amount and space exist, with a short hint. Toasts are kept for server failures only. Sign-in and sign-up already showed an inline error paragraph.
 
 **What the user sees.** Submitting with no amount shows a toast at the top or bottom: “Enter a valid amount”. The amount field itself is not marked, does not receive an error style, and the toast disappears. Schema errors are similarly converted to a single toast (`client/src/components/transactions/transaction-form.tsx:200-245`). The same pattern appears in create-due and sign-up.
 
@@ -632,9 +638,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ## 8. Activity
 
-### Act1 · Delete is swipe-only, with no keyboard or visible alternative
+### ✅ Act1 · Delete is swipe-only, with no keyboard or visible alternative
 
 **Severity:** High · **Screen:** Activity, Home
+
+**Status:** ✅ Fixed — every transaction row now has a visible “…” actions button that opens a sheet with Edit and Delete. Swipe remains an optional shortcut, the row is still a real button, Delete works while the row is focused, and the delete confirmation toast offers Undo, which recreates the transaction.
 
 **What the user sees.** Rows look like normal list items. A horizontal swipe reveals a red delete panel; tapping it opens a confirmation sheet. There is no trash icon, no overflow menu, no context-menu action and no keyboard shortcut. The row itself is a real button, so tapping it opens edit, but the only delete path is the gesture.
 
