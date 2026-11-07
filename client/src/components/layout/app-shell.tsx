@@ -11,7 +11,7 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="mx-auto min-h-full max-w-md">
       <OfflineBanner />
-      <main className="px-5 pb-36 pt-6">
+      <main className="px-5 pb-28 pt-6">
         {children}
       </main>
       <BottomNav />
