@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Shield,
   Clock,
+  RotateCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -19,12 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/auth-provider";
+import { getUserFacingError } from "@/lib/errors";
 import {
   useInvitationPreview,
   useAcceptInvitationByToken,
   useRejectInvitationByToken,
 } from "@/lib/queries";
 import AppLogo from "@/components/common/app-logo";
+import { cn } from "@/lib/utils";
 
 
 export default function InvitePage() {
@@ -33,7 +36,14 @@ export default function InvitePage() {
   const location = useLocation();
   const { user, isSignedIn, isLoaded } = useAuth();
 
-  const { data: preview, isLoading, isError, error } = useInvitationPreview(token);
+  const {
+    data: preview,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useInvitationPreview(token);
   const acceptMutation = useAcceptInvitationByToken();
   const rejectMutation = useRejectInvitationByToken();
 
@@ -107,18 +117,28 @@ export default function InvitePage() {
           <EmptyState
             icon={<AlertCircle className="size-8 text-rose-500" />}
             title="Invitation Expired or Invalid"
-            description={
-              error instanceof Error
-                ? error.message
-                : "This invitation link is invalid, has expired, or was already claimed."
-            }
+            description={getUserFacingError(
+              error,
+              "This invitation link is invalid, has expired, or was already claimed."
+            )}
             action={
-              <Button
-                onClick={() => navigate("/")}
-                className="rounded-full font-semibold"
-              >
-                Go to Home
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => void refetch()}
+                  disabled={isFetching}
+                  className="rounded-full font-semibold"
+                >
+                  <RotateCw className={cn("size-4", isFetching && "animate-spin")} />
+                  {isFetching ? "Trying again…" : "Try again"}
+                </Button>
+                <Button
+                  onClick={() => navigate("/")}
+                  className="rounded-full font-semibold"
+                >
+                  Go to Home
+                </Button>
+              </>
             }
           />
         </Card>

@@ -21,6 +21,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -43,7 +44,14 @@ import type { TransactionActivityMode } from "@ledg/shared";
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
-  const { spaces, transactions, loading: dataLoading } = useAllData();
+  const {
+    spaces,
+    transactions,
+    loading: dataLoading,
+    error: dataError,
+    refetch: refetchData,
+    fetching: dataFetching,
+  } = useAllData();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { motion, setMotion } = useMotion();
@@ -90,6 +98,9 @@ export default function SettingsPage() {
     data: notifPrefs,
     isLoading: loadingNotifPrefs,
     isError: notifPrefsError,
+    error: notifPrefsErrorDetail,
+    refetch: refetchNotifPrefs,
+    isFetching: fetchingNotifPrefs,
   } = useNotificationPreferences();
   const updateNotifPrefsMutation = useUpdateNotificationPreferences();
 
@@ -236,10 +247,23 @@ export default function SettingsPage() {
         <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Data & Backup
         </h2>
+        {dataError ? (
+          <Card className="rounded-4xl border border-border/60 p-2">
+            <ErrorState
+              contained={false}
+              className="py-4"
+              title="Couldn't load your data"
+              description="Exports are disabled until your transactions load, so you never download an empty backup by mistake."
+              error={dataError}
+              onRetry={refetchData}
+              isRetrying={dataFetching}
+            />
+          </Card>
+        ) : null}
         <Card className="rounded-4xl p-1.5">
           <button
             type="button"
-            disabled={dataLoading}
+            disabled={dataLoading || Boolean(dataError)}
             onClick={() => {
               exportTransactionsToCSV(transactions, spaces, "ledg-transactions.csv");
               toast.success(`Exported ${transactions.length} transactions to CSV`);
@@ -262,7 +286,7 @@ export default function SettingsPage() {
 
           <button
             type="button"
-            disabled={dataLoading}
+            disabled={dataLoading || Boolean(dataError)}
             onClick={() => {
               exportTransactionsToJSON(transactions, spaces, "ledg-backup.json");
               toast.success("Full backup file downloaded");
@@ -480,12 +504,13 @@ export default function SettingsPage() {
               <Loader2 className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : notifPrefsError || !notifPrefs ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-8">
-              <p className="text-sm font-semibold text-destructive">Failed to load preferences</p>
-              <p className="text-xs text-muted-foreground">
-                Please try again later or refresh the page.
-              </p>
-            </div>
+            <ErrorState
+              contained={false}
+              title="Couldn't load notification preferences"
+              error={notifPrefsErrorDetail}
+              onRetry={refetchNotifPrefs}
+              isRetrying={fetchingNotifPrefs}
+            />
           ) : (
             <>
               {/* Invite Events Toggle */}

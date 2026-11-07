@@ -23,6 +23,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   useNotifications,
   usePendingInvitations,
@@ -94,10 +95,23 @@ export function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
+  const notificationsQuery = useNotifications(1, 30);
   const { data: notificationData, isLoading: loadingNotifications } =
-    useNotifications(1, 30);
+    notificationsQuery;
+  const invitationsQuery = usePendingInvitations();
   const { data: pendingInvitations, isLoading: loadingInvitations } =
-    usePendingInvitations();
+    invitationsQuery;
+
+  const notificationsError =
+    notificationsQuery.isError || invitationsQuery.isError;
+  const notificationsErrorDetail =
+    notificationsQuery.error ?? invitationsQuery.error;
+  const refetchNotifications = () => {
+    void notificationsQuery.refetch();
+    void invitationsQuery.refetch();
+  };
+  const fetchingNotifications =
+    notificationsQuery.isFetching || invitationsQuery.isFetching;
 
   const acceptMutation = useAcceptInvitation();
   const rejectMutation = useRejectInvitation();
@@ -189,7 +203,11 @@ export function NotificationCenter() {
           {/* Header controls */}
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {unreadCount > 0 ? `${unreadCount} Unread` : "All caught up"}
+              {notificationsError
+                ? "Notifications unavailable"
+                : unreadCount > 0
+                  ? `${unreadCount} Unread`
+                  : "All caught up"}
             </span>
             {notificationData && notificationData.unreadCount > 0 && (
               <Button
@@ -291,6 +309,15 @@ export function NotificationCenter() {
                 <Loader2 className="size-6 animate-spin text-primary" />
                 <p className="text-xs text-muted-foreground">Loading notifications...</p>
               </div>
+            ) : notificationsError ? (
+              <ErrorState
+                contained={false}
+                className="py-6"
+                title="Couldn't load notifications"
+                error={notificationsErrorDetail}
+                onRetry={refetchNotifications}
+                isRetrying={fetchingNotifications}
+              />
             ) : notifications.length === 0 && (!pendingInvitations || pendingInvitations.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
                 <div className="flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
