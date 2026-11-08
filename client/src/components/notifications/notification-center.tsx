@@ -121,7 +121,21 @@ export function NotificationCenter() {
   const [actingInviteId, setActingInviteId] = useState<string | null>(null);
 
   const notifications = notificationData?.items || [];
-  const unreadCount = (notificationData?.unreadCount || 0) + (pendingInvitations?.length || 0);
+  const pendingInvites = pendingInvitations ?? [];
+
+  // Pending invitations already create an unread `space_invite` notification.
+  // Count each invite once; only add invites that have no matching unread
+  // notification (for example, invites sent before the account existed).
+  const unreadInviteNotificationIds = new Set(
+    notifications
+      .filter((notification) => !notification.read && notification.type === "space_invite")
+      .map((notification) => String(notification.data?.invitationId ?? ""))
+      .filter(Boolean)
+  );
+  const pendingWithoutNotification = pendingInvites.filter(
+    (invitation) => !unreadInviteNotificationIds.has(invitation.id)
+  ).length;
+  const unreadCount = (notificationData?.unreadCount || 0) + pendingWithoutNotification;
 
   const handleAccept = async (id: string, spaceName: string) => {
     setActingInviteId(id);
@@ -183,7 +197,7 @@ export function NotificationCenter() {
         type="button"
         aria-label={`Notifications (${notificationData?.unreadCount ?? 0} unread, ${pendingInvitations?.length ?? 0} pending invitations)`}
         onClick={() => setOpen(true)}
-        className="relative flex size-10 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
+        className="relative flex size-11 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
       >
         <Bell className="size-4.5" />
         {unreadCount > 0 && (
