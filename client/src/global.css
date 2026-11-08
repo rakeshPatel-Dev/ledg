@@ -46,6 +46,14 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.4);
     --radius-4xl: calc(var(--radius) * 3.2);
+    /* Soft Y-offset elevation — mature SaaS, not glow halos */
+    --shadow-2xs: var(--elev-1);
+    --shadow-xs: var(--elev-1);
+    --shadow-sm: var(--elev-2);
+    --shadow-md: var(--elev-3);
+    --shadow-lg: var(--elev-4);
+    --shadow-xl: var(--elev-5);
+    --shadow-2xl: var(--elev-6);
 }
 
 :root {
@@ -85,6 +93,17 @@
     --sidebar-accent-foreground: oklch(0.4 0.09 158);
     --sidebar-border: oklch(0.9 0.012 158);
     --sidebar-ring: oklch(0.52 0.145 158);
+    /* Elevation: offset + blur only. Soft slate, not black slabs. */
+    --elev-1: 0 1px 2px oklch(0.2 0.02 170 / 0.05);
+    --elev-2: 0 1px 2px oklch(0.2 0.02 170 / 0.04), 0 2px 6px oklch(0.2 0.02 170 / 0.06);
+    --elev-3: 0 2px 4px oklch(0.2 0.02 170 / 0.04), 0 6px 16px oklch(0.2 0.02 170 / 0.08);
+    --elev-4: 0 4px 8px oklch(0.2 0.02 170 / 0.04), 0 12px 28px oklch(0.2 0.02 170 / 0.1);
+    --elev-5: 0 8px 16px oklch(0.2 0.02 170 / 0.05), 0 20px 40px oklch(0.2 0.02 170 / 0.12);
+    --elev-6: 0 16px 32px oklch(0.2 0.02 170 / 0.08), 0 28px 56px oklch(0.2 0.02 170 / 0.14);
+    --elev-primary: inset 0 1px 0 oklch(1 0 0 / 0.22), 0 1px 2px oklch(0.2 0.02 170 / 0.1), 0 6px 16px color-mix(in oklch, var(--primary) 34%, transparent);
+    --elev-primary-hover: inset 0 1px 0 oklch(1 0 0 / 0.28), 0 2px 4px oklch(0.2 0.02 170 / 0.1), 0 10px 22px color-mix(in oklch, var(--primary) 40%, transparent);
+    --elev-raised: inset 0 1px 0 oklch(1 0 0 / 0.7), var(--elev-2);
+    --elev-field: inset 0 1px 2px oklch(0.2 0.02 170 / 0.04), 0 1px 0 oklch(1 0 0 / 0.55);
 }
 
 .dark {
@@ -122,6 +141,16 @@
     --sidebar-accent-foreground: oklch(0.965 0.005 158);
     --sidebar-border: oklch(1 0 0 / 12%);
     --sidebar-ring: oklch(0.65 0.14 158);
+    --elev-1: 0 1px 2px oklch(0 0 0 / 0.28);
+    --elev-2: 0 1px 2px oklch(0 0 0 / 0.24), 0 2px 8px oklch(0 0 0 / 0.32);
+    --elev-3: 0 2px 4px oklch(0 0 0 / 0.24), 0 8px 20px oklch(0 0 0 / 0.36);
+    --elev-4: 0 4px 10px oklch(0 0 0 / 0.28), 0 14px 32px oklch(0 0 0 / 0.42);
+    --elev-5: 0 10px 20px oklch(0 0 0 / 0.32), 0 24px 48px oklch(0 0 0 / 0.48);
+    --elev-6: 0 18px 36px oklch(0 0 0 / 0.4), 0 32px 64px oklch(0 0 0 / 0.55);
+    --elev-primary: inset 0 1px 0 oklch(1 0 0 / 0.16), 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 20px color-mix(in oklch, var(--primary) 28%, transparent);
+    --elev-primary-hover: inset 0 1px 0 oklch(1 0 0 / 0.2), 0 2px 4px oklch(0 0 0 / 0.35), 0 12px 26px color-mix(in oklch, var(--primary) 34%, transparent);
+    --elev-raised: inset 0 1px 0 oklch(1 0 0 / 0.08), var(--elev-2);
+    --elev-field: inset 0 1px 2px oklch(0 0 0 / 0.35), 0 1px 0 oklch(1 0 0 / 0.04);
 }
 
 @layer base {
@@ -140,6 +169,21 @@
   button {
     cursor: pointer;
     }
+}
+
+@layer utilities {
+  .shadow-elev-primary {
+    box-shadow: var(--elev-primary);
+  }
+  .shadow-elev-primary-hover {
+    box-shadow: var(--elev-primary-hover);
+  }
+  .shadow-elev-raised {
+    box-shadow: var(--elev-raised);
+  }
+  .shadow-elev-field {
+    box-shadow: var(--elev-field);
+  }
 }
 
 /* Hide scrollbar for smooth horizontal scrolling elements */
