@@ -364,7 +364,7 @@ export function DueDetailSheet({
                   onOpenSettle(due);
                 }}
                 className={cn(
-                  "w-full h-12 font-bold text-base gap-2 rounded-full shadow-md",
+                  "w-full h-12 font-bold text-base gap-2 rounded-full",
                   isLent
                     ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
                     : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20"
@@ -411,7 +411,7 @@ function SettlementRow({
   onUndo: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card/80 px-4 py-3 backdrop-blur-sm">
+    <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-xs">
       {/* Badge number */}
       <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
         <span className="text-[0.6rem] font-black">#{index + 1}</span>

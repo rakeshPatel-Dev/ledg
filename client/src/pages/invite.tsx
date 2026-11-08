@@ -195,7 +195,7 @@ export default function InvitePage() {
           <div className="flex flex-col gap-2.5">
             <Button
               size="lg"
-              className="w-full rounded-full font-bold shadow-md shadow-primary/20"
+              className="w-full rounded-full font-bold"
               onClick={() =>
                 navigate("/sign-up", {
                   state: {
@@ -255,7 +255,7 @@ export default function InvitePage() {
               size="lg"
               disabled={accepting}
               onClick={handleAccept}
-              className="w-full rounded-full font-bold shadow-md shadow-primary/25"
+              className="w-full rounded-full font-bold"
             >
               {accepting ? (
                 <>

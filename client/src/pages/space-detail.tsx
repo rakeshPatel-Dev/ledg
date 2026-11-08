@@ -579,11 +579,14 @@ export default function SpaceDetailPage() {
 
       {/* Main Space Hero Banner */}
       <FadeInItem>
-        <Card className="flex flex-col gap-4 rounded-4xl p-5 relative overflow-hidden border border-border/50 bg-card/80 backdrop-blur-md shadow-xs">
+        <Card
+          variant="raised"
+          className="flex flex-col gap-4 rounded-4xl p-5 relative overflow-hidden"
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <span
-                className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${typeBg} ${typeText}`}
+                className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/5 ring-inset dark:ring-white/5 ${typeBg} ${typeText}`}
               >
                 <Icon className="size-6" />
               </span>
@@ -611,14 +614,14 @@ export default function SpaceDetailPage() {
               onClick={() => {
                 openCreate(space.id, true);
               }}
-              className="rounded-full h-12 w-12 shrink-0 shadow-sm"
+              className="rounded-full h-12 w-12 shrink-0"
             >
               <Plus className="size-6" />
             </Button>
           </div>
 
           {/* Balance & Analytics breakdown */}
-          <div className="flex flex-col gap-2 rounded-2xl bg-muted/40 p-3 border border-border/40">
+          <div className="flex flex-col gap-2 rounded-2xl border border-border/40 bg-muted/35 p-3 shadow-elev-inset">
             <div className="flex items-center justify-between">
               <p
                 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -119,11 +120,18 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-2xl font-extrabold tracking-tight">You</h1>
+      <PageHeader
+        eyebrow="Account"
+        title="You"
+        description="Profile, preferences and data"
+      />
 
       {/* User Profile Card */}
       <Link to="/profile" className="block group">
-        <Card className="flex items-center justify-between gap-4 border border-border/60 rounded-4xl p-5 transition-all group-hover:bg-muted/40 active:scale-[0.99] cursor-pointer">
+        <Card
+          variant="raised"
+          className="flex items-center justify-between gap-4 border border-border/60 rounded-4xl p-5 transition-all group-hover:border-primary/25 active:scale-[0.99] cursor-pointer"
+        >
           <div className="flex items-center gap-4 min-w-0">
             <UserAvatar
               user={user}
@@ -154,7 +162,7 @@ export default function SettingsPage() {
 
       {/* Preferences Section */}
       <div className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
           Preferences
         </h2>
         <Card className="rounded-4xl p-1.5">
@@ -227,7 +235,7 @@ export default function SettingsPage() {
 
       {/* Feedback & Requests Section */}
       <div className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
           Feedback & Requests
         </h2>
         <Card className="rounded-4xl p-1.5">
@@ -252,7 +260,7 @@ export default function SettingsPage() {
 
       {/* Data & Backup Section */}
       <div className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
           Data & Backup
         </h2>
         {dataError ? (
@@ -338,7 +346,7 @@ export default function SettingsPage() {
 
       {/* Legal Section */}
       <div className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
           Legal
         </h2>
         <Card className="rounded-4xl p-1.5">

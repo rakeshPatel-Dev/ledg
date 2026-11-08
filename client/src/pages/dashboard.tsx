@@ -23,6 +23,7 @@ import { SwipeableTransactionItem } from "@/components/transactions/swipeable-tr
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { DuesSummaryCard } from "@/components/dues/dues-summary-card";
 import { Button } from "@/components/ui/button";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Segmented } from "@/components/ui/segmented";
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency, formatCompact } from "@/lib/format";
@@ -114,8 +115,8 @@ export default function DashboardPage() {
         </FadeInItem>
       ) : (
         <FadeInItem>
-          <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
-            <div className="flex items-center justify-between">
+          <section className="relative -mx-5 overflow-hidden rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.16),0_18px_40px_-18px_color-mix(in_oklch,var(--primary)_50%,transparent)] before:pointer-events-none before:absolute before:inset-0 before:hero-glow after:pointer-events-none after:absolute after:inset-0 after:ledger-lines after:opacity-45 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
+            <div className="relative flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground dark:text-emerald-100">
                 Net saved
               </p>
@@ -131,7 +132,7 @@ export default function DashboardPage() {
               <Skeleton className="mt-2 h-12 w-48 bg-black/15 dark:bg-white/10" />
             ) : (
               <>
-                <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
+                <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums drop-shadow-[0_1px_0_oklch(0_0_0/0.18)]">
                   {data ? formatCurrency(data.totalBalance, currency) : "—"}
                 </p>
                 <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground dark:text-emerald-100">
@@ -143,7 +144,7 @@ export default function DashboardPage() {
             <div className="mt-5 grid grid-cols-2 gap-3">
               <motion.div
                 whileHover={{ y: -2 }}
-                className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
+                className="rounded-3xl border border-white/15 bg-black/10 p-3.5 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
               >
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
                   <span className="flex size-6 items-center justify-center rounded-full bg-emerald-950/25 text-emerald-50 dark:bg-emerald-400/20 dark:text-emerald-200">
@@ -160,7 +161,7 @@ export default function DashboardPage() {
               </motion.div>
               <motion.div
                 whileHover={{ y: -2 }}
-                className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
+                className="rounded-3xl border border-white/15 bg-black/10 p-3.5 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
               >
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
                   <span className="flex size-6 items-center justify-center rounded-full bg-rose-950/25 text-rose-50 dark:bg-rose-400/20 dark:text-rose-200">
@@ -245,7 +246,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted shadow-elev-inset">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${percent}%` }}
@@ -289,12 +290,10 @@ export default function DashboardPage() {
       {!isPending && byPaymentMethod.length > 0 && (
         <FadeInItem>
           <section>
-            <div className="mb-3 flex items-center gap-2">
-              <CreditCard className="size-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Payment Methods
-              </h2>
-            </div>
+            <SectionHeading
+              title="Payment methods"
+              icon={<CreditCard className="size-3" />}
+            />
 
             <div className="grid grid-cols-2 gap-3">
               {byPaymentMethod.map((item) => {
@@ -316,8 +315,9 @@ export default function DashboardPage() {
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   >
                     <Card
+                      variant="raised"
                       className={cn(
-                        "flex flex-col gap-2 rounded-4xl p-4 transition-shadow hover:shadow-md",
+                        "flex flex-col gap-2 rounded-4xl p-4",
                         "border-border/50"
                       )}
                     >
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              "flex size-9 items-center justify-center rounded-2xl",
+                              "flex size-9 items-center justify-center rounded-2xl ring-1 ring-black/5 ring-inset dark:ring-white/5",
                               colorClass
                             )}
                           >
@@ -344,7 +344,7 @@ export default function DashboardPage() {
                         <p className="text-base font-bold tabular-nums">
                           {formatCurrency(item.amount, currency)}
                         </p>
-                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-elev-inset">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
@@ -365,17 +365,17 @@ export default function DashboardPage() {
       {(isPending || recent.length > 0) && (
         <FadeInItem>
           <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Recent activity
-              </h2>
-              <Link
-                to="/transactions"
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                See all
-              </Link>
-            </div>
+            <SectionHeading
+              title="Recent activity"
+              action={
+                <Link
+                  to="/transactions"
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  See all
+                </Link>
+              }
+            />
 
             {isPending ? (
               <div className="flex flex-col gap-2">
@@ -402,8 +402,9 @@ export default function DashboardPage() {
 
       {!isPending && (data?.transactionCount ?? 0) > 0 && (
         <FadeInItem>
-          <section className="flex items-center gap-3 rounded-4xl bg-accent/50 p-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+          <section className="relative flex items-center gap-3 overflow-hidden rounded-4xl border border-primary/12 bg-accent/40 p-4 shadow-elev-card">
+            <span className="absolute inset-y-4 left-0 w-0.5 rounded-r-full bg-primary/40" />
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/12 text-primary shadow-xs">
               <TrendingUp className="size-5" />
             </span>
             <div className="min-w-0 flex-1">

@@ -33,13 +33,13 @@ export function Sheet({
           <Drawer.Popup className="pointer-events-auto fixed inset-x-0 bottom-0 outline-none">
             <div
               className={cn(
-                "flex max-h-[88dvh] flex-col rounded-t-4xl border-t border-border/60 bg-card shadow-2xl outline-none",
+                "flex max-h-[88dvh] flex-col rounded-t-4xl border-t border-border/60 bg-[linear-gradient(180deg,var(--card-top),var(--card))] shadow-[inset_0_1px_0_oklch(1_0_0/0.6),0_-24px_60px_-24px_oklch(0.2_0.02_170/0.45)] outline-none dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.07),0_-24px_60px_-24px_oklch(0_0_0/0.8)]",
                 className
               )}
             >
               {/* Drag handle */}
               <div className="flex items-center justify-center pt-3 pb-1 shrink-0">
-                <div className="h-1.5 w-12 rounded-full bg-muted-foreground/25" />
+                <div className="h-1.5 w-12 rounded-full bg-muted-foreground/25 shadow-[inset_0_1px_1px_oklch(0.2_0.02_170/0.18)]" />
               </div>
 
               {/* Title/description (shown or sr-only) */}
@@ -71,7 +71,7 @@ export function Sheet({
               </div>
 
               {footer ? (
-                <div className="shrink-0 border-t border-border/60 bg-card px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+                <div className="shrink-0 border-t border-border/60 bg-card/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[inset_0_1px_0_oklch(1_0_0/0.5)] dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.05)]">
                   {footer}
                 </div>
               ) : null}

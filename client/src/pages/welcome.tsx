@@ -44,7 +44,7 @@ export default function WelcomePage() {
       {/* Feature Highlights */}
       <main className="my-auto py-8">
         <div className="grid gap-3">
-          <div className="flex items-center gap-3.5 rounded-2xl border border-border/80 bg-card p-3.5 shadow-xs">
+          <div className="flex items-center gap-3.5 rounded-2xl border border-border/70 bg-card p-3.5 surface-raised">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Zap className="size-5" />
             </div>
@@ -56,7 +56,7 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 rounded-2xl border border-border/80 bg-card p-3.5 shadow-xs">
+          <div className="flex items-center gap-3.5 rounded-2xl border border-border/70 bg-card p-3.5 surface-raised">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <PieChart className="size-5" />
             </div>
@@ -68,7 +68,7 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 rounded-2xl border border-border/80 bg-card p-3.5 shadow-xs">
+          <div className="flex items-center gap-3.5 rounded-2xl border border-border/70 bg-card p-3.5 surface-raised">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <ShieldCheck className="size-5" />
             </div>
@@ -89,7 +89,7 @@ export default function WelcomePage() {
         <Button
           variant="default"
           size="lg"
-          className="h-13 w-full rounded-full text-base font-semibold shadow-md"
+          className="h-13 w-full rounded-full text-base font-semibold"
           render={<Link to="/sign-up" />}
         >
           <ArrowRight className="size-4 mr-2" />

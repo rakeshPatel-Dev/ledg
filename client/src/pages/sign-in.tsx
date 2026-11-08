@@ -152,7 +152,7 @@ export default function SignInPage() {
             type="submit"
             size="lg"
             disabled={loading}
-            className="h-12 w-full text-base font-semibold shadow-md"
+            className="h-12 w-full text-base font-semibold"
           >
             {loading ? (
               <Loader2 className="size-4 animate-spin" />

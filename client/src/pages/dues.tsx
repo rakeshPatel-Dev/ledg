@@ -217,11 +217,11 @@ export default function DuesPage() {
     <FadeInStagger className="flex flex-col min-h-screen pb-28">
       {/* ── Hero ── */}
       <FadeInItem>
-        <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-4 text-primary-foreground shadow-xl shadow-primary/25 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
+        <section className="relative -mx-5 overflow-hidden rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-4 text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.16),0_18px_40px_-18px_color-mix(in_oklch,var(--primary)_50%,transparent)] before:pointer-events-none before:absolute before:inset-0 before:hero-glow after:pointer-events-none after:absolute after:inset-0 after:ledger-lines after:opacity-45 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
           {/* Top bar */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="relative flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-4xl bg-black/15 backdrop-blur-sm dark:bg-white/10">
+              <div className="flex size-8 items-center justify-center rounded-4xl border border-white/10 bg-black/15 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] dark:bg-white/10">
                 <HandCoins className="size-4" />
               </div>
               <h1 className="text-sm font-extrabold tracking-wide">Dues &amp; Loans</h1>
@@ -286,7 +286,7 @@ export default function DuesPage() {
             </div>
           ) : (
             <div className="mb-5">
-              <p className="text-4xl font-black tracking-tight tabular-nums leading-none">
+              <p className="text-4xl font-black tracking-tight tabular-nums leading-none drop-shadow-[0_1px_0_oklch(0_0_0/0.2)]">
                 {formatCurrency(duesSummary?.net ?? 0)}
               </p>
               <p className="mt-1.5 text-xs font-medium text-primary-foreground dark:text-emerald-100">
@@ -299,7 +299,7 @@ export default function DuesPage() {
           {/* Stats row */}
           {!summaryError && (
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
+              <div className="rounded-3xl border border-white/15 bg-black/10 p-3.5 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] dark:bg-white/10">
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="flex size-5 items-center justify-center rounded-full bg-emerald-950/25 dark:bg-emerald-400/20">
                     <ArrowUpRight className="size-3 text-emerald-50 dark:text-emerald-200" />
@@ -313,7 +313,7 @@ export default function DuesPage() {
                 </p>
               </div>
 
-              <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
+              <div className="rounded-3xl border border-white/15 bg-black/10 p-3.5 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] dark:bg-white/10">
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="flex size-5 items-center justify-center rounded-full bg-amber-950/25 dark:bg-amber-400/20">
                     <ArrowDownLeft className="size-3 text-amber-50 dark:text-amber-200" />
@@ -361,8 +361,8 @@ export default function DuesPage() {
                   className={cn(
                     "relative shrink-0 min-h-10 rounded-4xl px-2 py-1.5 text-xs font-semibold transition-all duration-200 after:absolute after:-inset-y-0.5 after:content-['']",
                     activeTab === tab.value
-                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      ? "border border-[color-mix(in_oklch,var(--primary),black_10%)] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] text-primary-foreground shadow-elev-primary"
+                      : "border border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted/60 hover:text-foreground"
                   )}
                 >
                   {tab.label}
@@ -371,8 +371,8 @@ export default function DuesPage() {
                       className={cn(
                         "ml-1 inline-flex items-center justify-center rounded-full text-[0.55rem] font-bold min-w-4 h-4 px-0.5",
                         activeTab === "all"
-                          ? "bg-black/20 text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
+                          ? "bg-black/20 text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.15)]"
+                          : "bg-muted text-muted-foreground shadow-xs"
                       )}
                     >
                       {duesSummary!.activeCount}
@@ -383,7 +383,7 @@ export default function DuesPage() {
             </div>
 
             {/* View mode toggle */}
-            <div className="flex shrink-0 items-center gap-0.5 rounded-4xl border border-border/50 bg-card/60 p-0.5">
+            <div className="flex shrink-0 items-center gap-0.5 rounded-4xl border border-border/50 bg-muted/55 p-0.5 shadow-elev-inset">
               <button
                 type="button"
                 onClick={() => setViewMode("person")}
@@ -392,7 +392,7 @@ export default function DuesPage() {
                 className={cn(
                   "relative flex size-10 items-center justify-center rounded-4xl transition-all after:absolute after:-inset-0.5 after:content-['']",
                   viewMode === "person"
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "border border-border/60 bg-card text-primary surface-raised"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -406,7 +406,7 @@ export default function DuesPage() {
                 className={cn(
                   "relative flex size-10 items-center justify-center rounded-4xl transition-all after:absolute after:-inset-0.5 after:content-['']",
                   viewMode === "list"
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "border border-border/60 bg-card text-primary surface-raised"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -491,7 +491,7 @@ export default function DuesPage() {
 
               return (
                 <FadeInItem key={group.name}>
-                  <div className="overflow-hidden rounded-4xl border border-border/50 bg-card/80 shadow-sm backdrop-blur-xl">
+                  <div className="overflow-hidden rounded-4xl border border-border/70 bg-card surface-raised">
                     {/* Person header */}
                     <button
                       type="button"
@@ -604,7 +604,7 @@ export default function DuesPage() {
           <FadeInStagger className="flex flex-col gap-2.5">
             {filteredDues.map((due) => (
               <FadeInItem key={due.id}>
-                <div className="rounded-4xl border border-border/50 bg-card/80 shadow-sm backdrop-blur-xl overflow-hidden">
+                <div className="rounded-4xl border border-border/70 bg-card surface-raised overflow-hidden">
                   <DueRow
                     due={due}
                     onSettle={() => handleOpenSettle(due)}

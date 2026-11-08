@@ -546,7 +546,7 @@ export function CreateDueSheet({
         <Button
           type="submit"
           className={cn(
-            "w-full h-13 font-bold text-base gap-2.5 rounded-full shadow-md transition-all",
+            "w-full h-13 font-bold text-base gap-2.5 rounded-full transition-all",
             isLent
               ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25"
               : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25"

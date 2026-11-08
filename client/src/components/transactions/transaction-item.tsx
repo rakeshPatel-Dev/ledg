@@ -65,12 +65,12 @@ export function TransactionItem({
         }
       }}
       className={cn(
-        "flex w-full items-center gap-3.5 rounded-3xl border border-border/70 bg-card px-3 py-3 text-left shadow-sm transition-[box-shadow,border-color,background-color] duration-200 hover:border-border hover:shadow-md cursor-pointer select-none",
+        "flex w-full items-center gap-3.5 rounded-3xl border border-border/70 bg-card surface-card px-3 py-3 text-left transition-[box-shadow,border-color,background-color] duration-200 hover:border-border hover:shadow-elev-card-hover cursor-pointer select-none",
         className
       )}
     >
       <span
-        className="flex size-12 shrink-0 items-center justify-center rounded-2xl"
+        className="flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/5 ring-inset dark:ring-white/5"
         style={{ backgroundColor: `${meta.color}1f`, color: meta.color }}
       >
         <Icon className="size-5" strokeWidth={2.2} />

@@ -104,7 +104,7 @@ export function PopoverContent({
   return (
     <div
       className={cn(
-        "absolute z-[100] max-w-[90vw] rounded-3xl border border-border/70 bg-card p-3 text-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95 duration-150",
+        "absolute z-[100] max-w-[90vw] rounded-3xl border border-border/70 bg-card surface-raised p-3 text-foreground outline-none animate-in fade-in-0 zoom-in-95 duration-150",
         side === "top" ? "bottom-full mb-2" : "top-full mt-2",
         align === "start" && "left-0",
         align === "center" && "left-1/2 -translate-x-1/2",

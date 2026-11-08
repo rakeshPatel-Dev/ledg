@@ -121,7 +121,7 @@ export function BottomNav() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative flex w-full max-w-md items-center justify-around rounded-full border border-border/60 bg-card/90 px-1.5 py-1 shadow-xl backdrop-blur-xl"
+          className="relative flex w-full max-w-md items-center justify-around rounded-full border border-border/70 bg-card/90 px-1.5 py-1 backdrop-blur-xl shadow-[inset_0_1px_0_oklch(1_0_0/0.65),0_18px_40px_-16px_oklch(0.2_0.02_170/0.42)] dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.06),0_18px_40px_-16px_oklch(0_0_0/0.8)]"
         >
           {NAV_ITEMS.map((item) => {
             if (item.type === "add") {
@@ -134,7 +134,7 @@ export function BottomNav() {
                     type="button"
                     onClick={handleAddClick}
                     aria-label={isDuesPage ? "Add due" : "Add transaction"}
-                    className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-elev-primary transition-colors hover:bg-primary/90 hover:shadow-elev-primary-hover"
+                    className="relative flex size-14 items-center justify-center rounded-full border border-[color-mix(in_oklch,var(--primary),black_12%)] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] text-primary-foreground shadow-elev-primary transition-[box-shadow,background] hover:shadow-elev-primary-hover"
                   >
                     <Plus className="size-7 stroke-[2.5px]" />
                   </motion.button>
@@ -168,7 +168,7 @@ export function BottomNav() {
                   {isMoreActive && (
                     <motion.div
                       layoutId="activeBottomNavPill"
-                      className="absolute inset-0 -z-10 rounded-full bg-primary/10"
+                      className="absolute inset-0 -z-10 rounded-full border border-primary/10 bg-primary/10 shadow-[inset_0_1px_2px_oklch(0.2_0.02_170/0.06)]"
                       transition={{
                         type: "spring",
                         stiffness: 380,
@@ -218,7 +218,7 @@ export function BottomNav() {
                     {isActive && (
                       <motion.div
                         layoutId="activeBottomNavPill"
-                        className="absolute inset-0 -z-10 rounded-full bg-primary/10"
+                        className="absolute inset-0 -z-10 rounded-full border border-primary/10 bg-primary/10 shadow-[inset_0_1px_2px_oklch(0.2_0.02_170/0.06)]"
                         transition={{
                           type: "spring",
                           stiffness: 380,

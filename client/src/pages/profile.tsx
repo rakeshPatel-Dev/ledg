@@ -223,7 +223,10 @@ export default function ProfilePage() {
 
         {/* Hero Profile Card */}
         <FadeInItem>
-          <Card className="flex flex-col items-center text-center gap-3 border-0 rounded-4xl p-6 relative overflow-hidden bg-gradient-to-b from-card to-muted/30">
+          <Card
+            variant="raised"
+            className="flex flex-col items-center text-center gap-3 rounded-4xl p-6 relative overflow-hidden"
+          >
             <UserAvatar
               user={{ name: displayName, image: profileData?.image ?? user?.image }}
               className="size-20 ring-4 ring-primary/20 shadow-md"
@@ -265,7 +268,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => setPersonalInfoOpen(true)}
-            className="flex items-center gap-3 w-full rounded-4xl border border-border/60 bg-card p-4 transition-all hover:bg-muted/40 active:scale-[0.99] text-left"
+            className="flex items-center gap-3 w-full rounded-4xl border border-border/60 bg-card p-4 surface-card transition-all hover:border-primary/20 active:scale-[0.99] text-left"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <UserRound className="size-5" />
@@ -286,7 +289,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => setSecurityOpen(true)}
-              className="flex items-center gap-3 w-full rounded-4xl border border-border/60 bg-card p-4 transition-all hover:bg-muted/40 active:scale-[0.99] text-left"
+              className="flex items-center gap-3 w-full rounded-4xl border border-border/60 bg-card p-4 surface-card transition-all hover:border-primary/20 active:scale-[0.99] text-left"
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Lock className="size-5" />

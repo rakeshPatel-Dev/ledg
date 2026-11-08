@@ -143,8 +143,8 @@ export function RequestFeatureForm() {
             rows={4}
             placeholder="Tell us what you'd like to see…"
             className={cn(
-              "w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground shadow-xs transition-colors outline-none placeholder:text-muted-foreground",
-              "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              "w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground shadow-elev-field transition-[box-shadow,border-color] duration-200 outline-none placeholder:text-muted-foreground",
+              "hover:border-border focus-visible:border-ring focus-visible:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50"
             )}
           />
           <ValidationError field="message" errors={state.errors} />

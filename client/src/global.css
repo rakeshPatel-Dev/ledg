@@ -104,6 +104,25 @@
     --elev-primary-hover: inset 0 1px 0 oklch(1 0 0 / 0.28), 0 2px 4px oklch(0.2 0.02 170 / 0.1), 0 10px 22px color-mix(in oklch, var(--primary) 40%, transparent);
     --elev-raised: inset 0 1px 0 oklch(1 0 0 / 0.7), var(--elev-2);
     --elev-field: inset 0 1px 2px oklch(0.2 0.02 170 / 0.04), 0 1px 0 oklch(1 0 0 / 0.55);
+    /* Paper depth: every raised surface is lit from the top and shaded below. */
+    --card-top: oklch(1 0 0);
+    --card-bottom: color-mix(in oklch, var(--card), var(--background) 38%);
+    --card-edge: oklch(1 0 0 / 0.85);
+    --primary-top: color-mix(in oklch, var(--primary), white 12%);
+    --primary-top-hover: color-mix(in oklch, var(--primary), white 18%);
+    --elev-card:
+      0 1px 1px oklch(0.2 0.02 170 / 0.04),
+      0 2px 4px oklch(0.2 0.02 170 / 0.03),
+      0 12px 24px -12px oklch(0.2 0.02 170 / 0.16);
+    --elev-card-hover:
+      0 1px 1px oklch(0.2 0.02 170 / 0.05),
+      0 4px 8px oklch(0.2 0.02 170 / 0.05),
+      0 20px 36px -16px oklch(0.2 0.02 170 / 0.22);
+    --elev-inset:
+      inset 0 1px 2px oklch(0.2 0.02 170 / 0.06),
+      inset 0 -1px 0 oklch(1 0 0 / 0.6);
+    --elev-pressed: inset 0 2px 4px oklch(0.2 0.02 170 / 0.14);
+    --surface-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.5), oklch(1 0 0 / 0) 46%);
 }
 
 .dark {
@@ -151,6 +170,24 @@
     --elev-primary-hover: inset 0 1px 0 oklch(1 0 0 / 0.2), 0 2px 4px oklch(0 0 0 / 0.35), 0 12px 26px color-mix(in oklch, var(--primary) 34%, transparent);
     --elev-raised: inset 0 1px 0 oklch(1 0 0 / 0.08), var(--elev-2);
     --elev-field: inset 0 1px 2px oklch(0 0 0 / 0.35), 0 1px 0 oklch(1 0 0 / 0.04);
+    --card-top: color-mix(in oklch, var(--card), white 4%);
+    --card-bottom: color-mix(in oklch, var(--card), black 10%);
+    --card-edge: oklch(1 0 0 / 0.07);
+    --primary-top: color-mix(in oklch, var(--primary), white 10%);
+    --primary-top-hover: color-mix(in oklch, var(--primary), white 16%);
+    --elev-card:
+      0 1px 1px oklch(0 0 0 / 0.3),
+      0 3px 6px oklch(0 0 0 / 0.18),
+      0 16px 30px -16px oklch(0 0 0 / 0.6);
+    --elev-card-hover:
+      0 1px 1px oklch(0 0 0 / 0.34),
+      0 6px 12px oklch(0 0 0 / 0.24),
+      0 24px 44px -18px oklch(0 0 0 / 0.7);
+    --elev-inset:
+      inset 0 1px 2px oklch(0 0 0 / 0.4),
+      inset 0 -1px 0 oklch(1 0 0 / 0.05);
+    --elev-pressed: inset 0 2px 4px oklch(0 0 0 / 0.55);
+    --surface-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.055), oklch(1 0 0 / 0) 50%);
 }
 
 @layer base {
@@ -159,31 +196,111 @@
     }
   body {
     @apply bg-background text-foreground;
-    }
+    background-image: radial-gradient(
+      110% 55% at 50% 0%,
+      color-mix(in oklch, var(--primary), transparent 95%),
+      transparent 68%
+    );
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image: radial-gradient(
+      110% 55% at 50% 0%,
+      color-mix(in oklch, var(--primary), transparent 92%),
+      transparent 62%
+    );
+  }
   html {
     @apply font-sans antialiased;
-    }
+  }
   html, body, #root {
     height: 100%;
-    }
+  }
   button {
     cursor: pointer;
-    }
+  }
 }
 
-@layer utilities {
-  .shadow-elev-primary {
-    box-shadow: var(--elev-primary);
-  }
-  .shadow-elev-primary-hover {
-    box-shadow: var(--elev-primary-hover);
-  }
-  .shadow-elev-raised {
-    box-shadow: var(--elev-raised);
-  }
-  .shadow-elev-field {
-    box-shadow: var(--elev-field);
-  }
+@utility shadow-elev-primary {
+  box-shadow: var(--elev-primary);
+}
+@utility shadow-elev-primary-hover {
+  box-shadow: var(--elev-primary-hover);
+}
+@utility shadow-elev-raised {
+  box-shadow: var(--elev-raised);
+}
+@utility shadow-elev-field {
+  box-shadow: var(--elev-field);
+}
+@utility shadow-elev-card {
+  box-shadow: var(--elev-card);
+}
+@utility shadow-elev-card-hover {
+  box-shadow: var(--elev-card-hover);
+}
+@utility shadow-elev-inset {
+  box-shadow: var(--elev-inset);
+}
+@utility shadow-elev-pressed {
+  box-shadow: var(--elev-pressed);
+}
+/* Layered paper: a top-lit sheen over a tight, tall ambient shadow. */
+@utility surface-card {
+  background-image: var(--surface-sheen);
+  box-shadow: var(--elev-card);
+}
+@utility surface-raised {
+  background-image: linear-gradient(180deg, var(--card-top), var(--card-bottom));
+  box-shadow:
+    inset 0 1px 0 0 var(--card-edge),
+    var(--elev-card);
+}
+@utility surface-inset {
+  background-image: linear-gradient(
+    180deg,
+    oklch(0.2 0.02 170 / 0.035),
+    oklch(1 0 0 / 0.25)
+  );
+  box-shadow: var(--elev-inset);
+}
+.dark .surface-inset {
+  background-image: linear-gradient(180deg, oklch(0 0 0 / 0.18), oklch(1 0 0 / 0.02));
+}
+/* Faint ruled lines, like a ledger page. Used only on the green hero. */
+@utility ledger-lines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    oklch(1 0 0 / 0.055) 0,
+    oklch(1 0 0 / 0.055) 1px,
+    transparent 1px,
+    transparent 26px
+  );
+}
+@utility hero-glow {
+  background-image: radial-gradient(
+    130% 100% at 15% 0%,
+    oklch(1 0 0 / 0.17),
+    transparent 58%
+  );
+}
+
+/* Fine paper grain — keeps large flat fills from reading as plain hex values. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: multiply;
+}
+
+.dark body::after {
+  opacity: 0.05;
+  mix-blend-mode: soft-light;
 }
 
 /* Hide scrollbar for smooth horizontal scrolling elements */

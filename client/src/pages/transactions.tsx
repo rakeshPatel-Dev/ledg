@@ -22,6 +22,8 @@ import { SwipeableTransactionItem } from "@/components/transactions/swipeable-tr
 import { DeleteTransactionSheet } from "@/components/transactions/delete-transaction-sheet";
 import { ImportTransactionsSheet } from "@/components/settings/import-transactions-sheet";
 import { Button } from "@/components/ui/button";
+import { FilterChip } from "@/components/ui/filter-chip";
+import { PageHeader } from "@/components/ui/page-header";
 import { Segmented } from "@/components/ui/segmented";
 import {
   Pagination,
@@ -39,7 +41,6 @@ import {
 import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
 import { exportTransactionsToCSV } from "@/lib/export";
 import { useTransactionForm } from "@/lib/transaction-form";
-import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 
 type TypeFilter = "all" | TransactionType;
@@ -130,49 +131,50 @@ export default function TransactionsPage() {
   return (
     <FadeInStagger className="flex flex-col gap-5">
       <FadeInItem>
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Activity</h1>
-            <p className="text-sm text-muted-foreground">
-              {transactionsQuery.isPending
-                ? "Loading…"
-                : transactionsQuery.isError
-                  ? "Couldn't load activity"
-                  : `${total} transaction${total === 1 ? "" : "s"}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              aria-label="Export CSV"
-              title="Export CSV"
-              variant="outline"
-              size="icon"
-              onClick={handleExportCSV}
-              className="rounded-full"
-            >
-              <Download className="size-4" />
-            </Button>
-            <Button
-              aria-label="Import transactions"
-              title="Import transactions"
-              variant="outline"
-              size="icon"
-              onClick={() => setImportSheetOpen(true)}
-              className="rounded-full"
-            >
-              <Upload className="size-4" />
-            </Button>
-            <Button
-              aria-label="Show Filters"
-              variant="outline"
-              size="icon"
-              onClick={() => setShowFilters((v) => !v)}
-              className="rounded-full"
-            >
-              <SlidersHorizontal className="size-4" />
-            </Button>
-          </div>
-        </header>
+        <PageHeader
+          eyebrow="Ledger"
+          title="Activity"
+          description={
+            transactionsQuery.isPending
+              ? "Loading…"
+              : transactionsQuery.isError
+                ? "Couldn't load activity"
+                : `${total} transaction${total === 1 ? "" : "s"}`
+          }
+          action={
+            <div className="flex items-center gap-2">
+              <Button
+                aria-label="Export CSV"
+                title="Export CSV"
+                variant="outline"
+                size="icon"
+                onClick={handleExportCSV}
+                className="rounded-full"
+              >
+                <Download className="size-4" />
+              </Button>
+              <Button
+                aria-label="Import transactions"
+                title="Import transactions"
+                variant="outline"
+                size="icon"
+                onClick={() => setImportSheetOpen(true)}
+                className="rounded-full"
+              >
+                <Upload className="size-4" />
+              </Button>
+              <Button
+                aria-label="Show Filters"
+                variant={hasActiveFilters ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowFilters((v) => !v)}
+                className="rounded-full"
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            </div>
+          }
+        />
       </FadeInItem>
 
       <FadeInItem>
@@ -208,38 +210,26 @@ export default function TransactionsPage() {
             className="overflow-hidden"
           >
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <button
-                type="button"
+              <FilterChip
+                active={spaceFilter === "all"}
                 onClick={() => {
                   setSpaceFilter("all");
                   setCurrentPage(1);
                 }}
-                className={cn(
-                  "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
-                  spaceFilter === "all"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                )}
               >
                 All spaces
-              </button>
+              </FilterChip>
               {spaces.map((s) => (
-                <button
+                <FilterChip
                   key={s.id}
-                  type="button"
+                  active={spaceFilter === s.id}
                   onClick={() => {
                     setSpaceFilter(s.id);
                     setCurrentPage(1);
                   }}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
-                    spaceFilter === s.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-accent"
-                  )}
                 >
                   {s.name}
-                </button>
+                </FilterChip>
               ))}
             </div>
           </motion.div>

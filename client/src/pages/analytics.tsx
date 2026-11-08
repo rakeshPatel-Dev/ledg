@@ -18,6 +18,9 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { FilterChip } from "@/components/ui/filter-chip";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Segmented } from "@/components/ui/segmented";
 import { DatePicker } from "@/components/ui/date-picker";
 import { getCategoryMeta } from "@/lib/categories";
@@ -253,12 +256,11 @@ export default function AnalyticsPage() {
   if (!summary) {
     return (
       <div className="flex flex-col gap-5">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Insights</h1>
-          <p className="text-sm text-muted-foreground">
-            Income, spending and savings · loans excluded
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Analysis"
+          title="Insights"
+          description="Income, spending and savings · loans excluded"
+        />
 
         <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
 
@@ -284,14 +286,11 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Insights</h1>
-          <p className="text-sm text-muted-foreground">
-            Income, spending and savings · loans excluded
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Analysis"
+        title="Insights"
+        description="Income, spending and savings · loans excluded"
+      />
 
       {spacesQuery.isError ? (
         <ErrorState
@@ -308,32 +307,20 @@ export default function AnalyticsPage() {
       {/* ── Space selector (if user has spaces) ── */}
       {spaces.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
+          <FilterChip
+            active={selectedSpaceId === "all"}
             onClick={() => setSelectedSpaceId("all")}
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
-              selectedSpaceId === "all"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-accent"
-            )}
           >
             All spaces
-          </button>
+          </FilterChip>
           {spaces.map((s) => (
-            <button
+            <FilterChip
               key={s.id}
-              type="button"
+              active={selectedSpaceId === s.id}
               onClick={() => setSelectedSpaceId(s.id)}
-              className={cn(
-                "rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
-                selectedSpaceId === s.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              )}
             >
               {s.name}
-            </button>
+            </FilterChip>
           ))}
         </div>
       )}
@@ -419,34 +406,46 @@ export default function AnalyticsPage() {
         <>
           {/* ── Income / Expense cards ── */}
           <section className="grid grid-cols-2 gap-3">
-            <Card className="flex flex-col gap-2 rounded-4xl p-5">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-success/15 text-success">
+            <Card
+              variant="raised"
+              className="relative flex flex-col gap-2 overflow-hidden rounded-4xl p-5"
+            >
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-linear-to-b from-success/10 to-transparent" />
+              <span className="relative flex size-10 items-center justify-center rounded-2xl bg-success/12 text-success ring-1 ring-success/20 ring-inset shadow-xs">
                 <ArrowDownLeft className="size-5" />
               </span>
-              <div>
-                <p className="text-xs text-muted-foreground">Income</p>
-                <p className="text-lg font-bold tabular-nums">
+              <div className="relative">
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Income
+                </p>
+                <p className="mt-0.5 text-xl font-extrabold tracking-tight tabular-nums">
                   {formatCurrency(totalIncome, currency)}
                 </p>
                 {summary?.deltas.income !== null && (
-                  <div className="mt-1 flex items-center gap-1.5">
+                  <div className="mt-1.5 flex items-center gap-1.5">
                     <DeltaBadge delta={summary?.deltas.income ?? null} />
                     <span className="text-[10px] text-muted-foreground">{compLabel}</span>
                   </div>
                 )}
               </div>
             </Card>
-            <Card className="flex flex-col gap-2 rounded-4xl p-5">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-destructive/15 text-destructive">
+            <Card
+              variant="raised"
+              className="relative flex flex-col gap-2 overflow-hidden rounded-4xl p-5"
+            >
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-linear-to-b from-destructive/10 to-transparent" />
+              <span className="relative flex size-10 items-center justify-center rounded-2xl bg-destructive/12 text-destructive ring-1 ring-destructive/20 ring-inset shadow-xs">
                 <ArrowUpRight className="size-5" />
               </span>
-              <div>
-                <p className="text-xs text-muted-foreground">Expenses</p>
-                <p className="text-lg font-bold tabular-nums">
+              <div className="relative">
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Expenses
+                </p>
+                <p className="mt-0.5 text-xl font-extrabold tracking-tight tabular-nums">
                   {formatCurrency(totalExpense, currency)}
                 </p>
                 {summary?.deltas.expense !== null && (
-                  <div className="mt-1 flex items-center gap-1.5">
+                  <div className="mt-1.5 flex items-center gap-1.5">
                     <DeltaBadge delta={summary?.deltas.expense ?? null} inverse />
                     <span className="text-[10px] text-muted-foreground">{compLabel}</span>
                   </div>
@@ -456,16 +455,16 @@ export default function AnalyticsPage() {
           </section>
 
           {/* ── Savings rate ring ── */}
-          <Card className="rounded-4xl p-5">
+          <Card variant="raised" className="rounded-4xl p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p
-                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-muted-foreground"
                   title="Savings rate = (income − expenses) ÷ income for the selected period. Loans excluded."
                 >
                   Savings rate
                 </p>
-                <p className="mt-1 text-3xl font-extrabold tabular-nums">
+                <p className="mt-1 text-3xl font-extrabold tracking-tight tabular-nums">
                   {Math.round(savingsRate)}%
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -474,16 +473,17 @@ export default function AnalyticsPage() {
               </div>
               <SavingsRing income={totalIncome} expense={totalExpense} />
             </div>
-            <div className="mt-4 flex items-center justify-center gap-4 border-t border-border/40 pt-3">
+            <div className="mt-4 flex items-center justify-center gap-4 rounded-2xl border border-border/40 bg-muted/30 px-3 py-2.5 shadow-elev-inset">
               <div className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-success" />
+                <span className="size-2.5 rounded-full bg-success shadow-[0_0_0_3px_color-mix(in_oklch,var(--success)_15%,transparent)]" />
                 <span className="text-[10px] text-muted-foreground">
                   Saved{" "}
                   {formatCurrency(Math.max(0, totalIncome - totalExpense), currency)}
                 </span>
               </div>
+              <div className="h-3 w-px bg-border/60" />
               <div className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-destructive" />
+                <span className="size-2.5 rounded-full bg-destructive shadow-[0_0_0_3px_color-mix(in_oklch,var(--destructive)_15%,transparent)]" />
                 <span className="text-[10px] text-muted-foreground">
                   Spent {formatCurrency(totalExpense, currency)}
                 </span>
@@ -507,9 +507,10 @@ export default function AnalyticsPage() {
           {/* ── Expense by Category (clickable drill-down) ── */}
           {(summary?.byExpenseCategory.length ?? 0) > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Spending by category
-              </h2>
+              <SectionHeading
+                title="Spending by category"
+                icon={<PieChart className="size-3" />}
+              />
               <Card className="flex flex-col gap-4 p-5">
                 {summary!.byExpenseCategory.map(({ category, amount, count }) => {
                   const meta = getCategoryMeta(category, "expense");
@@ -567,9 +568,10 @@ export default function AnalyticsPage() {
           {/* ── Income by Category ── */}
           {(summary?.byIncomeCategory.length ?? 0) > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Income by category
-              </h2>
+              <SectionHeading
+                title="Income by category"
+                icon={<Banknote className="size-3" />}
+              />
               <Card className="flex flex-col gap-4 p-5">
                 {summary!.byIncomeCategory.map(({ category, amount, count }) => {
                   const meta = getCategoryMeta(category, "income");
@@ -622,9 +624,10 @@ export default function AnalyticsPage() {
           {/* ── Payment methods ── */}
           {(summary?.byPaymentMethod.length ?? 0) > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Payment methods
-              </h2>
+              <SectionHeading
+                title="Payment methods"
+                icon={<CreditCard className="size-3" />}
+              />
               <Card className="flex flex-col gap-4 p-5">
                 {summary!.byPaymentMethod.map(({ method, amount, count }) => {
                   const key = method as PaymentMethod;

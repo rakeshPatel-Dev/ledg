@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
 import { useSpaces, useCreateSpace, useUpdateSpace, useDeleteSpace } from "@/lib/queries";
@@ -265,20 +266,21 @@ export default function SpacesPage() {
   return (
     <FadeInStagger className="flex flex-col gap-5">
       <FadeInItem>
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Spaces</h1>
-            <p className="text-sm text-muted-foreground">Organise money by purpose</p>
-          </div>
-          <Button
-            onClick={openCreate}
-            size="icon"
-            aria-label="Create space"
-            className="rounded-full shadow-sm"
-          >
-            <Plus className="size-5" />
-          </Button>
-        </header>
+        <PageHeader
+          eyebrow="Workspace"
+          title="Spaces"
+          description="Organise money by purpose"
+          action={
+            <Button
+              onClick={openCreate}
+              size="icon"
+              aria-label="Create space"
+              className="rounded-full"
+            >
+              <Plus className="size-5" />
+            </Button>
+          }
+        />
       </FadeInItem>
 
       {/* Tabs Segmentation */}
@@ -412,9 +414,9 @@ export default function SpacesPage() {
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >
                       <Card
+                        variant="raised"
                         className={cn(
-                          "relative flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
-                          "cursor-pointer hover:border-primary/20",
+                          "relative flex flex-col rounded-4xl p-4 cursor-pointer hover:border-primary/25",
                           space.isShared &&
                             "border-primary/20 bg-primary/2 dark:bg-primary/5"
                         )}
@@ -429,7 +431,7 @@ export default function SpacesPage() {
                           <div className="flex items-center gap-3 w-full">
                             <span
                               className={cn(
-                                "flex size-11 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                                "flex size-11 shrink-0 items-center justify-center rounded-2xl ring-1 ring-black/5 ring-inset transition-colors dark:ring-white/5",
                                 typeBg,
                                 typeText
                               )}
@@ -566,7 +568,7 @@ export default function SpacesPage() {
                                 const budget = space.monthlyBudget;
                                 if (spent == null) {
                                   return (
-                                    <div className="mt-3 w-full space-y-1.5 border-t border-border/40 pt-2.5">
+                                    <div className="mt-3 w-full space-y-1.5 rounded-2xl border border-border/40 bg-muted/30 px-3 py-2.5 shadow-elev-inset">
                                       <div className="flex items-center justify-between text-xs">
                                         <span className="font-medium text-muted-foreground">
                                           Monthly budget
@@ -592,7 +594,7 @@ export default function SpacesPage() {
                                 const overWidth = isOver ? (overAmount / spent) * 100 : 0;
 
                                 return (
-                                  <div className="mt-3 pt-2.5 border-t border-border/40 space-y-1.5 w-full">
+                                  <div className="mt-3 w-full space-y-1.5 rounded-2xl border border-border/40 bg-muted/30 px-3 py-2.5 shadow-elev-inset">
                                     <div className="flex items-center justify-between text-xs">
                                       <span className="text-muted-foreground font-medium">
                                         Monthly budget

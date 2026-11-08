@@ -335,7 +335,7 @@ export function SettleDueSheet({
         <Button
           type="submit"
           className={cn(
-            "w-full h-13 font-bold text-base gap-2.5 rounded-full shadow-md",
+            "w-full h-13 font-bold text-base gap-2.5 rounded-full",
             isFullPayment
               ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25"
               : "shadow-primary/20"

@@ -23,10 +23,10 @@ export function Calendar({
         caption_label: "text-sm font-bold tracking-tight text-foreground",
         nav: "space-x-1 flex items-center",
         button_previous: cn(
-          "absolute left-1 flex size-7 items-center justify-center rounded-xl border border-white/20 dark:border-white/10 bg-card/80 p-0 text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-95"
+          "absolute left-1 flex size-7 items-center justify-center rounded-xl border border-border/70 bg-card p-0 text-muted-foreground shadow-xs transition-[box-shadow,background-color,color] duration-200 hover:bg-accent hover:text-foreground hover:shadow-sm active:scale-95"
         ),
         button_next: cn(
-          "absolute right-1 flex size-7 items-center justify-center rounded-xl border border-white/20 dark:border-white/10 bg-card/80 p-0 text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-95"
+          "absolute right-1 flex size-7 items-center justify-center rounded-xl border border-border/70 bg-card p-0 text-muted-foreground shadow-xs transition-[box-shadow,background-color,color] duration-200 hover:bg-accent hover:text-foreground hover:shadow-sm active:scale-95"
         ),
         month_grid: "w-full border-collapse space-y-1",
         weekdays: "flex w-full mt-2",
