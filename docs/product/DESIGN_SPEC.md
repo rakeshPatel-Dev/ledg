@@ -26,7 +26,7 @@
 | Currency | INR by default (`Rs.`), amount formatting uses `INR` compact notation |
 | Platforms | Mobile-first responsive PWA (web); designed for ~360–430px wide phones |
 | Inspiration | Apple Wallet & Apple Health (cards, translucency, big numerals), iOS Settings (grouped lists), Linear / Notion / Arc (calm, precise, modern) |
-| Motion setting | Users can choose Full / Reduced / System motion globally |
+| Motion setting | Users can choose All animations / Reduced animations / Match my device; the default is Match my device (OS-aware) |
 | Theme | Light / Dark / System themes, always polished in both |
 
 ### Design personality keywords
@@ -62,7 +62,7 @@ The app defines all tokens as **OKLCH** with a neutral-green hue (≈158°) so t
 | `card-foreground` | = foreground | = foreground | = dark foreground | `#F4F8F6` |
 | `popover` | = card | `#FFFFFF` | = card | `#1A2421` |
 | `popover-foreground` | = foreground | — | = dark foreground | — |
-| `primary` | `oklch(0.62 0.145 158)` | `#10B981` | `oklch(0.65 0.14 158)` | `#34D399` |
+| `primary` | `oklch(0.52 0.145 158)` | `#008047` | `oklch(0.65 0.14 158)` | `#34D399` |
 | `primary-foreground` | `oklch(0.985 0.005 120)` | `#FFFFFF` | `oklch(0.14 0.02 170)` | `#05240F` |
 | `secondary` (bg tint) | `oklch(0.955 0.015 158)` | `#EDF6F0` | `oklch(0.28 0.03 170)` | `#222C29` |
 | `secondary-foreground` | `oklch(0.35 0.08 158)` | `#1F5D47` | `#F4F8F6` | `#F4F8F6` |
@@ -70,20 +70,20 @@ The app defines all tokens as **OKLCH** with a neutral-green hue (≈158°) so t
 | `muted-foreground` | `oklch(0.52 0.025 170)` | `#6F7B78` | `oklch(0.7 0.02 158)` | `#9FADA8` |
 | `accent` | `oklch(0.948 0.02 158)` | `#E7F3EC` | `oklch(0.3 0.04 158)` | `#25332E` |
 | `accent-foreground` | `oklch(0.4 0.09 158)` | `#1F6B4E` | `#F4F8F6` | `#F4F8F6` |
-| `destructive` | `oklch(0.6 0.19 27)` | `#E5484D` | `oklch(0.65 0.18 27)` | `#F65D5D` |
+| `destructive` | `oklch(0.56 0.19 27)` | `#CC3430` | `oklch(0.58 0.18 27)` | `#E05252` |
 | `destructive-foreground` | `oklch(0.985 0.005 120)` | `#FFFFFF` | `oklch(0.985 0.005 120)` | `#FFFFFF` |
-| `success` | = primary | `#10B981` | = dark primary | `#34D399` |
+| `success` | = primary | `#008047` | = dark primary | `#34D399` |
 | `warning` | `oklch(0.72 0.15 70)` | `#F0A32F` | `oklch(0.75 0.14 70)` | `#F7B32B` |
 | `border` | `oklch(0.9 0.012 158)` | `#E1E9E5` | `oklch(1 0 0 / 12%)` | `rgba(255,255,255,0.12)` |
 | `input` | = border | `#E1E9E5` | `oklch(1 0 0 / 15%)` | `rgba(255,255,255,0.15)` |
-| `ring` | = primary | `#10B981` | = dark primary | `#34D399` |
+| `ring` | = primary | `#008047` | = dark primary | `#34D399` |
 
 ### 3.2 Money semantics (very important)
 
 | Meaning | Color (light) | Dark equivalent | Used for |
 |---|---|---|---|
-| Income / received / saved / lend | `success` = emerald `#10B981` / `emerald-600` | `emerald-400` | Income amounts, "Receivable", "Owed to you", lent dues |
-| Expense / spent / you owe | `destructive` rose `#E5484D` (or `rose-600`) | `rose-400` | Expense amounts, "Spent", "Payable", borrowed dues (amounts use amber instead) |
+| Income / received / saved / lend | `success` = emerald `#008047` / `emerald-600` | `emerald-400` | Income amounts, "Receivable", "Owed to you", lent dues |
+| Expense / spent / you owe | `destructive` rose `#CC3430` (or `rose-600`) | `rose-400` | Expense amounts, "Spent", "Payable", borrowed dues (amounts use amber instead) |
 | You owe money (dues) | `amber-500 #F0A32F` | `amber-400/500` | Borrowed dues, payable figures, "I owe" |
 | Positive balance / net | `emerald-600` | `emerald-400` | Balance when > 0, net receivable |
 | Negative balance | `rose-600` | `rose-400` | Balance when < 0 |
@@ -177,6 +177,24 @@ Used in the Dashboard "Payment Methods" grid icons.
 Deterministic gradient chosen by hashing the person's name (used in Dues person avatars):
 `violet→purple`, `blue→cyan`, `emerald→teal`, `orange→amber`, `rose→pink`, `indigo→blue`. Text is white, bold, initials (first letters of up to two words, uppercased).
 
+### 3.9 Contrast and accessibility floor
+
+These are requirements, not suggestions. Re-measure whenever a token changes.
+
+| Combination | Minimum | Current |
+|---|---|---|
+| `primary-foreground` on `primary` (light) | 4.5:1 | **4.83:1** |
+| `destructive-foreground` on `destructive` (light) | 4.5:1 | **5.12:1** |
+| `muted-foreground` on `background` (light) | 4.5:1 | **5.15:1** |
+| Hero labels and subtext | 4.5:1 | full-opacity text on a darkened overlay |
+| Large text | 3:1 | — |
+
+- Never use opacity below ~80% for meaningful text on the hero. Prefer a darker overlay over white text at low opacity.
+- Interactive labels are at least **12 px**; micro type (0.6–0.65 rem) is reserved for badges and counters.
+- Every interactive control needs a **44 × 44 px** hit area, even when the visible icon is smaller. Use padding or an `after` pseudo-element.
+- Every screen needs one `<h1>`, a visible focus ring, and the global “Skip to content” link.
+- Motion defaults to **System** and follows `prefers-reduced-motion` before the user changes any setting.
+
 ---
 
 ## 4. Typography
@@ -190,7 +208,8 @@ Deterministic gradient chosen by hashing the person's name (used in Dues person 
 | Page titles | `text-2xl font-extrabold tracking-tight` |
 | Section eyebrows | `text-xs font-bold uppercase tracking-wider text-muted-foreground` |
 | Body | `text-sm` (headings/labels `text-sm font-semibold/-medium`) |
-| Small / captions | `text-xs`, `text-[0.65rem]`, `text-[0.6rem]` and `text-[0.55rem]` for micro-labels/badges |
+| Small / captions | `text-xs`, `text-[0.65rem]`, `text-[0.6rem]` for badges and counters |
+| Interactive labels | ≥ 12 px (`text-xs`); never use 0.55 rem for navigation or controls |
 | Line lengths | Descriptive text capped at `max-w-xs`; never ragged long lines |
 | Headings | `tracking-tight` throughout. Uppercase eyebrows always `tracking-wider`. |
 
@@ -201,10 +220,10 @@ Use letter-spaced uppercase micro-labels for anything meta (section titles, fiel
 ## 5. Spacing & layout grid
 
 - Base unit: **4px**, rhythm = **8px**. Page vertical rhythm = `gap-5` (20px) / `gap-6` (24px) between sections.
-- App column: centered `max-w-5` (32rem) column on all breakpoints. `<main className="px-5 pb-28 pt-6">`.
+- App column: centered `max-w-md` (28rem) column on all breakpoints. `<main className="px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6">`.
 - Standard paddings: card `p-4`/`p-5`, lists rows `px-4 py-3.5`, hero sections `px-5 pb-7 pt-2/4`.
 - Section header rows: title left (eyebrow sections) or `text-sm font-semibold uppercase text-muted-foreground` + optional action link right (`text-primary` "See all").
-- Page bottom clearance: `pb-28` (space for the floating nav).
+- Page bottom clearance: `pb-[calc(7rem+env(safe-area-inset-bottom))]` (space for the floating nav plus the iPhone home indicator).
 - Bottom sheet content: `px-5 pb-10` with internal `gap-5`.
 
 ---
@@ -228,7 +247,7 @@ Use letter-spaced uppercase micro-labels for anything meta (section titles, fiel
 ## 7. Elevation, translucency & borders
 
 - **Translucency is a core style:** cards, bottom nav and sheets use `bg-card/70-90 backdrop-blur-xl` (nav uses `backdrop-blur-2xl backdrop-saturate-180`).
-- **Hero gradient surfaces** (Dashboard balance, Dues hero): `bg-linear-to-br from-primary via-primary to-[oklch(0.52 0.15 158)]` with `shadow-lg shadow-primary/20` or `shadow-xl shadow-primary/25` and a big `rounded-b-[2.5rem]` bottom radius.
+- **Hero gradient surfaces** (Dashboard balance, Dues hero): light `bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)]`; dark `dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)]`. Shadow `shadow-lg shadow-primary/20` (light) or `dark:shadow-black/30`; big `rounded-b-[2.5rem]` bottom radius.
 - Card shadows: `shadow-xs` resting → `hover:shadow-md`. Buttons `shadow-sm`/`shadow-md` depending on size/role.
 - Colored element shadows follow the color: primary buttons → `shadow-primary/20-30`; emerald due buttons → `shadow-emerald-600/20-30`; amber → `shadow-amber-500/20-30`.
 - Hairline borders: `border-border/50` on cards/rows; `border-border/20-40` inside grouped content; `bg-muted/40` fills for stat wells.
@@ -241,13 +260,13 @@ Use letter-spaced uppercase micro-labels for anything meta (section titles, fiel
 - **Page transitions:** fade + subtle 8px translateY stagger. Children use `FadeInStagger`/`FadeInItem`.
 - **Segmented control:** active pill uses a shared spring `layoutId` slide (`spring: stiffness 420, damping 34, mass 0.8`).
 - **Hover on interactive cards:** `-translate-y-1`/`-2` lift + `shadow-md`. On touch: `active:scale-95`/`scale-98`, and `whileTap={{scale: 0.98}}`.
-- **Bottom nav center + button:** pulse ring (`scale 1→1.2→1`, 2s loop); nav entries have a `layoutId` active pill and `whileTap scale 0.9`.
+- **Bottom nav center + button:** solid `size-14` primary pill; no pulsing halo. Nav entries have a `layoutId` active pill and `whileTap scale 0.9`.
 - **Progress bars** animate width `0 → value` over 0.6s ease-out. Ring/donut animates ≥1s.
 - **Expand/collapse** (filters, due groups) animates `height 0→auto` over 0.2–0.22s.
 - **Sheets** slide up with a backdrop fade + `backdrop-blur-md` black/40.
 - **Number formatting/quick entries** may pulse scale once.
 - **Haptics:** `navigator.vibrate(10)` on the add-transaction button.
-- **Reduced motion:** global `reduce-motion` class flattens all transitions/animations to ~0.001ms when Motion = Reduced or System-reduced.
+- **Reduced motion:** the default is **System**, mapped to `reducedMotion="user"` so Framer Motion follows the OS setting before the user opens Settings. The manual options are “All animations”, “Reduced animations” and “Match my device”. The global `reduce-motion` class flattens CSS transitions when reduced motion is active.
 
 ---
 
@@ -328,22 +347,23 @@ Each transaction row is swipeable horizontally: dragging right past ~56px (or fa
 ### 11.1 App shell (protected pages)
 ```
 <div class="mx-auto min-h-full max-w-md">
-  <main class="px-5 pb-28 pt-6"> {page} </main>
+  <a href="#main-content" class="sr-only focus:not-sr-only ...">Skip to content</a>
+  <main id="main-content" tabindex="-1" class="px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6"> {page} </main>
   <BottomNav />
 </div>
 ```
-On desktop the column stays centered (`max-w-md`) with the bottom nav floating center. The global **TransactionFormBridge** mounts the Add/Edit transaction sheet above everything.
+On desktop the column stays centered (`max-w-md`) with the bottom nav floating center. The global **TransactionFormBridge** mounts the Add/Edit transaction sheet above everything. The skip link is the first focusable element; using it moves focus to `<main>`.
 
 ### 11.2 Header (Dashboard only, inside the page top)
 Left: `UserAvatar size-11 ring-2 ring-primary/30` + greeting stack — top `text-xs` `Good morning/afternoon/evening`, below `text-sm font-semibold` `@username` (fallback: first name). Whole block links to `/settings`.
-Right: **Dues pill** (`rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-md shadow-primary/30`, `HandCoins` icon + bold `Dues`) with a `-top-1 -right-1` absolute `bg-destructive text-white` badge showing overdue count; and the **Notification bell** (round `size-10 bg-card/80 backdrop-blur` icon button) with `-top-1 -right-1` primary badge (`9+` cap) showing unread count.
+Right: **Dues pill** (`min-h-11 rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-md shadow-primary/30`, `HandCoins` icon + bold `Dues`) with a `-top-1 -right-1` absolute `bg-destructive text-white` badge showing overdue count; and the **Notification bell** (round `size-11 bg-card/80 backdrop-blur` icon button) with `-top-1 -right-1` primary badge (`9+` cap) showing unread count.
 
 ### 11.3 Bottom nav (floating pill)
-Fixed `inset-x-0 bottom-0 z-40`, centered `max-w-md`, `px-4 pb-4`, with a subtle top fade `bg-linear-to-t from-background/60 to-transparent`.
-Pill container: `rounded-full border-border/50 bg-card/40 backdrop-blur-2xl backdrop-saturate-180 shadow-2xl px-1.5 py-0.5`, 5 cells:
+Fixed `inset-x-0 bottom-0 z-40`, centered `max-w-md`, `px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]`, with a subtle top fade `bg-linear-to-t from-background/60 to-transparent`.
+Pill container: `rounded-full border-border/50 bg-card/40 backdrop-blur-2xl backdrop-saturate-180 shadow-2xl px-1.5 py-1`, 5 cells; each cell is at least 44 px tall:
 1. **Home** (`House`) → `/` (end)
 2. **Activity** (`Wallet`) → `/transactions`
-3. **Add** — raised `size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30` **Plus** button with pulsing halo ring, inside the pill (not floating above it). It is context-aware: on `/spaces/:id` it opens the transaction sheet with that space preselected and locked; on `/dues` it opens the create-due sheet; elsewhere it opens the transaction sheet. Its accessible label follows the action.
+3. **Add** — raised `size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30` **Plus** button, with no pulsing halo, inside the pill (not floating above it). It is context-aware: on `/spaces/:id` it opens the transaction sheet with that space preselected and locked; on `/dues` it opens the create-due sheet; elsewhere it opens the transaction sheet. Its accessible label follows the action.
 4. **Spaces** (`Layers`) → `/spaces`; active on `/spaces/:id`
 5. **More** (`Ellipsis`) → opens the More sheet; active on `/dues`, `/analytics`, `/settings` and `/profile`; carries a static destructive overdue count badge.
 
@@ -352,7 +372,7 @@ Pill container: `rounded-full border-border/50 bg-card/40 backdrop-blur-2xl back
 - **Dues** (`HandCoins`) → `/dues` — `Money lent and borrowed`, with the overdue count badge
 - **Settings** (`Settings2`) → `/settings` — `Account, preferences, and data`
 
-Active link: emerald text + `stroke-[2.5]` icon + sliding rounded pill `bg-primary/10` (`layoutId="activeBottomNavPill"`). Labels `text-[0.55rem] font-semibold`.
+Active link: emerald text + `stroke-[2.5]` icon + sliding rounded pill `bg-primary/10` (`layoutId="activeBottomNavPill"`). Labels `text-xs font-semibold` (12 px), icons `size-5`, cells `min-h-11`.
 
 ### 11.4 Page transition wrapper
 Each page mounts inside `PageTransition` + uses `FadeInStagger` (`gap-5/6` column) with `FadeInItem` children fading/rising in sequence (≈40–60ms stagger).

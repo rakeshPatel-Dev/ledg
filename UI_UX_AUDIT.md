@@ -11,7 +11,7 @@
 | **Themes** | Light and dark |
 | **Data** | Seeded review account with 3 spaces, 58 transactions, 5 dues, notifications and pending invitations |
 | **Method** | Full walkthrough of the running app with realistic data, paired with a screen-by-screen review of the rendered interface, copy and interaction behaviour, then source verification of every data and state claim |
-| **Implementation status** | ✅ Items 1 (“Make the money truthful”), 2 (“Make failure visible”), 3 (“Make the common path short”) and 4 (“Make navigation honest”) of the priority list are implemented as of 7 November 2026. ◐ A few related findings are partly fixed; the rest are open. |
+| **Implementation status** | ✅ Items 1 (“Make the money truthful”), 2 (“Make failure visible”), 3 (“Make the common path short”) and 4 (“Make navigation honest”) of the priority list are implemented as of 7 November 2026. ✅ The accessibility set (Acc1–Acc10), the invite redirect (S1), keyboard space cards (S2), personal-space persistence (T4), import undo (T5) and reduced-motion defaults (Set2) are also implemented. ◐ Some lower-priority findings remain open, notably the desktop layout (V1/N4), the Settings IA (Set1), notification-centre refinements and full colour-semantics consistency (Acc8/D6); route-change announcements are still missing. |
 
 ---
 
@@ -214,9 +214,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### T4 · Deleting the default Personal space recreates it
+### ✅ T4 · Deleting the default Personal space recreates it
 
 **Severity:** High · **Screen:** Spaces
+
+**Status:** ✅ Fixed — the Personal space is created once when the account is created, not on every spaces fetch. Deleting it now sticks. A user with zero spaces sees the normal create-space empty state instead of a resurrected default.
 
 **What the user sees.** The user deletes “Personal”, confirms the destructive sheet, sees “Deleted ‘Personal’”, and the card disappears. On the next spaces fetch — navigating away and back, or reloading — “Personal” is back, empty, with a zero balance.
 
@@ -228,9 +230,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### T5 · Bulk import has no undo
+### ✅ T5 · Bulk import has no undo
 
 **Severity:** High · **Screen:** Import transactions
+
+**Status:** ✅ Fixed — the import response now carries the inserted transaction IDs. The result view and the success toast both offer “Undo”, which deletes only rows created by that user in that import (never dues-linked entries) and refreshes every affected dashboard. The endpoint accepts up to 1,000 IDs per undo.
 
 **What the user sees.** A preview with file name, date range, row count and skipped-row errors, a “Skip duplicates” toggle, and an “Import N transactions” button. After import, a result card shows how many were imported, skipped and failed, with “Done” and “Import another file”. There is no undo, no recent-import history and no way to identify the batch afterwards.
 
@@ -926,9 +930,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ## 11. Spaces and members
 
-### S1 · A signed-out invitee loses the invitation after auth
+### ✅ S1 · A signed-out invitee loses the invitation after auth
 
 **Severity:** High · **Screens:** Invite, Sign in, Sign up
+
+**Status:** ✅ Fixed — sign-in and sign-up read `state.from`, redirect to the invite URL after success, pre-fill the invited email, and use the invite URL as the email-verification and Google callback. The sign-in/sign-up links preserve the same state, and the invite error copy distinguishes invalid/expired links from other failures.
 
 **What the user sees.** An invite link opens a preview with the space name, inviter and invited email. For a signed-out user, the buttons are “Sign up to accept” and “Sign in with existing account”. Both pass `state.from` to the auth page (`client/src/pages/invite.tsx:180-210`). The sign-in page ignores it and always `navigate("/")` (`client/src/pages/sign-in.tsx:42`). Sign-up shows the “verify your email” screen with `callbackURL` set to `/` (`client/src/pages/sign-up.tsx:53-66,113-160`). The invite is never resumed.
 
@@ -940,9 +946,11 @@ Across all time the entries may cancel, but monthly and period views do not. A u
 
 ---
 
-### S2 · Space cards cannot be opened with a keyboard
+### ✅ S2 · Space cards cannot be opened with a keyboard
 
 **Severity:** High · **Screen:** Spaces
+
+**Status:** ✅ Fixed — each space card now contains a full-card “Open [space]” button in the tab order with a visible focus ring. Edit and delete remain separate sibling buttons, so the keyboard order is open → edit → delete and no action is nested.
 
 **What the user sees.** Each space is a `<Card>` with `onClick`, `cursor-pointer`, and a `focus-visible` ring class, but no `role`, `tabIndex`, `onKeyDown` or anchor. It is not in the tab order. The edit and delete buttons inside the card are focusable, but the card itself is not.
 
@@ -1076,9 +1084,11 @@ See N2. The space detail page has its own “Add transaction” button that corr
 
 ---
 
-### Set2 · Motion defaults to Full and ignores the OS setting
+### ✅ Set2 · Motion defaults to Full and ignores the OS setting
 
 **Severity:** High · **Screen:** Settings, all animated screens
+
+**Status:** ✅ Fixed — the motion default is now `system`, so `reducedMotion="user"` follows the OS setting before the user opens Settings. The manual options remain as “All animations”, “Reduced animations” and “Match my device”, each with a one-line description.
 
 **What the user sees.** Motion has three options: Full, Reduced, System. The provider defaults to `"full"` (`client/src/app/providers/index.tsx:20`), so a user whose operating system requests reduced motion still gets page transitions, staggered cards, spring buttons and the pulsing “+” until they find Settings → Motion → System or Reduced. The `.reduce-motion` CSS class only flattens CSS transitions; Framer Motion is controlled by `MotionBridge`, which maps `"full"` to `reducedMotion="never"` (`client/src/app/providers/index.tsx:10-14`). The default therefore actively overrides the OS preference.
 
@@ -1234,9 +1244,11 @@ See N2. The space detail page has its own “Add transaction” button that corr
 
 ## 14. Accessibility
 
-### Acc1 · Primary and hero text fail contrast
+### ✅ Acc1 · Primary and hero text fail contrast
 
 **Severity:** High · **Screens:** Home, Dues, Auth, all primary buttons
+
+**Status:** ✅ Fixed — light `--primary` is now `oklch(0.52 0.145 158)` and `--destructive` is `oklch(0.56 0.19 27)`. Measured in-browser at 4.83:1 and 5.12:1 against white. Hero labels use full-opacity text on darker overlays in light mode, and the dark hero has its own deep-green surface. Muted text on the page background measures 5.15:1.
 
 **What the user sees.** White text on the brand green measures **3.26:1** in light mode (`--primary: oklch(0.62 0.145 158)`, `--primary-foreground: oklch(0.985 0.005 120)`). That is below the 4.5:1 required for normal text and only barely above the 3:1 large-text threshold. Hero subtext at 70% opacity measures about **2.3:1**. The same green is used for primary buttons, the Dues hero, the welcome CTA and the central “+”.
 
@@ -1248,9 +1260,11 @@ See N2. The space detail page has its own “Add transaction” button that corr
 
 ---
 
-### Acc2 · Dark mode keeps a luminous green hero
+### ✅ Acc2 · Dark mode keeps a luminous green hero
 
 **Severity:** Medium · **Screens:** Home, Dues
+
+**Status:** ✅ Fixed — the dark hero uses a deep-green gradient (`oklch(0.30 → 0.22)`) with light emerald-tinted text, and its tiles use `dark:bg-white/10`. The light hero keeps the brand green with darker translucent tiles. Both were checked in light and dark at 390 and 360 px.
 
 **What the user sees.** In dark mode, the page background is near-black, cards are dark, and the Home/Dues hero remains a saturated bright green block with dark text. The 70%-opacity subtext measures about **4.2:1**, below AA for normal text. The bright block is visually disconnected from the rest of the interface.
 
@@ -1262,9 +1276,11 @@ See N2. The space detail page has its own “Add transaction” button that corr
 
 ---
 
-### Acc3 · Bottom-nav labels are 8.8 px
+### ✅ Acc3 · Bottom-nav labels are 8.8 px
 
 **Severity:** High · **Screens:** All
+
+**Status:** ✅ Fixed — labels are now `text-xs` (12 px), icons are 20 px, each nav cell is at least 44 px tall, and the More badge is 0.6 rem. Verified at 390 × 844 and 360 × 640.
 
 **What the user sees.** The five bottom-nav labels use `text-[0.55rem]`, which is 8.8 px at the default root size (`client/src/components/layout/bottom-nav.tsx:91`). The icons are 18.4 px. The labels are the only text identifying the destinations.
 
@@ -1276,9 +1292,11 @@ See N2. The space detail page has its own “Add transaction” button that corr
 
 ---
 
-### Acc4 · Keyboard and switch users cannot open spaces or delete rows
+### ✅ Acc4 · Keyboard and switch users cannot open spaces or delete rows
 
 **Severity:** High · **Screens:** Spaces, Activity, Home
+
+**Status:** ✅ Fixed — space cards expose a full-card “Open [space]” button with a visible focus ring, so Enter opens the card. Transaction rows already have a visible “…” action sheet plus a Delete-key shortcut and an undo toast; the swipe gesture is now only a shortcut. Verified by tabbing to a space card and opening it with Enter.
 
 **What the user sees.** Space cards are clickable `<div>`s with no tab stop (S2). Transaction rows are real buttons, so edit is reachable, but delete is a swipe gesture with no keyboard equivalent (Act1). The focus-visible ring on the space card never appears because the card cannot receive focus.
 
@@ -1290,9 +1308,11 @@ See N2. The space detail page has its own “Add transaction” button that corr
 
 ---
 
-### Acc5 · Motion does not respect the OS preference by default
+### ✅ Acc5 · Motion does not respect the OS preference by default
 
 **Severity:** High · **Screens:** All
+
+**Status:** ✅ Fixed — the provider defaults to `system` in both `animation-provider.tsx` and the app providers, so Framer Motion follows the OS `prefers-reduced-motion` value before any setting is changed. The manual Full option is still available.
 
 See Set2. The default is Full, and Framer Motion animations are not covered by the CSS `.reduce-motion` class.
 
@@ -1300,9 +1320,11 @@ See Set2. The default is Full, and Framer Motion animations are not covered by t
 
 ---
 
-### Acc6 · Several tap targets are below 44 px
+### ✅ Acc6 · Several tap targets are below 44 px
 
 **Severity:** Medium · **Screens:** Dues, Spaces, Notifications, Activity
+
+**Status:** ✅ Fixed — the Dues search and view toggles are now 40 px visuals with a 44 px hit area, space edit/delete controls are 40 px with a 44 px hit area, notification bells are 44 px, pagination links are at least 44 × 40 px, the header Dues pill is at least 44 px tall, and every bottom-nav cell is at least 44 px tall. The Dues filter chips were re-padded so all four fit at 360 px.
 
 **What the user sees.** The Dues view toggle buttons are `size-7` (28 px). The Dues search toggle is `size-8` (32 px). Space card edit/delete icons are roughly 28–32 px. The pagination links are small. The bottom-nav labels sit in a 44 px-ish row but the actual link area is compact.
 
@@ -1314,9 +1336,11 @@ See Set2. The default is Full, and Framer Motion animations are not covered by t
 
 ---
 
-### Acc7 · Form labels are not programmatically associated
+### ✅ Acc7 · Form labels are not programmatically associated
 
 **Severity:** Medium · **Screens:** Add/Edit transaction, Create due
+
+**Status:** ✅ Fixed — Amount, Name, Phone, Date, Due Date, Space and Note have unique IDs and matching `htmlFor` labels. The payment-method group is labelled with `aria-labelledby`. `DatePicker` accepts `id`, `aria-label`, `aria-labelledby` and `aria-describedby`, and the transaction Space select forwards its ID to the trigger.
 
 **What the user sees.** The Date and Space labels are plain `<label>` elements without `htmlFor` (`client/src/components/transactions/transaction-form.tsx:387-416`). The Create due form uses labels without `htmlFor` for name, phone, date, due date, payment and note. The category and payment groups use `role="group"` with `aria-labelledby`, which is good, but the individual fields are not consistently labelled.
 
@@ -1328,9 +1352,11 @@ See Set2. The default is Full, and Framer Motion animations are not covered by t
 
 ---
 
-### Acc8 · Meaning relies on colour alone in several places
+### ◐ Acc8 · Meaning relies on colour alone in several places
 
 **Severity:** Medium · **Screens:** Home, Activity, Insights, Dues
+
+**Status:** ◐ Partly fixed — Insights delta arrows now follow the numeric direction (up for positive, down for negative) while colour indicates whether that is an improvement, and the badge carries an `aria-label` such as “Down 12 percent”. Overdue states include the word “overdue”, and amounts keep their +/− signs. The remaining gap is the inconsistent colour semantics between Dues and Activity (D6): amber means “you owe” in Dues but rose is used for expenses elsewhere.
 
 **What the user sees.** Income is green with a down-left arrow; expense is red with an up-right arrow. Delta badges use green/red plus an arrow whose direction is semantic, not numeric (I2). Space balances turn red when negative. Overdue banners are red. In each case, colour is the fastest cue and sometimes the only one.
 
@@ -1342,9 +1368,11 @@ See Set2. The default is Full, and Framer Motion animations are not covered by t
 
 ---
 
-### Acc9 · The bottom nav has no safe-area padding
+### ✅ Acc9 · The bottom nav has no safe-area padding
 
 **Severity:** Medium · **Screens:** All on iPhone
+
+**Status:** ✅ Fixed — the nav uses `pb-[calc(1rem+env(safe-area-inset-bottom))]` and the app shell uses `pb-[calc(7rem+env(safe-area-inset-bottom))]`. The viewport already opts into `viewport-fit=cover`.
 
 **What the user sees.** The bottom nav is `fixed bottom-0` with `pb-4` (16 px), but no `env(safe-area-inset-bottom)`. On an iPhone with a home indicator, the nav sits under or too close to the system gesture area.
 
@@ -1356,9 +1384,11 @@ See Set2. The default is Full, and Framer Motion animations are not covered by t
 
 ---
 
-### Acc10 · No skip link or landmark structure
+### ◐ Acc10 · No skip link or landmark structure
 
 **Severity:** Low · **Screens:** All
+
+**Status:** ◐ Partly fixed — there is a “Skip to content” link as the first focusable element, `<main id="main-content" tabIndex={-1}>` receives focus when it is used, and the main signed-in screens now expose one `<h1>` (visible on Dues, Spaces, Activity, Insights, Settings and Profile; screen-reader-only on Home). Route-change announcements are still not implemented.
 
 **What the user sees.** The app has a `<main>` and `<nav>`, but no “Skip to content” link, no `<h1>` on several screens (Dues uses a `<span>` for “Dues & Loans”), and repeated sections use `<h2>` without a consistent hierarchy.
 
@@ -1682,9 +1712,9 @@ The roadmap is ordered by user risk, not by engineering convenience.
 1. ✅ **Fix dues accounting (T1).** Either exclude loan principal/settlements from spend, income, budgets and savings, or introduce a distinct loan transaction type and exclude it by default. Reclassify existing “Due paid” / “Due received” entries.
 2. ✅ **Define Total Balance (T2).** Rename it, add a caption, and show receivables/payables beside it. Remove the “Active” pill. The dues summary card directly below the hero shows receivables and payables.
 3. ✅ **Add error states everywhere (T3).** Never render `0` for a failed query. Add retry and an offline banner. Start with Home, Insights, Spaces and Space detail.
-4. **Fix the invite redirect (S1).** Preserve `state.from` and the invite token through sign-in, sign-up and email verification.
-5. **Fix the add-transaction data loss (A2).** Nested create-space flow or remove the option.
-6. **Sticky primary action (A1).** Move the button outside the scroll area and collapse optional fields.
+4. ✅ **Fix the invite redirect (S1).** Preserve `state.from` and the invite token through sign-in, sign-up and email verification.
+5. ✅ **Fix the add-transaction data loss (A2).** Nested create-space flow or remove the option.
+6. ✅ **Sticky primary action (A1).** Move the button outside the scroll area and collapse optional fields.
 
 **Success measure:** In a moderated test, no participant reports that lending money changed their monthly spending, and every participant can add a transaction without scrolling.
 
@@ -1692,15 +1722,15 @@ The roadmap is ordered by user risk, not by engineering convenience.
 
 **Goal:** The app is fast and predictable for daily use.
 
-7. **Dues in the navigation (N1/N3).** Keep the “…” More sheet entry with an active state and overdue badge on every screen.
-8. **Context-aware “+” (N2).** Preselect the current space; on Dues, offer due creation.
-9. **Visible delete and edit actions (Act1).** Add a row menu and undo; keep swipe as a shortcut.
-10. **Inline validation (A3).** Field-level errors, focus management and disabled-until-valid.
-11. **Keyboard access (S2/Acc4).** Semantic cards, focus rings, tab order and a skip link.
-12. **Contrast and type (Acc1/Acc3).** Fix the primary green, hero subtext and 8.8 px labels.
-13. **Reduced motion by default (Set2).** Default to system; the existing `MotionBridge` already maps it to `reducedMotion="user"`.
-14. **Personal space deletion (T4).** Stop recreating it; prevent deleting the last space with a clear message.
-15. **Import undo (T5).** Batch ID and one-tap undo, plus an error report download.
+7. ✅ **Dues in the navigation (N1/N3).** Keep the “…” More sheet entry with an active state and overdue badge on every screen.
+8. ✅ **Context-aware “+” (N2).** Preselect the current space; on Dues, offer due creation.
+9. ✅ **Visible delete and edit actions (Act1).** Add a row menu and undo; keep swipe as a shortcut.
+10. ✅ **Inline validation (A3).** Field-level errors, focus management and disabled-until-valid.
+11. ✅ **Keyboard access (S2/Acc4).** Semantic cards, focus rings, tab order and a skip link.
+12. ✅ **Contrast and type (Acc1/Acc3).** Fix the primary green, hero subtext and 8.8 px labels.
+13. ✅ **Reduced motion by default (Set2).** Default to system; the existing `MotionBridge` already maps it to `reducedMotion="user"`.
+14. ✅ **Personal space deletion (T4).** Stop recreating it; allow zero spaces and show the create-space empty state.
+15. ✅ **Import undo (T5).** Return inserted IDs and offer one-tap undo in the result view and toast.
 
 **Success measure:** A keyboard-only user can complete “open a space, add a transaction, edit it, delete it” without a mouse. A user who deletes Personal does not see it return.
 
