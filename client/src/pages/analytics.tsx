@@ -40,18 +40,20 @@ const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
 
 function DeltaBadge({ delta, inverse = false }: { delta: number | null; inverse?: boolean }) {
   if (delta === null) return null;
-  const isPositive = inverse ? delta < 0 : delta > 0;
-  const Icon = isPositive ? TrendingUp : TrendingDown;
+  const isImprovement = inverse ? delta < 0 : delta > 0;
+  // The arrow follows the number; the colour says whether that is good news.
+  const Icon = delta < 0 ? TrendingDown : TrendingUp;
   return (
     <span
+      aria-label={`${delta < 0 ? "Down" : "Up"} ${Math.abs(delta)} percent`}
       className={cn(
         "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-        isPositive
+        isImprovement
           ? "bg-success/15 text-success"
           : "bg-destructive/15 text-destructive"
       )}
     >
-      <Icon className="size-2.5" />
+      <Icon className="size-2.5" aria-hidden="true" />
       {Math.abs(delta)}%
     </span>
   );
@@ -121,10 +123,13 @@ function getPeriodComparisonLabel(period: AnalyticsPeriod) {
 export default function AnalyticsPage() {
   const currency = DEFAULT_CURRENCY;
   const todayStr = localDateKey(new Date());
+  const monthStartStr = localDateKey(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>("all");
-  const [customFrom, setCustomFrom] = useState<string>(todayStr);
+  const [customFrom, setCustomFrom] = useState<string>(monthStartStr);
   const [customTo, setCustomTo] = useState<string>(todayStr);
   const [drillCategory, setDrillCategory] = useState<string | null>(null);
 
@@ -353,7 +358,7 @@ export default function AnalyticsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCustomFrom(todayStr);
+                    setCustomFrom(monthStartStr);
                     setCustomTo(todayStr);
                   }}
                   className="font-medium text-primary hover:underline text-xs"
