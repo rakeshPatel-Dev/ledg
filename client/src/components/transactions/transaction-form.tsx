@@ -347,11 +347,11 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
         type: newSpaceType,
         monthlyBudget: null,
       });
-      setSpace(created.id);
+      setSpace(created.space.id);
       setNewSpaceOpen(false);
       setNewSpaceName("");
       setNewSpaceType("personal");
-      toast.success(`Created "${created.name}"`);
+      toast.success(`Created "${created.space.name}"`);
     } catch (error) {
       setNewSpaceError(
         getUserFacingError(error, "Couldn't create the space. Try again.")
@@ -554,6 +554,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                     key={meta.name}
                     type="button"
                     title={meta.name}
+                    aria-pressed={active}
                     onClick={() => {
                       setCategory(meta.name);
                       clearFieldError("category");
@@ -613,8 +614,11 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 min-w-0">
-              <label className="text-sm font-medium">Date</label>
+              <label htmlFor="transaction-date" className="text-sm font-medium">
+                Date
+              </label>
               <DatePicker
+                id="transaction-date"
                 value={date}
                 onChange={(val) => {
                   setDate(val);
@@ -648,7 +652,9 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
               ) : null}
             </div>
             <div className="space-y-1.5 min-w-0">
-              <label className="text-sm font-medium">Space</label>
+              <label htmlFor="transaction-space" className="text-sm font-medium">
+                Space
+              </label>
               <Select
                 disabled={Boolean(formState.lockSpace)}
                 value={activeSpaceId}
@@ -664,6 +670,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                 }}
               >
                 <SelectTrigger
+                  id="transaction-space"
                   ref={spaceRef}
                   disabled={Boolean(formState.lockSpace)}
                   className="relative pl-10"
@@ -715,6 +722,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                   <button
                     key={method}
                     type="button"
+                    aria-pressed={paymentMethod === method}
                     onClick={() => {
                       setPaymentMethod(method);
                       clearFieldError("paymentMethod");

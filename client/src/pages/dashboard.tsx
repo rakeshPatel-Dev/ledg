@@ -87,6 +87,7 @@ export default function DashboardPage() {
 
   return (
     <FadeInStagger className="flex flex-col gap-6">
+      <h1 className="sr-only">Home</h1>
       <Header />
 
       {isError ? (
@@ -101,13 +102,13 @@ export default function DashboardPage() {
         </FadeInItem>
       ) : (
       <FadeInItem>
-        <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20">
+        <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground dark:text-emerald-100">
               Net saved
             </p>
             <span
-              className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground/90 backdrop-blur-md"
+              className="rounded-full bg-black/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground backdrop-blur-md dark:bg-white/10 dark:text-emerald-50"
               title="Loan principal and settlements are tracked separately"
             >
               Excl. loans
@@ -115,13 +116,13 @@ export default function DashboardPage() {
           </div>
 
           {isPending ? (
-            <Skeleton className="mt-2 h-12 w-48 bg-primary-foreground/20" />
+            <Skeleton className="mt-2 h-12 w-48 bg-black/15 dark:bg-white/10" />
           ) : (
             <>
               <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
                 {data ? formatCurrency(data.totalBalance, currency) : "—"}
               </p>
-              <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground/70">
+              <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground dark:text-emerald-100">
                 All-time income minus spending
               </p>
             </>
@@ -130,10 +131,10 @@ export default function DashboardPage() {
           <div className="mt-5 grid grid-cols-2 gap-3">
             <motion.div
               whileHover={{ y: -2 }}
-              className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md transition-all hover:bg-primary-foreground/15"
+              className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
             >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground/85">
-                <span className="flex size-6 items-center justify-center rounded-full bg-emerald-400/25 text-emerald-200">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
+                <span className="flex size-6 items-center justify-center rounded-full bg-emerald-950/25 text-emerald-50 dark:bg-emerald-400/20 dark:text-emerald-200">
                   <ArrowDownLeft className="size-3.5" />
                 </span>
                 Income
@@ -141,16 +142,16 @@ export default function DashboardPage() {
               <p className="mt-2 text-lg font-extrabold tabular-nums">
                 {data ? formatCompact(data.monthIncome, currency) : "—"}
               </p>
-              <p className="text-[0.65rem] font-medium text-primary-foreground/70">
+              <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
                 this month
               </p>
             </motion.div>
             <motion.div
               whileHover={{ y: -2 }}
-              className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md transition-all hover:bg-primary-foreground/15"
+              className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
             >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground/85">
-                <span className="flex size-6 items-center justify-center rounded-full bg-rose-400/25 text-rose-200">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
+                <span className="flex size-6 items-center justify-center rounded-full bg-rose-950/25 text-rose-50 dark:bg-rose-400/20 dark:text-rose-200">
                   <ArrowUpRight className="size-3.5" />
                 </span>
                 Spent
@@ -158,7 +159,7 @@ export default function DashboardPage() {
               <p className="mt-2 text-lg font-extrabold tabular-nums">
                 {data ? formatCompact(data.monthSpend, currency) : "—"}
               </p>
-              <p className="text-[0.65rem] font-medium text-primary-foreground/70">
+              <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
                 this month
               </p>
             </motion.div>

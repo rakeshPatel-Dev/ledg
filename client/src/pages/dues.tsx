@@ -189,18 +189,20 @@ export default function DuesPage() {
     <FadeInStagger className="flex flex-col min-h-screen pb-28">
       {/* ── Hero ── */}
       <FadeInItem>
-        <section className="-mx-5 bg-linear-to-br from-primary via-primary to-[oklch(0.52_0.15_158)] px-5 pb-7 pt-4 text-primary-foreground shadow-xl shadow-primary/25 rounded-b-[2.5rem]">
+        <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-4 text-primary-foreground shadow-xl shadow-primary/25 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
           {/* Top bar */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-4xl bg-primary-foreground/15 backdrop-blur-sm">
+              <div className="flex size-8 items-center justify-center rounded-4xl bg-black/15 backdrop-blur-sm dark:bg-white/10">
                 <HandCoins className="size-4" />
               </div>
-              <span className="text-sm font-bold tracking-wide">Dues & Loans</span>
+              <h1 className="text-sm font-extrabold tracking-wide">Dues &amp; Loans</h1>
             </div>
             <button
+              type="button"
               onClick={() => setSearchOpen((v) => !v)}
-              className="flex size-8 items-center justify-center rounded-4xl bg-primary-foreground/15 backdrop-blur-sm transition-all active:scale-95"
+              aria-label={searchOpen ? "Close search" : "Search dues"}
+              className="relative flex size-10 items-center justify-center rounded-4xl bg-black/15 backdrop-blur-sm transition-all after:absolute after:-inset-0.5 after:content-[''] active:scale-95 dark:bg-white/10"
             >
               {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
             </button>
@@ -217,13 +219,14 @@ export default function DuesPage() {
                 className="mb-4 overflow-hidden"
               >
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-primary-foreground/50" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-primary-foreground/80 dark:text-emerald-100/80" />
                   <input
                     autoFocus
+                    aria-label="Search dues"
                     placeholder="Search by name, note, or phone..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-4xl bg-primary-foreground/15 backdrop-blur-sm pl-10 pr-4 py-2.5 text-sm text-primary-foreground placeholder:text-primary-foreground/50 outline-none border border-primary-foreground/20 focus:border-primary-foreground/40"
+                    className="w-full rounded-4xl bg-black/15 backdrop-blur-sm pl-10 pr-4 py-2.5 text-sm text-primary-foreground placeholder:text-primary-foreground/80 outline-none border border-black/20 focus:border-black/40 dark:bg-white/10 dark:text-emerald-50 dark:placeholder:text-emerald-100/80 dark:border-white/15 dark:focus:border-white/40"
                   />
                 </div>
               </motion.div>
@@ -232,33 +235,33 @@ export default function DuesPage() {
 
           {/* Net amount */}
           {summaryError ? (
-            <div className="mb-5 rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md">
-              <p className="text-xs font-semibold text-primary-foreground">
+            <div className="mb-5 rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
+              <p className="text-xs font-semibold text-primary-foreground dark:text-emerald-50">
                 Couldn&apos;t load the dues summary.
               </p>
-              <p className="mt-1 text-[0.68rem] text-primary-foreground/70">
+              <p className="mt-1 text-[0.68rem] text-primary-foreground dark:text-emerald-100">
                 {getUserFacingError(summaryErrorDetail)}
               </p>
               <button
                 type="button"
                 onClick={() => void summaryQuery.refetch()}
                 disabled={summaryFetching}
-                className="mt-2 text-xs font-bold text-primary-foreground underline underline-offset-2 disabled:opacity-60"
+                className="mt-2 text-xs font-bold text-primary-foreground underline underline-offset-2 disabled:opacity-60 dark:text-emerald-50"
               >
                 {summaryFetching ? "Trying again…" : "Try again"}
               </button>
             </div>
           ) : summaryLoading ? (
             <div className="space-y-2 mb-5">
-              <div className="h-9 w-36 animate-pulse rounded-3xl bg-primary-foreground/20" />
-              <div className="h-3 w-24 animate-pulse rounded-full bg-primary-foreground/15" />
+              <div className="h-9 w-36 animate-pulse rounded-3xl bg-black/15 dark:bg-white/10" />
+              <div className="h-3 w-24 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
             </div>
           ) : (
             <div className="mb-5">
               <p className="text-4xl font-black tracking-tight tabular-nums leading-none">
                 {formatCurrency(duesSummary?.net ?? 0)}
               </p>
-              <p className="mt-1.5 text-xs font-medium text-primary-foreground/70">
+              <p className="mt-1.5 text-xs font-medium text-primary-foreground dark:text-emerald-100">
                 {(duesSummary?.net ?? 0) >= 0 ? "Net receivable" : "Net payable"}
                 {duesSummary?.activeCount ? ` · ${duesSummary.activeCount} active` : ""}
               </p>
@@ -268,12 +271,12 @@ export default function DuesPage() {
           {/* Stats row */}
           {!summaryError && (
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md">
+            <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-emerald-400/25">
-                  <ArrowUpRight className="size-3 text-emerald-300" />
+                <span className="flex size-5 items-center justify-center rounded-full bg-emerald-950/25 dark:bg-emerald-400/20">
+                  <ArrowUpRight className="size-3 text-emerald-50 dark:text-emerald-200" />
                 </span>
-                <span className="text-[0.68rem] font-semibold text-primary-foreground/75 uppercase tracking-wider">
+                <span className="text-[0.68rem] font-semibold text-primary-foreground uppercase tracking-wider dark:text-emerald-50">
                   Owed to you
                 </span>
               </div>
@@ -282,12 +285,12 @@ export default function DuesPage() {
               </p>
             </div>
 
-            <div className="rounded-3xl bg-primary-foreground/12 p-3.5 backdrop-blur-md">
+            <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-amber-400/25">
-                  <ArrowDownLeft className="size-3 text-amber-300" />
+                <span className="flex size-5 items-center justify-center rounded-full bg-amber-950/25 dark:bg-amber-400/20">
+                  <ArrowDownLeft className="size-3 text-amber-50 dark:text-amber-200" />
                 </span>
-                <span className="text-[0.68rem] font-semibold text-primary-foreground/75 uppercase tracking-wider">
+                <span className="text-[0.68rem] font-semibold text-primary-foreground uppercase tracking-wider dark:text-emerald-50">
                   You owe
                 </span>
               </div>
@@ -304,10 +307,10 @@ export default function DuesPage() {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-3 flex items-center gap-2 rounded-4xl bg-red-500/20 border border-red-400/20 px-3.5 py-2.5"
+                className="mt-3 flex items-center gap-2 rounded-4xl bg-red-950/35 border border-red-950/30 px-3.5 py-2.5 dark:bg-red-500/20 dark:border-red-400/20"
               >
-                <AlertTriangle className="size-4 text-red-200 shrink-0" />
-                <span className="text-xs font-semibold text-red-100">
+                <AlertTriangle className="size-4 text-red-50 shrink-0 dark:text-red-100" />
+                <span className="text-xs font-semibold text-red-50 dark:text-red-100">
                   {overdueCount} due{overdueCount > 1 ? "s are" : " is"} overdue · check now
                 </span>
               </motion.div>
@@ -321,13 +324,13 @@ export default function DuesPage() {
         <div className="sticky top-0 z-10 -mx-5 bg-background/90 backdrop-blur-xl px-5 pt-3 pb-2 border-b border-border/30">
           <div className="flex items-center justify-between gap-2">
             {/* Filter Tabs */}
-            <div className="flex gap-1 overflow-x-auto scrollbar-none flex-1">
+            <div className="flex gap-0.5 overflow-x-auto scrollbar-none flex-1">
               {TABS.map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => setActiveTab(tab.value)}
                   className={cn(
-                    "relative shrink-0 rounded-4xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-200",
+                    "relative shrink-0 min-h-10 rounded-4xl px-2 py-1.5 text-xs font-semibold transition-all duration-200 after:absolute after:-inset-y-0.5 after:content-['']",
                     activeTab === tab.value
                       ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -337,7 +340,7 @@ export default function DuesPage() {
                   {tab.value === "all" && (duesSummary?.activeCount ?? 0) > 0 && (
                     <span className={cn(
                       "ml-1 inline-flex items-center justify-center rounded-full text-[0.55rem] font-bold min-w-4 h-4 px-0.5",
-                      activeTab === "all" ? "bg-primary-foreground/25 text-primary-foreground" : "bg-muted text-muted-foreground"
+                      activeTab === "all" ? "bg-black/20 text-primary-foreground" : "bg-muted text-muted-foreground"
                     )}>
                       {duesSummary!.activeCount}
                     </span>
@@ -349,24 +352,28 @@ export default function DuesPage() {
             {/* View mode toggle */}
             <div className="flex shrink-0 items-center gap-0.5 rounded-4xl border border-border/50 bg-card/60 p-0.5">
               <button
+                type="button"
                 onClick={() => setViewMode("person")}
-                title="Group by person"
+                aria-label="Group by person"
+                aria-pressed={viewMode === "person"}
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-4xl transition-all",
+                  "relative flex size-10 items-center justify-center rounded-4xl transition-all after:absolute after:-inset-0.5 after:content-['']",
                   viewMode === "person" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Users className="size-3.5" />
+                <Users className="size-4" />
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode("list")}
-                title="Flat list"
+                aria-label="Flat list"
+                aria-pressed={viewMode === "list"}
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-4xl transition-all",
+                  "relative flex size-10 items-center justify-center rounded-4xl transition-all after:absolute after:-inset-0.5 after:content-['']",
                   viewMode === "list" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <LayoutList className="size-3.5" />
+                <LayoutList className="size-4" />
               </button>
             </div>
           </div>

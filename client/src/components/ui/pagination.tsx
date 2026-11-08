@@ -54,7 +54,7 @@ function PaginationLink({
           variant: isActive ? "default" : "ghost",
           size,
         }),
-        "rounded-full cursor-pointer font-semibold text-xs",
+        "min-h-11 min-w-10 rounded-full cursor-pointer font-semibold text-xs",
         className
       )}
       {...props}

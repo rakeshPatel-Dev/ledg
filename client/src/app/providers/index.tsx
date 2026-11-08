@@ -17,7 +17,7 @@ function MotionBridge({ children }: { children: ReactNode }) {
 export default function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider defaultTheme="system">
-      <MotionProvider defaultMotion="full">
+      <MotionProvider defaultMotion="system">
         <MotionBridge>
           <TransactionFormProvider>{children}</TransactionFormProvider>
           <Toaster

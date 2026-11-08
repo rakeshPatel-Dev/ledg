@@ -182,8 +182,9 @@ export function useCreateSpace() {
 
       return { previous, tempId: optimistic.id };
     },
-    onSuccess: (real, _variables, context) => {
+    onSuccess: (result, _variables, context) => {
       pendingKey = null;
+      const real = result.space;
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
         (old ?? []).map((s) => (s.id === context.tempId ? real : s))
       );
@@ -1026,6 +1027,20 @@ export function useImportTransactions() {
 
   return useMutation({
     mutationFn: (data: ImportInput) => getApi().importer.transactions(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+    },
+  });
+}
+
+export function useUndoImport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => getApi().transactions.bulkDelete(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });

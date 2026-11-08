@@ -43,6 +43,17 @@ export class ApiError extends Error {
   }
 }
 
+export interface SpaceCreateInvitationResult {
+  identifier: string;
+  status: "invited" | "failed";
+  error?: string;
+}
+
+export interface SpaceCreateResult {
+  space: Space;
+  invitations: SpaceCreateInvitationResult[];
+}
+
 // ─── Analytics Types ──────────────────────────────────────────────────────────
 
 export type AnalyticsPeriod = "today" | "month" | "3months" | "year" | "all" | "custom";
@@ -142,13 +153,13 @@ export function createApi() {
       get: (id: string) =>
         request<{ space: Space }>(`/spaces/${id}`).then((r) => r.space),
       create: (data: SpaceInput, idempotencyKey?: string) =>
-        request<{ space: Space }>("/spaces", {
+        request<SpaceCreateResult>("/spaces", {
           method: "POST",
           headers: idempotencyKey
             ? { "Idempotency-Key": idempotencyKey }
             : undefined,
           body: JSON.stringify(data),
-        }).then((r) => r.space),
+        }),
       update: (id: string, data: SpaceUpdateInput) =>
         request<{ space: Space }>(`/spaces/${id}`, {
           method: "PUT",
@@ -269,8 +280,7 @@ export function createApi() {
     },
     transactions: {
 
-      listAll: (page = 1, pageSize = 20, filters: AllTransactionsFilter = {}) => {
-        const params = new URLSearchParams({
+      listAll: (page = 1, pageSize = 20, filters: AllTransactionsFilter = {}) => {        const params = new URLSearchParams({
           page: String(page),
           pageSize: String(pageSize),
         });
@@ -297,6 +307,11 @@ export function createApi() {
           `/spaces/${spaceId}/transactions${qs ? `?${qs}` : ""}`
         );
       },
+      bulkDelete: (ids: string[]) =>
+        request<{ deleted: number }>("/transactions/bulk", {
+          method: "DELETE",
+          body: JSON.stringify({ ids }),
+        }),
       create: (spaceId: string, data: TransactionInput) =>
         request<{ transaction: Transaction }>(
           `/spaces/${spaceId}/transactions`,

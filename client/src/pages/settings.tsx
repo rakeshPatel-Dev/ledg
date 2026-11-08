@@ -89,9 +89,15 @@ export default function SettingsPage() {
   };
 
   const motionLabels = {
-    full: "Full Motion",
-    reduced: "Reduced Motion",
-    system: "System Default",
+    full: "All animations",
+    reduced: "Reduced animations",
+    system: "Match my device",
+  };
+
+  const motionDescriptions = {
+    full: "Page transitions, card entrances and button springs.",
+    reduced: "Only essential transitions; decorative motion is off.",
+    system: "Follow the reduced-motion setting on this device.",
   };
 
    const {
@@ -483,7 +489,12 @@ export default function SettingsPage() {
                 >
                   <Icon className="size-5" />
                 </span>
-                <span className="flex-1 text-sm">{motionLabels[m]}</span>
+                <span className="flex-1">
+                  <span className="block text-sm">{motionLabels[m]}</span>
+                  <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
+                    {motionDescriptions[m]}
+                  </span>
+                </span>
                 {active && <span className="size-2 rounded-full bg-primary" />}
               </button>
             );

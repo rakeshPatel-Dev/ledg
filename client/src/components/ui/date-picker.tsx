@@ -14,6 +14,10 @@ export interface DatePickerProps {
   disabled?: boolean;
   side?: "top" | "bottom";
   align?: "start" | "center" | "end";
+  id?: string;
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
+  ariaDescribedBy?: string;
 }
 
 export function DatePicker({
@@ -24,6 +28,10 @@ export function DatePicker({
   disabled,
   side = "top",
   align = "start",
+  id,
+  ariaLabel,
+  ariaLabelledBy,
+  ariaDescribedBy,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -46,6 +54,10 @@ export function DatePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         disabled={disabled}
         className={cn(
           "flex h-12 w-full items-center gap-3 rounded-2xl border border-input bg-card/80 px-3.5 text-sm text-foreground shadow-xs backdrop-blur-md transition-all outline-none",

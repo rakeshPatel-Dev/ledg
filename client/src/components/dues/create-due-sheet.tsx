@@ -184,7 +184,7 @@ export function CreateDueSheet({
     >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-0">
         {/* ── Direction toggle (hero pill) ── */}
-        <div className="flex gap-2 mb-6 p-1 rounded-3xl bg-muted/50 border border-border/40">
+        <div role="group" aria-label="Loan direction" className="flex gap-2 mb-6 p-1 rounded-3xl bg-muted/50 border border-border/40">
           {([
             { value: "lent" as const, label: "I Lent", Icon: ArrowUpRight, color: "bg-emerald-600 text-white shadow-emerald-600/30" },
             { value: "borrowed" as const, label: "I Borrowed", Icon: ArrowDownLeft, color: "bg-amber-500 text-white shadow-amber-500/30" },
@@ -192,6 +192,7 @@ export function CreateDueSheet({
             <button
               key={value}
               type="button"
+              aria-pressed={direction === value}
               onClick={() => setDirection(value)}
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-all duration-200",
@@ -231,7 +232,7 @@ export function CreateDueSheet({
 
         {/* ── Amount ── */}
         <div className="flex flex-col gap-2 mb-5">
-          <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="due-amount" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
             Amount <span className="text-destructive">*</span>
           </label>
           <div className="relative">
@@ -239,6 +240,7 @@ export function CreateDueSheet({
               Rs.
             </span>
             <input
+              id="due-amount"
               type="number"
               step="any"
               min="0.01"
@@ -275,12 +277,13 @@ export function CreateDueSheet({
 
         {/* ── Person ── */}
         <div className="flex flex-col gap-2 mb-5">
-          <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="due-name" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
             {isLent ? "Lent to" : "Borrowed from"} <span className="text-destructive">*</span>
           </label>
           <div className="relative">
             <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
             <Input
+              id="due-name"
               placeholder="Person's name"
               value={name}
               ref={nameRef}
@@ -327,12 +330,13 @@ export function CreateDueSheet({
 
         {/* ── Phone (optional) ── */}
         <div className="flex flex-col gap-2 mb-5">
-          <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="due-phone" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
             Phone <span className="text-muted-foreground/50 font-normal normal-case text-[0.65rem]">(optional)</span>
           </label>
           <div className="relative">
             <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
             <Input
+              id="due-phone"
               type="tel"
               placeholder="e.g. 9841234567"
               value={phone}
@@ -344,7 +348,7 @@ export function CreateDueSheet({
 
         {/* ── Date Given ── */}
         <div className="flex flex-col gap-2 mb-5">
-          <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="due-date" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
             Date
           </label>
           <div className="flex gap-1.5 flex-wrap mb-1.5">
@@ -365,6 +369,7 @@ export function CreateDueSheet({
             ))}
           </div>
           <DatePicker
+            id="due-date"
             value={date}
             onChange={(d) => {
               if (d) {
@@ -377,7 +382,7 @@ export function CreateDueSheet({
         {/* ── Due Date ── */}
         <div className="flex flex-col gap-2 mb-5">
           <div className="flex items-center justify-between">
-            <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <label htmlFor="due-due-date" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <CalendarDays className="size-3.5" />
               Due Date
               <span className="text-muted-foreground/50 font-normal normal-case text-[0.65rem]">(optional)</span>
@@ -393,6 +398,7 @@ export function CreateDueSheet({
             )}
           </div>
           <DatePicker
+            id="due-due-date"
             value={dueDate ?? ""}
             onChange={(d) => setDueDate(d || null)}
             placeholder="Set a repayment reminder"
@@ -401,10 +407,10 @@ export function CreateDueSheet({
 
         {/* ── Payment Method ── */}
         <div className="flex flex-col gap-2 mb-5">
-          <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+          <label id="due-via-label" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
             Via
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div role="group" aria-labelledby="due-via-label" className="grid grid-cols-4 gap-2">
             {(["cash", "wallet", "bank_transfer", "card"] as PaymentMethod[]).map((method) => {
               const Icon = PAYMENT_ICONS[method];
               const selected = paymentMethod === method;
@@ -412,6 +418,7 @@ export function CreateDueSheet({
                 <button
                   key={method}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => setPaymentMethod(method)}
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-2xl border p-3 text-[0.65rem] font-semibold transition-all",
@@ -431,11 +438,11 @@ export function CreateDueSheet({
         {/* ── Space (if multiple) ── */}
         {spaces.length > 1 && (
           <div className="flex flex-col gap-2 mb-5">
-            <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+            <label htmlFor="due-space" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
               Ledger Space
             </label>
             <Select value={spaceId} onValueChange={setSpaceId}>
-              <SelectTrigger className="h-11 rounded-2xl">
+              <SelectTrigger id="due-space" className="h-11 rounded-2xl">
                 <SelectValue placeholder="Select space" />
               </SelectTrigger>
               <SelectContent>
@@ -451,10 +458,11 @@ export function CreateDueSheet({
 
         {/* ── Note ── */}
         <div className="flex flex-col gap-2 mb-6">
-          <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="due-note" className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
             Note <span className="text-muted-foreground/50 font-normal normal-case text-[0.65rem]">(optional)</span>
           </label>
           <Input
+            id="due-note"
             placeholder="e.g. For trip / dinner bills..."
             value={note}
             onChange={(e) => setNote(e.target.value)}

@@ -8,7 +8,7 @@ interface MotionProviderState {
 }
 
 const initialState: MotionProviderState = {
-  motion: "full",
+  motion: "system",
   setMotion: () => null,
 };
 
@@ -18,7 +18,7 @@ const PREFERS_REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
 
 export function MotionProvider({
   children,
-  defaultMotion = "full",
+  defaultMotion = "system",
   storageKey = "ledg-motion",
 }: {
   children: ReactNode;

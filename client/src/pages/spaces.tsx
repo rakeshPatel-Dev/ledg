@@ -230,12 +230,32 @@ export default function SpacesPage() {
         });
         toast.success("Space updated");
       } else {
-        await createSpace.mutateAsync(parsed.data);
-        toast.success(
-          inviteIdentifiers.length > 0
-            ? "Space created and invitations sent!"
-            : "Space created"
+        const created = await createSpace.mutateAsync(parsed.data);
+        const invited = created.invitations.filter(
+          (invitation) => invitation.status === "invited"
         );
+        const failed = created.invitations.filter(
+          (invitation) => invitation.status === "failed"
+        );
+
+        if (failed.length > 0) {
+          const failedNames = failed
+            .map((invitation) => invitation.identifier)
+            .join(", ");
+          toast.error(
+            `Space created, but ${failed.length} ${
+              failed.length === 1 ? "invitation" : "invitations"
+            } failed: ${failedNames}`
+          );
+        } else if (invited.length > 0) {
+          toast.success(
+            `Space created and ${invited.length} ${
+              invited.length === 1 ? "invitation" : "invitations"
+            } sent`
+          );
+        } else {
+          toast.success("Space created");
+        }
       }
       setSheetOpen(false);
     } catch (error) {
@@ -413,14 +433,19 @@ export default function SpacesPage() {
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
                   <Card
-                    onClick={() => handleSpaceClick(space)}
                     className={cn(
-                      "flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
+                      "relative flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
                       "cursor-pointer hover:border-primary/20",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       space.isShared && "border-primary/20 bg-primary/2 dark:bg-primary/5"
                     )}
                   >
+                    <button
+                      type="button"
+                      aria-label={`Open ${space.name}`}
+                      onClick={() => handleSpaceClick(space)}
+                      className="absolute inset-0 z-0 rounded-4xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    />
+                    <div className="pointer-events-none relative z-10 flex w-full flex-col">
                     <div className="flex items-center gap-3 w-full">
                       <span
                         className={cn(
@@ -527,14 +552,14 @@ export default function SpacesPage() {
                         </p>
 
                         {isOwner && (
-                          <div className="flex gap-1">
+                          <div className="pointer-events-auto flex gap-1">
                             <button
                               type="button"
                               onClick={(e) => openEdit(e, space)}
                               aria-label={`Edit ${space.name}`}
-                              className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
+                              className="relative flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
                             >
-                              <Pencil className="size-3.5" />
+                              <Pencil className="size-4" />
                             </button>
                             <button
                               type="button"
@@ -543,9 +568,9 @@ export default function SpacesPage() {
                                 setDeletingSpace(space);
                               }}
                               aria-label={`Delete ${space.name}`}
-                              className="flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all hover:bg-destructive/20 active:scale-95 cursor-pointer"
+                              className="relative flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-destructive/20 active:scale-95 cursor-pointer"
                             >
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-4" />
                             </button>
                           </div>
                         )}
@@ -634,6 +659,7 @@ export default function SpacesPage() {
                         </div>
                       );
                     })() : null}
+                    </div>
                   </Card>
                 </motion.div>
               </FadeInItem>

@@ -55,7 +55,8 @@
     --card-foreground: oklch(0.185 0.025 170);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.185 0.025 170);
-    --primary: oklch(0.62 0.145 158);
+    /* Primary and destructive are dark enough for white text to clear 4.5:1. */
+    --primary: oklch(0.52 0.145 158);
     --primary-foreground: oklch(0.985 0.005 120);
     --secondary: oklch(0.955 0.015 158);
     --secondary-foreground: oklch(0.35 0.08 158);
@@ -63,27 +64,27 @@
     --muted-foreground: oklch(0.52 0.025 170);
     --accent: oklch(0.948 0.02 158);
     --accent-foreground: oklch(0.4 0.09 158);
-    --destructive: oklch(0.6 0.19 27);
+    --destructive: oklch(0.56 0.19 27);
     --destructive-foreground: oklch(0.985 0.005 120);
-    --success: oklch(0.62 0.145 158);
+    --success: oklch(0.52 0.145 158);
     --warning: oklch(0.72 0.15 70);
     --border: oklch(0.9 0.012 158);
     --input: oklch(0.9 0.012 158);
-    --ring: oklch(0.62 0.145 158);
-    --chart-1: oklch(0.62 0.145 158);
+    --ring: oklch(0.52 0.145 158);
+    --chart-1: oklch(0.52 0.145 158);
     --chart-2: oklch(0.72 0.15 70);
     --chart-3: oklch(0.55 0.12 260);
-    --chart-4: oklch(0.62 0.19 27);
+    --chart-4: oklch(0.56 0.19 27);
     --chart-5: oklch(0.65 0.11 320);
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0.006 158);
     --sidebar-foreground: oklch(0.185 0.025 170);
-    --sidebar-primary: oklch(0.62 0.145 158);
+    --sidebar-primary: oklch(0.52 0.145 158);
     --sidebar-primary-foreground: oklch(0.985 0.005 120);
     --sidebar-accent: oklch(0.948 0.02 158);
     --sidebar-accent-foreground: oklch(0.4 0.09 158);
     --sidebar-border: oklch(0.9 0.012 158);
-    --sidebar-ring: oklch(0.62 0.145 158);
+    --sidebar-ring: oklch(0.52 0.145 158);
 }
 
 .dark {
@@ -101,7 +102,7 @@
     --muted-foreground: oklch(0.7 0.02 158);
     --accent: oklch(0.3 0.04 158);
     --accent-foreground: oklch(0.965 0.005 158);
-    --destructive: oklch(0.65 0.18 27);
+    --destructive: oklch(0.58 0.18 27);
     --destructive-foreground: oklch(0.985 0.005 120);
     --success: oklch(0.65 0.14 158);
     --warning: oklch(0.75 0.14 70);

@@ -116,12 +116,12 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-linear-to-t from-background/60 via-background/20 to-transparent px-4 pb-4">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-linear-to-t from-background/60 via-background/20 to-transparent px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative flex w-full max-w-md items-center justify-around rounded-full border border-border/50 bg-card/40 px-1.5 py-0.5 shadow-2xl backdrop-blur-2xl backdrop-saturate-180"
+          className="relative flex w-full max-w-md items-center justify-around rounded-full border border-border/50 bg-card/40 px-1.5 py-1 shadow-2xl backdrop-blur-2xl backdrop-saturate-180"
         >
           {NAV_ITEMS.map((item) => {
             if (item.type === "add") {
@@ -137,19 +137,6 @@ export function BottomNav() {
                     className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-colors hover:bg-primary/90"
                   >
                     <Plus className="size-7 stroke-[2.5px]" />
-                    <motion.div
-                      className="absolute inset-0 rounded-full bg-primary/20"
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.6, 0, 0.6],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        ease: "easeInOut",
-                      }}
-                    />
                   </motion.button>
                 </div>
               );
@@ -172,7 +159,7 @@ export function BottomNav() {
                   aria-expanded={moreOpen}
                   aria-current={isMoreActive ? "page" : undefined}
                   className={cn(
-                    "relative flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 text-[0.55rem] font-semibold transition-colors select-none touch-manipulation",
+                    "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 text-xs font-semibold transition-colors select-none touch-manipulation",
                     isMoreActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -194,12 +181,12 @@ export function BottomNav() {
                     <span className="relative">
                       <Ellipsis
                         className={cn(
-                          "size-[1.15rem] transition-all duration-200",
+                          "size-5 transition-all duration-200",
                           isMoreActive && "scale-105 stroke-[2.5px]"
                         )}
                       />
                       {overdueCount > 0 && (
-                        <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.5rem] font-bold text-white shadow-sm">
+                        <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.6rem] font-bold text-white shadow-sm">
                           {overdueCount > 9 ? "9+" : overdueCount}
                         </span>
                       )}
@@ -219,7 +206,7 @@ export function BottomNav() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    "relative flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 text-[0.55rem] font-semibold transition-colors select-none touch-manipulation",
+                    "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 text-xs font-semibold transition-colors select-none touch-manipulation",
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -247,7 +234,7 @@ export function BottomNav() {
                     >
                       <Icon
                         className={cn(
-                          "size-[1.15rem] transition-all duration-200",
+                          "size-5 transition-all duration-200",
                           isActive && "scale-105 stroke-[2.5px]"
                         )}
                       />

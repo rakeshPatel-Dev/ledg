@@ -39,7 +39,7 @@ export function Header() {
         <Link
           to="/dues"
           aria-label="Dues and loans"
-          className="relative flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-md shadow-primary/30 transition-all hover:bg-primary/90 active:scale-95"
+          className="relative flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-md shadow-primary/30 transition-all hover:bg-primary/90 active:scale-95"
         >
           <HandCoins className="size-4" />
           <span className="text-xs font-bold">Dues</span>
