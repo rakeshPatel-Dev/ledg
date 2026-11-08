@@ -159,16 +159,16 @@ export function BottomNav() {
                   aria-expanded={moreOpen}
                   aria-current={isMoreActive ? "page" : undefined}
                   className={cn(
-                    "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 text-xs font-semibold transition-colors select-none touch-manipulation",
+                    "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 text-xs transition-colors select-none touch-manipulation",
                     isMoreActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "font-bold text-primary-foreground"
+                      : "font-semibold text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {isMoreActive && (
                     <motion.div
                       layoutId="activeBottomNavPill"
-                      className="absolute inset-0 -z-10 rounded-full border border-primary/10 bg-primary/10 shadow-[inset_0_1px_2px_oklch(0.2_0.02_170/0.06)]"
+                      className="absolute inset-0 -z-10 rounded-full border border-[color-mix(in_oklch,var(--primary),black_12%)] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] shadow-[inset_0_1px_0_oklch(1_0_0/0.22),0_1px_2px_oklch(0.2_0.02_170/0.16)] dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.16),0_1px_2px_oklch(0_0_0/0.4)]"
                       transition={{
                         type: "spring",
                         stiffness: 380,
@@ -206,10 +206,10 @@ export function BottomNav() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 text-xs font-semibold transition-colors select-none touch-manipulation",
+                    "relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 text-xs transition-colors select-none touch-manipulation",
                     isActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "font-bold text-primary-foreground"
+                      : "font-semibold text-muted-foreground hover:text-foreground"
                   )
                 }
               >
@@ -218,7 +218,7 @@ export function BottomNav() {
                     {isActive && (
                       <motion.div
                         layoutId="activeBottomNavPill"
-                        className="absolute inset-0 -z-10 rounded-full border border-primary/10 bg-primary/10 shadow-[inset_0_1px_2px_oklch(0.2_0.02_170/0.06)]"
+                        className="absolute inset-0 -z-10 rounded-full border border-[color-mix(in_oklch,var(--primary),black_12%)] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] shadow-[inset_0_1px_0_oklch(1_0_0/0.22),0_1px_2px_oklch(0.2_0.02_170/0.16)] dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.16),0_1px_2px_oklch(0_0_0/0.4)]"
                         transition={{
                           type: "spring",
                           stiffness: 380,
