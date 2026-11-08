@@ -17,5 +17,6 @@ router.delete("/:id", transactionController.deleteTransaction);
 export const allTransactionsRouter = Router();
 allTransactionsRouter.use(authenticate);
 allTransactionsRouter.get("/all", transactionController.listAllTransactions);
+allTransactionsRouter.delete("/bulk", transactionController.bulkDeleteTransactions);
 
 export default router;

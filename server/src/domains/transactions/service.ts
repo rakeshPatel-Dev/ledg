@@ -220,12 +220,43 @@ export async function updateUserTransaction(
   return updatedTransaction;
 }
 
+/**
+ * Undo an import by deleting only the transactions the same user created.
+ * Dues-linked rows are never removed here.
+ */
+export async function deleteUserCreatedTransactions(
+  userId: Types.ObjectId,
+  ids: string[]
+) {
+  if (ids.length === 0) return { deleted: 0 };
+
+  const rows = await transactionRepository.findUserCreatedTransactionIds(
+    ids,
+    userId
+  );
+  if (rows.length === 0) return { deleted: 0 };
+
+  const deleted = await transactionRepository.deleteUserCreatedTransactions(
+    rows.map((row) => row.id),
+    userId
+  );
+
+  const affectedUsers = new Set<string>([String(userId)]);
+  for (const spaceId of new Set(rows.map((row) => row.spaceId))) {
+    for (const memberId of await spaceRepository.findMemberUserIds(spaceId)) {
+      affectedUsers.add(memberId);
+    }
+  }
+  await invalidateDashboardCache([...affectedUsers]);
+
+  return { deleted };
+}
+
 export async function deleteUserTransaction(
   userId: Types.ObjectId,
   spaceId: string,
   transactionId: string
-) {
-  const { space, role } = await assertSpaceAccess(spaceId, userId);
+) {  const { space, role } = await assertSpaceAccess(spaceId, userId);
   const user = await getUserContext(userId);
 
   const existingTxn = await transactionRepository.findTransactionById(

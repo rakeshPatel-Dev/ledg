@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   Loader2,
+  RotateCcw,
   Upload,
   X,
 } from "lucide-react";
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSpaces, useImportTransactions } from "@/lib/queries";
+import { useSpaces, useImportTransactions, useUndoImport } from "@/lib/queries";
 import { parseImportFile, type ParsedImport } from "@/lib/import";
 import { localDateKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function ImportTransactionsSheet({
   const spacesQuery = useSpaces();
   const spaces = spacesQuery.data ?? [];
   const importTransactions = useImportTransactions();
+  const undoImport = useUndoImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fileName, setFileName] = useState<string | null>(null);
@@ -119,12 +121,62 @@ export function ImportTransactionsSheet({
         ...(destination === "single" ? { targetSpaceId } : {}),
       });
       setResult(response);
-      toast.success(
-        `Imported ${response.imported} transaction${response.imported === 1 ? "" : "s"}`
-      );
+
+      const undoIds = response.importedIds ?? [];
+      const message = `Imported ${response.imported} transaction${
+        response.imported === 1 ? "" : "s"
+      }`;
+
+      if (undoIds.length > 0) {
+        toast.success(message, {
+          duration: 10000,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              undoImport.mutate(undoIds, {
+                onSuccess: (result) => {
+                  toast.success(
+                    `Undid import: ${result.deleted} transaction${
+                      result.deleted === 1 ? "" : "s"
+                    } removed`
+                  );
+                  handleOpenChange(false);
+                },
+                onError: (error) => {
+                  toast.error(
+                    error instanceof Error ? error.message : "Could not undo import"
+                  );
+                },
+              });
+            },
+          },
+        });
+      } else {
+        toast.success(message);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Import failed");
     }
+  };
+
+  const handleUndo = () => {
+    const undoIds = result?.importedIds ?? [];
+    if (undoIds.length === 0) return;
+    undoImport.mutate(undoIds, {
+      onSuccess: (result) => {
+        toast.success(
+          `Undid import: ${result.deleted} transaction${
+            result.deleted === 1 ? "" : "s"
+          } removed`
+        );
+        handleOpenChange(false);
+      },
+      onError: (error) => {
+        toast.error(
+          error instanceof Error ? error.message : "Could not undo import"
+        );
+      },
+    });
   };
 
   const canImport =
@@ -156,6 +208,8 @@ export function ImportTransactionsSheet({
             result={result}
             onDone={() => handleOpenChange(false)}
             onAgain={reset}
+            onUndo={handleUndo}
+            undoing={undoImport.isPending}
           />
         ) : (
           <>
@@ -339,12 +393,17 @@ function ImportResultView({
   result,
   onDone,
   onAgain,
+  onUndo,
+  undoing,
 }: {
   result: ImportResult;
   onDone: () => void;
   onAgain: () => void;
+  onUndo: () => void;
+  undoing: boolean;
 }) {
   const total = result.imported + result.skipped + result.failed;
+  const canUndo = (result.importedIds?.length ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-4 pt-1">
@@ -381,6 +440,27 @@ function ImportResultView({
       )}
 
       <div className="flex flex-col gap-2">
+        {canUndo && (
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full rounded-full text-base font-semibold"
+            onClick={onUndo}
+            disabled={undoing}
+          >
+            {undoing ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Undoing…
+              </>
+            ) : (
+              <>
+                <RotateCcw className="size-4" />
+                Undo import
+              </>
+            )}
+          </Button>
+        )}
         <Button
           size="lg"
           className="w-full rounded-full text-base font-semibold"

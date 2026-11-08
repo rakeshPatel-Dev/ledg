@@ -176,6 +176,7 @@ export async function importTransactions(
       failed: input.transactions.length,
       spacesCreated,
       errors,
+      importedIds: [],
     };
   }
 
@@ -239,9 +240,10 @@ export async function importTransactions(
   }
 
   const invalidCount = errors.length;
-  const imported = await transactionRepository.createManyTransactions(
+  const inserted = await transactionRepository.createManyTransactions(
     docs.map((item) => item.doc)
   );
+  const imported = inserted.inserted;
 
   const failed = Math.max(input.transactions.length - imported - skipped, 0);
   if (failed > invalidCount) {
@@ -267,5 +269,6 @@ export async function importTransactions(
     failed,
     spacesCreated,
     errors,
+    importedIds: inserted.ids,
   };
 }

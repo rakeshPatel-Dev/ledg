@@ -27,14 +27,16 @@ export async function createTransaction(
 /**
  * Insert many transactions in chunks. `ordered: false` lets valid rows land
  * even if one document fails validation; the caller reports the shortfall.
+ * The inserted ids are returned so an import can be undone.
  */
 export async function createManyTransactions(
   docs: Record<string, unknown>[]
-): Promise<number> {
-  if (docs.length === 0) return 0;
+): Promise<{ inserted: number; ids: string[] }> {
+  if (docs.length === 0) return { inserted: 0, ids: [] };
 
   const CHUNK_SIZE = 500;
   let inserted = 0;
+  const ids: string[] = [];
 
   for (let i = 0; i < docs.length; i += CHUNK_SIZE) {
     const chunk = docs.slice(i, i + CHUNK_SIZE);
@@ -43,15 +45,67 @@ export async function createManyTransactions(
         ordered: false,
       });
       inserted += result.length;
+      ids.push(...result.map((doc) => String(doc._id)));
     } catch (error) {
       // BulkWriteError carries how many documents made it in before the
-      // failures; keep those and let the caller report the rest.
-      const bulk = error as { result?: { insertedCount?: number } };
-      inserted += bulk.result?.insertedCount ?? 0;
+      // failures; keep those and let the caller report the rest. Mongoose
+      // exposes insertedDocs for unordered inserts, while the driver reports
+      // insertedIds on the result.
+      const bulk = error as {
+        result?: {
+          insertedCount?: number;
+          insertedIds?: Record<string, unknown> | Map<string, unknown>;
+        };
+        insertedDocs?: Array<{ _id?: unknown }>;
+      };
+      inserted += bulk.result?.insertedCount ?? bulk.insertedDocs?.length ?? 0;
+
+      const insertedIds = bulk.result?.insertedIds;
+      if (insertedIds instanceof Map) {
+        ids.push(...[...insertedIds.values()].map((id) => String(id)));
+      } else if (insertedIds) {
+        ids.push(...Object.values(insertedIds).map((id) => String(id)));
+      } else {
+        ids.push(
+          ...(bulk.insertedDocs ?? []).map((doc) => String(doc._id))
+        );
+      }
     }
   }
 
-  return inserted;
+  return { inserted, ids };
+}
+
+/** Transactions the user created that can be removed by an import undo. */
+export async function findUserCreatedTransactionIds(
+  ids: string[],
+  userId: Types.ObjectId
+): Promise<Array<{ id: string; spaceId: string }>> {
+  const docs = await TransactionModel.find({
+    _id: { $in: ids },
+    "createdBy.userId": userId,
+    source: { $ne: "dues" },
+  })
+    .select("_id spaceId")
+    .lean();
+
+  return docs.map((doc) => ({
+    id: String(doc._id),
+    spaceId: String(doc.spaceId),
+  }));
+}
+
+/** Delete only transactions created by the user (undo path). */
+export async function deleteUserCreatedTransactions(
+  ids: string[],
+  userId: Types.ObjectId
+): Promise<number> {
+  const result = await TransactionModel.deleteMany({
+    _id: { $in: ids },
+    "createdBy.userId": userId,
+    source: { $ne: "dues" },
+  });
+  return result.deletedCount ?? 0;
 }
 
 /**

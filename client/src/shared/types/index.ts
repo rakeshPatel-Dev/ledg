@@ -80,6 +80,8 @@ export interface ImportResult {
   failed: number;
   spacesCreated: number;
   errors: ImportRowError[];
+  /** IDs of the rows that were created, used for the undo action. */
+  importedIds?: string[];
 }
 
 export interface SpaceInvitation {

@@ -113,3 +113,34 @@ export const listAllTransactions = asyncHandler(
     res.json({ success: true, data });
   }
 );
+
+const MAX_BULK_DELETE = 1000;
+
+export const bulkDeleteTransactions = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const ids: unknown = req.body?.ids;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new BadRequestError("No transaction ids provided");
+    }
+    if (ids.length > MAX_BULK_DELETE) {
+      throw new BadRequestError(
+        `You can undo at most ${MAX_BULK_DELETE} transactions at once`
+      );
+    }
+    if (
+      !ids.every(
+        (id): id is string => typeof id === "string" && OBJECT_ID_RE.test(id)
+      )
+    ) {
+      throw new BadRequestError("Invalid transaction id");
+    }
+
+    const result = await transactionService.deleteUserCreatedTransactions(
+      req.userId!,
+      ids
+    );
+
+    res.json({ success: true, data: result });
+  }
+);
