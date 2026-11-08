@@ -26,5 +26,8 @@
     "seed": "npm run sync-shared && npm --prefix server run seed --"
   },
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
 }
