@@ -115,8 +115,4 @@ export interface SpaceDoc {
   updatedAt: Date;
 }
 
-
-export const SpaceModel =
-  mongoose.models.Space || model<SpaceDoc>("Space", spaceSchema);
-
-
+export const SpaceModel = mongoose.models.Space || model<SpaceDoc>("Space", spaceSchema);

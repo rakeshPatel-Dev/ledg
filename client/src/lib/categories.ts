@@ -45,7 +45,13 @@ export const EXPENSE_CATEGORIES: CategoryMeta[] = [
   { name: "Travel", icon: Plane, color: "#0B7285", defaultsTo: "expense" },
   { name: "Education", icon: GraduationCap, color: "#CA8A04", defaultsTo: "expense" },
   { name: "Family", icon: Users, color: "#059669", defaultsTo: "expense" },
-  { name: "Due paid", icon: HandCoins, color: "#7C3AED", defaultsTo: "expense", internal: true },
+  {
+    name: "Due paid",
+    icon: HandCoins,
+    color: "#7C3AED",
+    defaultsTo: "expense",
+    internal: true,
+  },
   { name: "Other", icon: Coins, color: "#868E96", defaultsTo: "expense" },
 ];
 
@@ -58,7 +64,13 @@ export const INCOME_CATEGORIES: CategoryMeta[] = [
   { name: "Refund", icon: RotateCcw, color: "#EA580C", defaultsTo: "income" },
   { name: "Interest", icon: Landmark, color: "#4F46E5", defaultsTo: "income" },
   { name: "Rental", icon: Building, color: "#0891B2", defaultsTo: "income" },
-  { name: "Due received", icon: HandCoins, color: "#059669", defaultsTo: "income", internal: true },
+  {
+    name: "Due received",
+    icon: HandCoins,
+    color: "#059669",
+    defaultsTo: "income",
+    internal: true,
+  },
   { name: "Other", icon: Coins, color: "#64748B", defaultsTo: "income" },
 ];
 
@@ -85,10 +97,7 @@ export function getCategoryMeta(name: string, type?: TransactionType): CategoryM
     // Resolve within the type-specific list so duplicate names (e.g. "Other")
     // pick the correct expense/income metadata, falling back within the list.
     const list = getCategoriesByType(type);
-    return (
-      list.find((c) => c.name.toLowerCase() === lower) ??
-      list[list.length - 1]
-    );
+    return list.find((c) => c.name.toLowerCase() === lower) ?? list[list.length - 1];
   }
   const match = categoryMap.get(lower);
   if (match) return match;

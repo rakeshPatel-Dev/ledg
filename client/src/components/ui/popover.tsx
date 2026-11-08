@@ -22,11 +22,7 @@ export interface PopoverProps {
   children: React.ReactNode;
 }
 
-export function Popover({
-  open: openProp,
-  onOpenChange,
-  children,
-}: PopoverProps) {
+export function Popover({ open: openProp, onOpenChange, children }: PopoverProps) {
   const [openState, setOpenState] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -55,10 +51,7 @@ export function Popover({
     }
   }, [open, setOpen]);
 
-  const contextValue = React.useMemo(
-    () => ({ open, setOpen }),
-    [open, setOpen]
-  );
+  const contextValue = React.useMemo(() => ({ open, setOpen }), [open, setOpen]);
 
   return (
     <PopoverContext.Provider value={contextValue}>
@@ -111,7 +104,7 @@ export function PopoverContent({
   return (
     <div
       className={cn(
-        "absolute z-[100] max-w-[90vw] rounded-3xl border border-white/25 dark:border-white/10 bg-card/95 p-3 text-foreground shadow-2xl backdrop-blur-2xl backdrop-saturate-180 outline-none animate-in fade-in-0 zoom-in-95 duration-150",
+        "absolute z-[100] max-w-[90vw] rounded-3xl border border-border/70 bg-card p-3 text-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95 duration-150",
         side === "top" ? "bottom-full mb-2" : "top-full mt-2",
         align === "start" && "left-0",
         align === "center" && "left-1/2 -translate-x-1/2",

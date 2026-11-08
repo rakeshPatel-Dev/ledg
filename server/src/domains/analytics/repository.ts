@@ -121,10 +121,7 @@ function summaryGroupStage(): PipelineStage.FacetPipelineStage[] {
           $sum: {
             $cond: [
               {
-                $and: [
-                  { $eq: ["$type", "income"] },
-                  { $ne: ["$source", "dues"] },
-                ],
+                $and: [{ $eq: ["$type", "income"] }, { $ne: ["$source", "dues"] }],
               },
               "$amount",
               0,
@@ -135,10 +132,7 @@ function summaryGroupStage(): PipelineStage.FacetPipelineStage[] {
           $sum: {
             $cond: [
               {
-                $and: [
-                  { $eq: ["$type", "expense"] },
-                  { $ne: ["$source", "dues"] },
-                ],
+                $and: [{ $eq: ["$type", "expense"] }, { $ne: ["$source", "dues"] }],
               },
               "$amount",
               0,
@@ -237,9 +231,7 @@ function trendGroupStages(
   ];
 }
 
-function recentTransactionStages(
-  limit: number
-): PipelineStage.FacetPipelineStage[] {
+function recentTransactionStages(limit: number): PipelineStage.FacetPipelineStage[] {
   return [
     { $sort: { date: -1 } },
     { $limit: limit },

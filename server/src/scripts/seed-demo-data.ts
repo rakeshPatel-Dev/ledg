@@ -60,9 +60,7 @@ function zonedParts(date: Date): { y: number; m: number; d: number } {
 }
 
 function zonedBoundary(y: number, m: number, d: number, end = false): Date {
-  const ms = end
-    ? Date.UTC(y, m, d, 23, 59, 59, 999)
-    : Date.UTC(y, m, d, 0, 0, 0, 0);
+  const ms = end ? Date.UTC(y, m, d, 23, 59, 59, 999) : Date.UTC(y, m, d, 0, 0, 0, 0);
   return new Date(ms - TZ_OFFSET_MINUTES * 60_000);
 }
 
@@ -99,79 +97,545 @@ interface TxSeed {
 
 const CURRENT_MONTH_TX: TxSeed[] = [
   // Income
-  { space: "household", type: "income", category: "Salary", amount: 85000, note: "Monthly salary", paymentMethod: "bank_transfer", at: 0.0 },
-  { space: "household", type: "income", category: "Freelance", amount: 18000, note: "Client invoice", paymentMethod: "bank_transfer", at: 0.68 },
-  { space: "household", type: "income", category: "Investment", amount: 2400, note: "Dividend", paymentMethod: "bank_transfer", at: 0.80 },
-  { space: "hustle", type: "income", category: "Freelance", amount: 7500, note: "Logo project", paymentMethod: "wallet", at: 0.55 },
-  { space: "hustle", type: "income", category: "Business", amount: 12000, note: "Retainer", paymentMethod: "bank_transfer", at: 0.74 },
+  {
+    space: "household",
+    type: "income",
+    category: "Salary",
+    amount: 85000,
+    note: "Monthly salary",
+    paymentMethod: "bank_transfer",
+    at: 0.0,
+  },
+  {
+    space: "household",
+    type: "income",
+    category: "Freelance",
+    amount: 18000,
+    note: "Client invoice",
+    paymentMethod: "bank_transfer",
+    at: 0.68,
+  },
+  {
+    space: "household",
+    type: "income",
+    category: "Investment",
+    amount: 2400,
+    note: "Dividend",
+    paymentMethod: "bank_transfer",
+    at: 0.8,
+  },
+  {
+    space: "hustle",
+    type: "income",
+    category: "Freelance",
+    amount: 7500,
+    note: "Logo project",
+    paymentMethod: "wallet",
+    at: 0.55,
+  },
+  {
+    space: "hustle",
+    type: "income",
+    category: "Business",
+    amount: 12000,
+    note: "Retainer",
+    paymentMethod: "bank_transfer",
+    at: 0.74,
+  },
 
   // Household expenses
-  { space: "household", type: "expense", category: "Rent", amount: 25000, note: "Monthly rent", paymentMethod: "bank_transfer", at: 0.02 },
-  { space: "household", type: "expense", category: "Groceries", amount: 3200, note: "Bhatbhateni", paymentMethod: "card", at: 0.08 },
-  { space: "household", type: "expense", category: "Food", amount: 450, note: "Lunch at Thamel", paymentMethod: "wallet", at: 0.10 },
-  { space: "household", type: "expense", category: "Transport", amount: 250, note: "Pathao ride", paymentMethod: "wallet", at: 0.13 },
-  { space: "household", type: "expense", category: "Bills", amount: 1800, note: "Internet bill", paymentMethod: "bank_transfer", at: 0.16 },
-  { space: "household", type: "expense", category: "Bills", amount: 1200, note: "Electricity", paymentMethod: "wallet", at: 0.18 },
-  { space: "household", type: "expense", category: "Shopping", amount: 4500, note: "Daraz order", paymentMethod: "card", at: 0.22 },
-  { space: "household", type: "expense", category: "Entertainment", amount: 1500, note: "Netflix", paymentMethod: "card", at: 0.25 },
-  { space: "household", type: "expense", category: "Food", amount: 380, note: "Lunch at Thamel", paymentMethod: "cash", at: 0.28 },
-  { space: "household", type: "expense", category: "Groceries", amount: 2850, note: "Bhatbhateni", paymentMethod: "card", at: 0.32 },
-  { space: "household", type: "expense", category: "Transport", amount: 180, note: "Pathao ride", paymentMethod: "wallet", at: 0.35 },
-  { space: "household", type: "expense", category: "Health", amount: 900, note: "Pharmacy", paymentMethod: "cash", at: 0.40 },
-  { space: "household", type: "expense", category: "Education", amount: 2000, note: "Coursera", paymentMethod: "card", at: 0.44 },
-  { space: "household", type: "expense", category: "Family", amount: 5000, note: "Sent to parents", paymentMethod: "bank_transfer", at: 0.48 },
-  { space: "household", type: "expense", category: "Food", amount: 520, note: "Lunch at Thamel", paymentMethod: "wallet", at: 0.52 },
-  { space: "household", type: "expense", category: "Entertainment", amount: 1500, note: "Netflix", paymentMethod: "card", at: 0.56 },
-  { space: "household", type: "expense", category: "Groceries", amount: 2100, note: "Bhatbhateni", paymentMethod: "cash", at: 0.60 },
-  { space: "household", type: "expense", category: "Other", amount: 600, note: "Misc", paymentMethod: "cash", at: 0.64 },
-  { space: "household", type: "expense", category: "Shopping", amount: 2200, note: "New shoes", paymentMethod: "card", at: 0.72 },
-  { space: "household", type: "expense", category: "Transport", amount: 320, note: "Pathao ride", paymentMethod: "wallet", at: 0.76 },
-  { space: "household", type: "expense", category: "Food", amount: 700, note: "Dinner out", paymentMethod: "card", at: 0.84 },
-  { space: "household", type: "expense", category: "Bills", amount: 900, note: "Mobile top-up", paymentMethod: "wallet", at: 0.88 },
+  {
+    space: "household",
+    type: "expense",
+    category: "Rent",
+    amount: 25000,
+    note: "Monthly rent",
+    paymentMethod: "bank_transfer",
+    at: 0.02,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Groceries",
+    amount: 3200,
+    note: "Bhatbhateni",
+    paymentMethod: "card",
+    at: 0.08,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Food",
+    amount: 450,
+    note: "Lunch at Thamel",
+    paymentMethod: "wallet",
+    at: 0.1,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Transport",
+    amount: 250,
+    note: "Pathao ride",
+    paymentMethod: "wallet",
+    at: 0.13,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Bills",
+    amount: 1800,
+    note: "Internet bill",
+    paymentMethod: "bank_transfer",
+    at: 0.16,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Bills",
+    amount: 1200,
+    note: "Electricity",
+    paymentMethod: "wallet",
+    at: 0.18,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Shopping",
+    amount: 4500,
+    note: "Daraz order",
+    paymentMethod: "card",
+    at: 0.22,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Entertainment",
+    amount: 1500,
+    note: "Netflix",
+    paymentMethod: "card",
+    at: 0.25,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Food",
+    amount: 380,
+    note: "Lunch at Thamel",
+    paymentMethod: "cash",
+    at: 0.28,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Groceries",
+    amount: 2850,
+    note: "Bhatbhateni",
+    paymentMethod: "card",
+    at: 0.32,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Transport",
+    amount: 180,
+    note: "Pathao ride",
+    paymentMethod: "wallet",
+    at: 0.35,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Health",
+    amount: 900,
+    note: "Pharmacy",
+    paymentMethod: "cash",
+    at: 0.4,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Education",
+    amount: 2000,
+    note: "Coursera",
+    paymentMethod: "card",
+    at: 0.44,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Family",
+    amount: 5000,
+    note: "Sent to parents",
+    paymentMethod: "bank_transfer",
+    at: 0.48,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Food",
+    amount: 520,
+    note: "Lunch at Thamel",
+    paymentMethod: "wallet",
+    at: 0.52,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Entertainment",
+    amount: 1500,
+    note: "Netflix",
+    paymentMethod: "card",
+    at: 0.56,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Groceries",
+    amount: 2100,
+    note: "Bhatbhateni",
+    paymentMethod: "cash",
+    at: 0.6,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Other",
+    amount: 600,
+    note: "Misc",
+    paymentMethod: "cash",
+    at: 0.64,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Shopping",
+    amount: 2200,
+    note: "New shoes",
+    paymentMethod: "card",
+    at: 0.72,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Transport",
+    amount: 320,
+    note: "Pathao ride",
+    paymentMethod: "wallet",
+    at: 0.76,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Food",
+    amount: 700,
+    note: "Dinner out",
+    paymentMethod: "card",
+    at: 0.84,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Bills",
+    amount: 900,
+    note: "Mobile top-up",
+    paymentMethod: "wallet",
+    at: 0.88,
+  },
 
   // Trip
-  { space: "trip", type: "expense", category: "Travel", amount: 12000, note: "Pokhara flight", paymentMethod: "card", at: 0.20 },
-  { space: "trip", type: "expense", category: "Travel", amount: 3500, note: "Hotel booking", paymentMethod: "card", at: 0.30 },
-  { space: "trip", type: "expense", category: "Food", amount: 1800, note: "Lakeside dinner", paymentMethod: "cash", at: 0.42 },
-  { space: "trip", type: "expense", category: "Transport", amount: 1200, note: "Local taxi", paymentMethod: "cash", at: 0.50 },
+  {
+    space: "trip",
+    type: "expense",
+    category: "Travel",
+    amount: 12000,
+    note: "Pokhara flight",
+    paymentMethod: "card",
+    at: 0.2,
+  },
+  {
+    space: "trip",
+    type: "expense",
+    category: "Travel",
+    amount: 3500,
+    note: "Hotel booking",
+    paymentMethod: "card",
+    at: 0.3,
+  },
+  {
+    space: "trip",
+    type: "expense",
+    category: "Food",
+    amount: 1800,
+    note: "Lakeside dinner",
+    paymentMethod: "cash",
+    at: 0.42,
+  },
+  {
+    space: "trip",
+    type: "expense",
+    category: "Transport",
+    amount: 1200,
+    note: "Local taxi",
+    paymentMethod: "cash",
+    at: 0.5,
+  },
 
   // Side hustle
-  { space: "hustle", type: "expense", category: "Other", amount: 1500, note: "Adobe subscription", paymentMethod: "card", at: 0.62 },
+  {
+    space: "hustle",
+    type: "expense",
+    category: "Other",
+    amount: 1500,
+    note: "Adobe subscription",
+    paymentMethod: "card",
+    at: 0.62,
+  },
 ];
 
 const PREVIOUS_MONTH_TX: TxSeed[] = [
-  { space: "household", type: "income", category: "Salary", amount: 85000, note: "Monthly salary", paymentMethod: "bank_transfer", at: 0.0 },
-  { space: "household", type: "income", category: "Freelance", amount: 15000, note: "Client invoice", paymentMethod: "bank_transfer", at: 0.85 },
-  { space: "household", type: "expense", category: "Rent", amount: 22000, note: "Monthly rent", paymentMethod: "bank_transfer", at: 0.02 },
-  { space: "household", type: "expense", category: "Groceries", amount: 4000, note: "Bhatbhateni", paymentMethod: "card", at: 0.10 },
-  { space: "household", type: "expense", category: "Food", amount: 1200, note: "Lunch at Thamel", paymentMethod: "cash", at: 0.15 },
-  { space: "household", type: "expense", category: "Transport", amount: 600, note: "Pathao ride", paymentMethod: "wallet", at: 0.20 },
-  { space: "household", type: "expense", category: "Bills", amount: 2000, note: "Utilities", paymentMethod: "bank_transfer", at: 0.25 },
-  { space: "household", type: "expense", category: "Shopping", amount: 3000, note: "Dashain shopping", paymentMethod: "card", at: 0.35 },
-  { space: "household", type: "expense", category: "Entertainment", amount: 1500, note: "Netflix", paymentMethod: "card", at: 0.45 },
-  { space: "household", type: "expense", category: "Travel", amount: 4000, note: "Chitwan trip", paymentMethod: "card", at: 0.55 },
-  { space: "household", type: "expense", category: "Health", amount: 1500, note: "Dental checkup", paymentMethod: "cash", at: 0.65 },
-  { space: "household", type: "expense", category: "Family", amount: 5000, note: "Sent to parents", paymentMethod: "bank_transfer", at: 0.75 },
-  { space: "household", type: "expense", category: "Food", amount: 900, note: "Dinner out", paymentMethod: "wallet", at: 0.90 },
+  {
+    space: "household",
+    type: "income",
+    category: "Salary",
+    amount: 85000,
+    note: "Monthly salary",
+    paymentMethod: "bank_transfer",
+    at: 0.0,
+  },
+  {
+    space: "household",
+    type: "income",
+    category: "Freelance",
+    amount: 15000,
+    note: "Client invoice",
+    paymentMethod: "bank_transfer",
+    at: 0.85,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Rent",
+    amount: 22000,
+    note: "Monthly rent",
+    paymentMethod: "bank_transfer",
+    at: 0.02,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Groceries",
+    amount: 4000,
+    note: "Bhatbhateni",
+    paymentMethod: "card",
+    at: 0.1,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Food",
+    amount: 1200,
+    note: "Lunch at Thamel",
+    paymentMethod: "cash",
+    at: 0.15,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Transport",
+    amount: 600,
+    note: "Pathao ride",
+    paymentMethod: "wallet",
+    at: 0.2,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Bills",
+    amount: 2000,
+    note: "Utilities",
+    paymentMethod: "bank_transfer",
+    at: 0.25,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Shopping",
+    amount: 3000,
+    note: "Dashain shopping",
+    paymentMethod: "card",
+    at: 0.35,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Entertainment",
+    amount: 1500,
+    note: "Netflix",
+    paymentMethod: "card",
+    at: 0.45,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Travel",
+    amount: 4000,
+    note: "Chitwan trip",
+    paymentMethod: "card",
+    at: 0.55,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Health",
+    amount: 1500,
+    note: "Dental checkup",
+    paymentMethod: "cash",
+    at: 0.65,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Family",
+    amount: 5000,
+    note: "Sent to parents",
+    paymentMethod: "bank_transfer",
+    at: 0.75,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Food",
+    amount: 900,
+    note: "Dinner out",
+    paymentMethod: "wallet",
+    at: 0.9,
+  },
 ];
 
 const LAST_YEAR_TX: TxSeed[] = [
-  { space: "household", type: "income", category: "Salary", amount: 70000, note: "Monthly salary", paymentMethod: "bank_transfer", at: 0.0 },
-  { space: "household", type: "expense", category: "Rent", amount: 22000, note: "Monthly rent", paymentMethod: "bank_transfer", at: 0.05 },
-  { space: "household", type: "expense", category: "Groceries", amount: 3500, note: "Bhatbhateni", paymentMethod: "card", at: 0.30 },
-  { space: "household", type: "expense", category: "Travel", amount: 15000, note: "Everest base camp", paymentMethod: "card", at: 0.55 },
-  { space: "household", type: "expense", category: "Shopping", amount: 4000, note: "Winter clothes", paymentMethod: "card", at: 0.80 },
+  {
+    space: "household",
+    type: "income",
+    category: "Salary",
+    amount: 70000,
+    note: "Monthly salary",
+    paymentMethod: "bank_transfer",
+    at: 0.0,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Rent",
+    amount: 22000,
+    note: "Monthly rent",
+    paymentMethod: "bank_transfer",
+    at: 0.05,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Groceries",
+    amount: 3500,
+    note: "Bhatbhateni",
+    paymentMethod: "card",
+    at: 0.3,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Travel",
+    amount: 15000,
+    note: "Everest base camp",
+    paymentMethod: "card",
+    at: 0.55,
+  },
+  {
+    space: "household",
+    type: "expense",
+    category: "Shopping",
+    amount: 4000,
+    note: "Winter clothes",
+    paymentMethod: "card",
+    at: 0.8,
+  },
 ];
 
 // Anchored to "N days ago" instead of a fraction of the current month, so the
 // spending trend has several points even when the demo is seeded on the 1st.
 const RECENT_DAYS_TX: Array<{ daysAgo: number; seed: TxSeed }> = [
-  { daysAgo: 1, seed: { space: "household", type: "expense", category: "Food", amount: 480, note: "Lunch at Thamel", paymentMethod: "wallet", at: 1 } },
-  { daysAgo: 2, seed: { space: "household", type: "expense", category: "Transport", amount: 220, note: "Pathao ride", paymentMethod: "wallet", at: 1 } },
-  { daysAgo: 3, seed: { space: "household", type: "expense", category: "Groceries", amount: 2650, note: "Bhatbhateni", paymentMethod: "card", at: 1 } },
-  { daysAgo: 4, seed: { space: "household", type: "expense", category: "Bills", amount: 1100, note: "Water bill", paymentMethod: "bank_transfer", at: 1 } },
-  { daysAgo: 5, seed: { space: "hustle", type: "income", category: "Freelance", amount: 3500, note: "Landing page", paymentMethod: "bank_transfer", at: 1 } },
-  { daysAgo: 6, seed: { space: "trip", type: "expense", category: "Food", amount: 950, note: "Cafe lunch", paymentMethod: "cash", at: 1 } },
+  {
+    daysAgo: 1,
+    seed: {
+      space: "household",
+      type: "expense",
+      category: "Food",
+      amount: 480,
+      note: "Lunch at Thamel",
+      paymentMethod: "wallet",
+      at: 1,
+    },
+  },
+  {
+    daysAgo: 2,
+    seed: {
+      space: "household",
+      type: "expense",
+      category: "Transport",
+      amount: 220,
+      note: "Pathao ride",
+      paymentMethod: "wallet",
+      at: 1,
+    },
+  },
+  {
+    daysAgo: 3,
+    seed: {
+      space: "household",
+      type: "expense",
+      category: "Groceries",
+      amount: 2650,
+      note: "Bhatbhateni",
+      paymentMethod: "card",
+      at: 1,
+    },
+  },
+  {
+    daysAgo: 4,
+    seed: {
+      space: "household",
+      type: "expense",
+      category: "Bills",
+      amount: 1100,
+      note: "Water bill",
+      paymentMethod: "bank_transfer",
+      at: 1,
+    },
+  },
+  {
+    daysAgo: 5,
+    seed: {
+      space: "hustle",
+      type: "income",
+      category: "Freelance",
+      amount: 3500,
+      note: "Landing page",
+      paymentMethod: "bank_transfer",
+      at: 1,
+    },
+  },
+  {
+    daysAgo: 6,
+    seed: {
+      space: "trip",
+      type: "expense",
+      category: "Food",
+      amount: 950,
+      note: "Cafe lunch",
+      paymentMethod: "cash",
+      at: 1,
+    },
+  },
 ];
 
 // ─── Dues ────────────────────────────────────────────────────────────────────
@@ -187,11 +651,51 @@ interface DueSeed {
 }
 
 const DUE_SEEDS: DueSeed[] = [
-  { space: "household", direction: "lent", name: "Suman Shrestha", principal: 5000, note: "Bike repair", dueInDays: 14, settled: 0 },
-  { space: "household", direction: "lent", name: "Anita Gurung", principal: 12000, note: "Trip advance", dueInDays: 30, settled: 5000 },
-  { space: "household", direction: "borrowed", name: "Bikash Thapa", principal: 8000, note: "Rent help", dueInDays: 5, settled: 0 },
-  { space: "household", direction: "borrowed", name: "Ramesh KC", principal: 3000, note: "Short-term loan", dueInDays: -3, settled: 3000 },
-  { space: "hustle", direction: "lent", name: "Prakash Adhikari", principal: 2500, note: "Lunch split", dueInDays: -7, settled: 0 },
+  {
+    space: "household",
+    direction: "lent",
+    name: "Suman Shrestha",
+    principal: 5000,
+    note: "Bike repair",
+    dueInDays: 14,
+    settled: 0,
+  },
+  {
+    space: "household",
+    direction: "lent",
+    name: "Anita Gurung",
+    principal: 12000,
+    note: "Trip advance",
+    dueInDays: 30,
+    settled: 5000,
+  },
+  {
+    space: "household",
+    direction: "borrowed",
+    name: "Bikash Thapa",
+    principal: 8000,
+    note: "Rent help",
+    dueInDays: 5,
+    settled: 0,
+  },
+  {
+    space: "household",
+    direction: "borrowed",
+    name: "Ramesh KC",
+    principal: 3000,
+    note: "Short-term loan",
+    dueInDays: -3,
+    settled: 3000,
+  },
+  {
+    space: "hustle",
+    direction: "lent",
+    name: "Prakash Adhikari",
+    principal: 2500,
+    note: "Lunch split",
+    dueInDays: -7,
+    settled: 0,
+  },
 ];
 
 // ─── Seed ────────────────────────────────────────────────────────────────────
@@ -215,9 +719,7 @@ async function resolveUser() {
   const user = await UserModel.findOne().sort({ createdAt: -1 });
   if (user) return user;
 
-  throw new Error(
-    "No users found. Sign in to the app once, then re-run the seed."
-  );
+  throw new Error("No users found. Sign in to the app once, then re-run the seed.");
 }
 
 async function clearDemoData(ownerId: Types.ObjectId) {
@@ -227,9 +729,7 @@ async function clearDemoData(ownerId: Types.ObjectId) {
 
   if (spaceIds.length === 0) return;
 
-  const debts = await DebtModel.find({ spaceId: { $in: spaceIds } }).select(
-    "_id"
-  );
+  const debts = await DebtModel.find({ spaceId: { $in: spaceIds } }).select("_id");
   await DebtSettlementModel.deleteMany({
     debtId: { $in: debts.map((debt) => debt._id) },
   });
@@ -293,10 +793,7 @@ async function main() {
   const lastYearEnd = zonedBoundary(y - 1, m + 1, 1);
 
   const currentMonthAt = (fraction: number) =>
-    new Date(
-      monthStart.getTime() +
-        (now.getTime() - monthStart.getTime()) * fraction
-    );
+    new Date(monthStart.getTime() + (now.getTime() - monthStart.getTime()) * fraction);
 
   const previousMonthAt = (fraction: number) =>
     new Date(
@@ -330,12 +827,8 @@ async function main() {
   });
 
   const docs = [
-    ...CURRENT_MONTH_TX.map((seed) =>
-      toDoc(seed, currentMonthAt(seed.at))
-    ),
-    ...PREVIOUS_MONTH_TX.map((seed) =>
-      toDoc(seed, previousMonthAt(seed.at))
-    ),
+    ...CURRENT_MONTH_TX.map((seed) => toDoc(seed, currentMonthAt(seed.at))),
+    ...PREVIOUS_MONTH_TX.map((seed) => toDoc(seed, previousMonthAt(seed.at))),
     ...LAST_YEAR_TX.map((seed) => toDoc(seed, lastYearAt(seed.at))),
     ...RECENT_DAYS_TX.map(({ daysAgo, seed }) => toDoc(seed, addDays(now, -daysAgo))),
     // A couple dated right now so the "Today" period is populated too.

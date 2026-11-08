@@ -142,9 +142,7 @@
     {
       "id": "contact",
       "heading": "16. Contact",
-      "body": [
-        "If you have questions about these Terms, you can contact us at:"
-      ],
+      "body": ["If you have questions about these Terms, you can contact us at:"],
       "contactEmail": "devrakesh.tech@gmail.com"
     }
   ]

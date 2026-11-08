@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDownLeft, ArrowUpRight, TrendingUp, CreditCard, Landmark, Wallet as WalletIcon, Smartphone, Plus, ReceiptText } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  TrendingUp,
+  CreditCard,
+  Landmark,
+  Wallet as WalletIcon,
+  Smartphone,
+  Plus,
+  ReceiptText,
+} from "lucide-react";
 import { DEFAULT_CURRENCY, PAYMENT_LABELS, type Transaction } from "@ledg/shared";
 import { motion } from "framer-motion";
 
@@ -29,8 +39,7 @@ const CATEGORY_TABS: { value: CategoryTab; label: string }[] = [
 ];
 
 export default function DashboardPage() {
-  const { data, isPending, isError, error, refetch, isFetching } =
-    useDashboardSummary();
+  const { data, isPending, isError, error, refetch, isFetching } = useDashboardSummary();
   const { openCreate, openEdit } = useTransactionForm();
   const currency = DEFAULT_CURRENCY;
   const [tab, setTab] = useState<CategoryTab>("expense");
@@ -44,10 +53,7 @@ export default function DashboardPage() {
   const activeCategories = tab === "expense" ? byCategory : byIncomeCategory;
   const maxCategory = activeCategories[0]?.amount ?? 0;
 
-  const activePaymentTotal = byPaymentMethod.reduce(
-    (sum, item) => sum + item.amount,
-    0
-  );
+  const activePaymentTotal = byPaymentMethod.reduce((sum, item) => sum + item.amount, 0);
 
   const getPaymentIcon = (method: string) => {
     const methodLower = method.toLowerCase();
@@ -57,7 +63,11 @@ export default function DashboardPage() {
     if (methodLower.includes("bank") || methodLower.includes("transfer")) {
       return Landmark;
     }
-    if (methodLower.includes("upi") || methodLower.includes("phone") || methodLower.includes("mobile")) {
+    if (
+      methodLower.includes("upi") ||
+      methodLower.includes("phone") ||
+      methodLower.includes("mobile")
+    ) {
       return Smartphone;
     }
     return WalletIcon;
@@ -71,7 +81,11 @@ export default function DashboardPage() {
     if (methodLower.includes("bank") || methodLower.includes("transfer")) {
       return "bg-purple-500/10 text-purple-500";
     }
-    if (methodLower.includes("upi") || methodLower.includes("phone") || methodLower.includes("mobile")) {
+    if (
+      methodLower.includes("upi") ||
+      methodLower.includes("phone") ||
+      methodLower.includes("mobile")
+    ) {
       return "bg-emerald-500/10 text-emerald-500";
     }
     return "bg-amber-500/10 text-amber-500";
@@ -81,9 +95,7 @@ export default function DashboardPage() {
     !isPending &&
     !isError &&
     ((data?.transactionCount ?? 0) === 0 ||
-      (recent.length === 0 &&
-        byCategory.length === 0 &&
-        byIncomeCategory.length === 0));
+      (recent.length === 0 && byCategory.length === 0 && byIncomeCategory.length === 0));
 
   return (
     <FadeInStagger className="flex flex-col gap-6">
@@ -101,71 +113,71 @@ export default function DashboardPage() {
           />
         </FadeInItem>
       ) : (
-      <FadeInItem>
-        <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground dark:text-emerald-100">
-              Net saved
-            </p>
-            <span
-              className="rounded-full bg-black/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground backdrop-blur-md dark:bg-white/10 dark:text-emerald-50"
-              title="Loan principal and settlements are tracked separately"
-            >
-              Excl. loans
-            </span>
-          </div>
+        <FadeInItem>
+          <section className="-mx-5 rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-lg shadow-primary/20 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground dark:text-emerald-100">
+                Net saved
+              </p>
+              <span
+                className="rounded-full bg-black/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground backdrop-blur-md dark:bg-white/10 dark:text-emerald-50"
+                title="Loan principal and settlements are tracked separately"
+              >
+                Excl. loans
+              </span>
+            </div>
 
-          {isPending ? (
-            <Skeleton className="mt-2 h-12 w-48 bg-black/15 dark:bg-white/10" />
-          ) : (
-            <>
-              <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
-                {data ? formatCurrency(data.totalBalance, currency) : "—"}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground dark:text-emerald-100">
-                All-time income minus spending
-              </p>
-            </>
-          )}
+            {isPending ? (
+              <Skeleton className="mt-2 h-12 w-48 bg-black/15 dark:bg-white/10" />
+            ) : (
+              <>
+                <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums">
+                  {data ? formatCurrency(data.totalBalance, currency) : "—"}
+                </p>
+                <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground dark:text-emerald-100">
+                  All-time income minus spending
+                </p>
+              </>
+            )}
 
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <motion.div
-              whileHover={{ y: -2 }}
-              className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
-                <span className="flex size-6 items-center justify-center rounded-full bg-emerald-950/25 text-emerald-50 dark:bg-emerald-400/20 dark:text-emerald-200">
-                  <ArrowDownLeft className="size-3.5" />
-                </span>
-                Income
-              </div>
-              <p className="mt-2 text-lg font-extrabold tabular-nums">
-                {data ? formatCompact(data.monthIncome, currency) : "—"}
-              </p>
-              <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
-                this month
-              </p>
-            </motion.div>
-            <motion.div
-              whileHover={{ y: -2 }}
-              className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
-                <span className="flex size-6 items-center justify-center rounded-full bg-rose-950/25 text-rose-50 dark:bg-rose-400/20 dark:text-rose-200">
-                  <ArrowUpRight className="size-3.5" />
-                </span>
-                Spent
-              </div>
-              <p className="mt-2 text-lg font-extrabold tabular-nums">
-                {data ? formatCompact(data.monthSpend, currency) : "—"}
-              </p>
-              <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
-                this month
-              </p>
-            </motion.div>
-          </div>
-        </section>
-      </FadeInItem>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <motion.div
+                whileHover={{ y: -2 }}
+                className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-emerald-950/25 text-emerald-50 dark:bg-emerald-400/20 dark:text-emerald-200">
+                    <ArrowDownLeft className="size-3.5" />
+                  </span>
+                  Income
+                </div>
+                <p className="mt-2 text-lg font-extrabold tabular-nums">
+                  {data ? formatCompact(data.monthIncome, currency) : "—"}
+                </p>
+                <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
+                  this month
+                </p>
+              </motion.div>
+              <motion.div
+                whileHover={{ y: -2 }}
+                className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-rose-950/25 text-rose-50 dark:bg-rose-400/20 dark:text-rose-200">
+                    <ArrowUpRight className="size-3.5" />
+                  </span>
+                  Spent
+                </div>
+                <p className="mt-2 text-lg font-extrabold tabular-nums">
+                  {data ? formatCompact(data.monthSpend, currency) : "—"}
+                </p>
+                <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
+                  this month
+                </p>
+              </motion.div>
+            </div>
+          </section>
+        </FadeInItem>
       )}
 
       <FadeInItem>
@@ -257,7 +269,11 @@ export default function DashboardPage() {
                       : "Add your first expense to see it broken down here."
                   }
                   action={
-                    <Button onClick={() => openCreate()} variant="outline" className="rounded-full">
+                    <Button
+                      onClick={() => openCreate()}
+                      variant="outline"
+                      className="rounded-full"
+                    >
                       <Plus className="size-4 mr-2" />
                       Add {tab}
                     </Button>
@@ -284,10 +300,13 @@ export default function DashboardPage() {
               {byPaymentMethod.map((item) => {
                 const Icon = getPaymentIcon(item.method);
                 const colorClass = getPaymentColor(item.method);
-                const percentage = activePaymentTotal > 0
-                  ? Math.round((item.amount / activePaymentTotal) * 100)
-                  : 0;
-                const displayName = PAYMENT_LABELS[item.method as keyof typeof PAYMENT_LABELS] || item.method;
+                const percentage =
+                  activePaymentTotal > 0
+                    ? Math.round((item.amount / activePaymentTotal) * 100)
+                    : 0;
+                const displayName =
+                  PAYMENT_LABELS[item.method as keyof typeof PAYMENT_LABELS] ||
+                  item.method;
 
                 return (
                   <motion.div
@@ -296,16 +315,20 @@ export default function DashboardPage() {
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   >
-                    <Card className={cn(
-                      "flex flex-col gap-2 rounded-4xl p-4 transition-shadow hover:shadow-md",
-                      "border-border/50"
-                    )}>
+                    <Card
+                      className={cn(
+                        "flex flex-col gap-2 rounded-4xl p-4 transition-shadow hover:shadow-md",
+                        "border-border/50"
+                      )}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "flex size-9 items-center justify-center rounded-2xl",
-                            colorClass
-                          )}>
+                          <span
+                            className={cn(
+                              "flex size-9 items-center justify-center rounded-2xl",
+                              colorClass
+                            )}
+                          >
                             <Icon className="size-4.5" />
                           </span>
                           <span className="text-sm font-medium truncate">
@@ -384,9 +407,7 @@ export default function DashboardPage() {
               <TrendingUp className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-foreground">
-                Smart Insight
-              </p>
+              <p className="text-xs font-semibold text-foreground">Smart Insight</p>
               <p className="text-xs text-muted-foreground truncate">
                 {(data?.monthSpend ?? 0) > 0
                   ? `You spent ${formatCompact(data?.monthSpend ?? 0, currency)} this month across ${byCategory.length} categories.`

@@ -44,9 +44,7 @@ export function DeleteTransactionSheet({
       });
       toast.success("Transaction restored");
     } catch (error) {
-      toast.error(
-        getUserFacingError(error, "Couldn't restore the transaction.")
-      );
+      toast.error(getUserFacingError(error, "Couldn't restore the transaction."));
     }
   };
 
@@ -66,9 +64,7 @@ export function DeleteTransactionSheet({
         },
       });
     } catch (error) {
-      toast.error(
-        getUserFacingError(error, "Failed to delete the transaction.")
-      );
+      toast.error(getUserFacingError(error, "Failed to delete the transaction."));
     } finally {
       setIsPending(false);
     }

@@ -142,7 +142,6 @@ export interface NotificationPreference {
   memberChanges: boolean;
 }
 
-
 export interface DebtCounterparty {
   name: string;
   phone?: string;

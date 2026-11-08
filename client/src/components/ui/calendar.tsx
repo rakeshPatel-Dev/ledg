@@ -37,8 +37,10 @@ export function Calendar({
         day_button: cn(
           "flex size-9 items-center justify-center rounded-2xl p-0 font-medium text-xs text-foreground transition-all hover:bg-primary/20 hover:text-primary active:scale-95 outline-none"
         ),
-        selected: "bg-primary text-primary-foreground font-bold shadow-md shadow-primary/30 rounded-2xl",
-        today: "bg-accent/80 text-foreground font-bold border border-primary/50 rounded-2xl",
+        selected:
+          "bg-primary text-primary-foreground font-bold shadow-md shadow-primary/30 rounded-2xl",
+        today:
+          "bg-accent/80 text-foreground font-bold border border-primary/50 rounded-2xl",
         outside: "text-muted-foreground/40 opacity-50",
         disabled: "text-muted-foreground/30 opacity-30 cursor-not-allowed",
         ...classNames,

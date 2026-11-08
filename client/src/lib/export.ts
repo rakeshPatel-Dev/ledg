@@ -17,7 +17,12 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 function escapeCSV(field: unknown): string {
   if (field === null || field === undefined) return "";
   const str = String(field);
-  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+  if (
+    str.includes(",") ||
+    str.includes('"') ||
+    str.includes("\n") ||
+    str.includes("\r")
+  ) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;

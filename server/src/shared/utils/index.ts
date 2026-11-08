@@ -1,7 +1,4 @@
-export function formatCurrency(
-  amount: number,
-  currency = "NPR"
-): string {
+export function formatCurrency(amount: number, currency = "NPR"): string {
   if (currency === "NPR") {
     const formattedNum = new Intl.NumberFormat("en-NP", {
       maximumFractionDigits: amount % 1 === 0 ? 0 : 2,

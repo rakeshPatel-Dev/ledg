@@ -169,10 +169,7 @@ describe("getDashboardData", () => {
       }),
     ]);
 
-    const data = await getDashboardData(
-      [spaceId],
-      new Date("2026-11-01T00:00:00.000Z")
-    );
+    const data = await getDashboardData([spaceId], new Date("2026-11-01T00:00:00.000Z"));
 
     expect(data.allTime.totalIncome).toBe(5000);
     expect(data.allTime.totalExpense).toBe(1200);
@@ -182,15 +179,14 @@ describe("getDashboardData", () => {
     expect(data.expenseCategories).toEqual([
       { category: "Food", amount: 1200, count: 1 },
     ]);
-    expect(data.paymentMethods).toEqual([
-      { method: "card", amount: 1200, count: 1 },
-    ]);
+    expect(data.paymentMethods).toEqual([{ method: "card", amount: 1200, count: 1 }]);
 
     // Loan movements stay visible in history and keep their source marker so
     // the UI can label and protect them.
     expect(data.recentTransactions).toHaveLength(3);
-    expect(
-      data.recentTransactions.find((t) => t.source === "dues")
-    ).toMatchObject({ category: "Due paid", amount: 300 });
+    expect(data.recentTransactions.find((t) => t.source === "dues")).toMatchObject({
+      category: "Due paid",
+      amount: 300,
+    });
   });
 });

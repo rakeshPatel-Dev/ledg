@@ -96,16 +96,12 @@ export function NotificationCenter() {
   const navigate = useNavigate();
 
   const notificationsQuery = useNotifications(1, 30);
-  const { data: notificationData, isLoading: loadingNotifications } =
-    notificationsQuery;
+  const { data: notificationData, isLoading: loadingNotifications } = notificationsQuery;
   const invitationsQuery = usePendingInvitations();
-  const { data: pendingInvitations, isLoading: loadingInvitations } =
-    invitationsQuery;
+  const { data: pendingInvitations, isLoading: loadingInvitations } = invitationsQuery;
 
-  const notificationsError =
-    notificationsQuery.isError || invitationsQuery.isError;
-  const notificationsErrorDetail =
-    notificationsQuery.error ?? invitationsQuery.error;
+  const notificationsError = notificationsQuery.isError || invitationsQuery.isError;
+  const notificationsErrorDetail = notificationsQuery.error ?? invitationsQuery.error;
   const refetchNotifications = () => {
     void notificationsQuery.refetch();
     void invitationsQuery.refetch();
@@ -128,7 +124,9 @@ export function NotificationCenter() {
   // notification (for example, invites sent before the account existed).
   const unreadInviteNotificationIds = new Set(
     notifications
-      .filter((notification) => !notification.read && notification.type === "space_invite")
+      .filter(
+        (notification) => !notification.read && notification.type === "space_invite"
+      )
       .map((notification) => String(notification.data?.invitationId ?? ""))
       .filter(Boolean)
   );
@@ -197,7 +195,7 @@ export function NotificationCenter() {
         type="button"
         aria-label={`Notifications (${notificationData?.unreadCount ?? 0} unread, ${pendingInvitations?.length ?? 0} pending invitations)`}
         onClick={() => setOpen(true)}
-        className="relative flex size-11 items-center justify-center rounded-full bg-card/80 backdrop-blur-md text-muted-foreground shadow-xs transition-all hover:bg-card hover:text-foreground active:scale-95 border border-white/20 dark:border-white/10"
+        className="relative flex size-11 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground shadow-elev-raised transition-[box-shadow,background-color,color] duration-200 hover:bg-muted/60 hover:text-foreground hover:shadow-md active:scale-95"
       >
         <Bell className="size-4.5" />
         {unreadCount > 0 && (
@@ -332,7 +330,8 @@ export function NotificationCenter() {
                 onRetry={refetchNotifications}
                 isRetrying={fetchingNotifications}
               />
-            ) : notifications.length === 0 && (!pendingInvitations || pendingInvitations.length === 0) ? (
+            ) : notifications.length === 0 &&
+              (!pendingInvitations || pendingInvitations.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
                 <div className="flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
                   <Inbox className="size-6" />

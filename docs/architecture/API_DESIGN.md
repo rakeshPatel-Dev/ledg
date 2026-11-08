@@ -19,16 +19,16 @@ Backend validates JWT.
 Success
 
 {
-    success: true,
-    data: {}
+success: true,
+data: {}
 }
 
 Failure
 
 {
-    success: false,
-    message: "",
-    errors: []
+success: false,
+message: "",
+errors: []
 }
 
 ---
@@ -195,9 +195,9 @@ Spent 350 on coffee
 Returns
 
 {
-    amount:350,
-    category:"Food",
-    account:"Cash"
+amount:350,
+category:"Food",
+account:"Cash"
 }
 
 ---

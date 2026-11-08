@@ -41,10 +41,7 @@ export function RecurringCard({ groups }: RecurringCardProps) {
           {groups.slice(0, 5).map((group) => {
             const meta = getCategoryMeta(group.category);
             return (
-              <div
-                key={group.key}
-                className="flex items-center gap-3 px-4 py-3"
-              >
+              <div key={group.key} className="flex items-center gap-3 px-4 py-3">
                 <span
                   className="flex size-9 shrink-0 items-center justify-center rounded-2xl"
                   style={{

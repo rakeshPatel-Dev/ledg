@@ -93,8 +93,14 @@ export default function DuesPage() {
 
   const queryParams = useMemo(() => {
     if (activeTab === "settled") return { status: "settled" as DebtStatus, pageSize: 50 };
-    if (activeTab === "lent") return { direction: "lent" as DebtDirection, status: "all" as const, pageSize: 50 };
-    if (activeTab === "borrowed") return { direction: "borrowed" as DebtDirection, status: "all" as const, pageSize: 50 };
+    if (activeTab === "lent")
+      return { direction: "lent" as DebtDirection, status: "all" as const, pageSize: 50 };
+    if (activeTab === "borrowed")
+      return {
+        direction: "borrowed" as DebtDirection,
+        status: "all" as const,
+        pageSize: 50,
+      };
     return { pageSize: 50 };
   }, [activeTab]);
 
@@ -110,8 +116,10 @@ export default function DuesPage() {
 
   const filteredDues = useMemo(() => {
     let list = duesResult?.items ?? [];
-    if (activeTab === "lent") list = list.filter((d) => d.direction === "lent" && d.status !== "settled");
-    else if (activeTab === "borrowed") list = list.filter((d) => d.direction === "borrowed" && d.status !== "settled");
+    if (activeTab === "lent")
+      list = list.filter((d) => d.direction === "lent" && d.status !== "settled");
+    else if (activeTab === "borrowed")
+      list = list.filter((d) => d.direction === "borrowed" && d.status !== "settled");
     else if (activeTab === "all") list = list.filter((d) => d.status !== "settled");
 
     if (!search.trim()) return list;
@@ -125,12 +133,29 @@ export default function DuesPage() {
   }, [duesResult?.items, activeTab, search]);
 
   const groupedByPerson = useMemo(() => {
-    const map = new Map<string, { name: string; phone?: string; dues: Debt[]; totalLent: number; totalBorrowed: number; net: number }>();
+    const map = new Map<
+      string,
+      {
+        name: string;
+        phone?: string;
+        dues: Debt[];
+        totalLent: number;
+        totalBorrowed: number;
+        net: number;
+      }
+    >();
     for (const due of filteredDues) {
       const key = due.counterparty.name.toLowerCase().trim();
       let group = map.get(key);
       if (!group) {
-        group = { name: due.counterparty.name, phone: due.counterparty.phone ?? undefined, dues: [], totalLent: 0, totalBorrowed: 0, net: 0 };
+        group = {
+          name: due.counterparty.name,
+          phone: due.counterparty.phone ?? undefined,
+          dues: [],
+          totalLent: 0,
+          totalBorrowed: 0,
+          net: 0,
+        };
         map.set(key, group);
       }
       group.dues.push(due);
@@ -143,7 +168,10 @@ export default function DuesPage() {
   }, [filteredDues]);
 
   const togglePersonExpand = (name: string) => {
-    setExpandedPeople((prev) => ({ ...prev, [name.toLowerCase()]: !prev[name.toLowerCase()] }));
+    setExpandedPeople((prev) => ({
+      ...prev,
+      [name.toLowerCase()]: !prev[name.toLowerCase()],
+    }));
   };
 
   const handleOpenCreate = (dir: DebtDirection = "lent", person = "") => {
@@ -270,35 +298,35 @@ export default function DuesPage() {
 
           {/* Stats row */}
           {!summaryError && (
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-emerald-950/25 dark:bg-emerald-400/20">
-                  <ArrowUpRight className="size-3 text-emerald-50 dark:text-emerald-200" />
-                </span>
-                <span className="text-[0.68rem] font-semibold text-primary-foreground uppercase tracking-wider dark:text-emerald-50">
-                  Owed to you
-                </span>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-emerald-950/25 dark:bg-emerald-400/20">
+                    <ArrowUpRight className="size-3 text-emerald-50 dark:text-emerald-200" />
+                  </span>
+                  <span className="text-[0.68rem] font-semibold text-primary-foreground uppercase tracking-wider dark:text-emerald-50">
+                    Owed to you
+                  </span>
+                </div>
+                <p className="text-xl font-extrabold tabular-nums leading-none">
+                  {formatCurrency(duesSummary?.owedToMe ?? 0)}
+                </p>
               </div>
-              <p className="text-xl font-extrabold tabular-nums leading-none">
-                {formatCurrency(duesSummary?.owedToMe ?? 0)}
-              </p>
-            </div>
 
-            <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-amber-950/25 dark:bg-amber-400/20">
-                  <ArrowDownLeft className="size-3 text-amber-50 dark:text-amber-200" />
-                </span>
-                <span className="text-[0.68rem] font-semibold text-primary-foreground uppercase tracking-wider dark:text-emerald-50">
-                  You owe
-                </span>
+              <div className="rounded-3xl bg-black/10 p-3.5 backdrop-blur-md dark:bg-white/10">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-amber-950/25 dark:bg-amber-400/20">
+                    <ArrowDownLeft className="size-3 text-amber-50 dark:text-amber-200" />
+                  </span>
+                  <span className="text-[0.68rem] font-semibold text-primary-foreground uppercase tracking-wider dark:text-emerald-50">
+                    You owe
+                  </span>
+                </div>
+                <p className="text-xl font-extrabold tabular-nums leading-none">
+                  {formatCurrency(duesSummary?.iOwe ?? 0)}
+                </p>
               </div>
-              <p className="text-xl font-extrabold tabular-nums leading-none">
-                {formatCurrency(duesSummary?.iOwe ?? 0)}
-              </p>
             </div>
-          </div>
           )}
 
           {/* Overdue banner */}
@@ -311,7 +339,8 @@ export default function DuesPage() {
               >
                 <AlertTriangle className="size-4 text-red-50 shrink-0 dark:text-red-100" />
                 <span className="text-xs font-semibold text-red-50 dark:text-red-100">
-                  {overdueCount} due{overdueCount > 1 ? "s are" : " is"} overdue · check now
+                  {overdueCount} due{overdueCount > 1 ? "s are" : " is"} overdue · check
+                  now
                 </span>
               </motion.div>
             )}
@@ -338,10 +367,14 @@ export default function DuesPage() {
                 >
                   {tab.label}
                   {tab.value === "all" && (duesSummary?.activeCount ?? 0) > 0 && (
-                    <span className={cn(
-                      "ml-1 inline-flex items-center justify-center rounded-full text-[0.55rem] font-bold min-w-4 h-4 px-0.5",
-                      activeTab === "all" ? "bg-black/20 text-primary-foreground" : "bg-muted text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "ml-1 inline-flex items-center justify-center rounded-full text-[0.55rem] font-bold min-w-4 h-4 px-0.5",
+                        activeTab === "all"
+                          ? "bg-black/20 text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
                       {duesSummary!.activeCount}
                     </span>
                   )}
@@ -358,7 +391,9 @@ export default function DuesPage() {
                 aria-pressed={viewMode === "person"}
                 className={cn(
                   "relative flex size-10 items-center justify-center rounded-4xl transition-all after:absolute after:-inset-0.5 after:content-['']",
-                  viewMode === "person" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  viewMode === "person"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Users className="size-4" />
@@ -370,7 +405,9 @@ export default function DuesPage() {
                 aria-pressed={viewMode === "list"}
                 className={cn(
                   "relative flex size-10 items-center justify-center rounded-4xl transition-all after:absolute after:-inset-0.5 after:content-['']",
-                  viewMode === "list" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  viewMode === "list"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <LayoutList className="size-4" />
@@ -425,16 +462,14 @@ export default function DuesPage() {
                         onClick={() => handleOpenCreate("lent")}
                         className="gap-2 h-10 rounded-full font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
-                        <ArrowUpRight className="size-4" />
-                        I Lent
+                        <ArrowUpRight className="size-4" />I Lent
                       </Button>
                       <Button
                         onClick={() => handleOpenCreate("borrowed")}
                         variant="outline"
                         className="gap-2 h-10 rounded-full font-semibold border-amber-500/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                       >
-                        <ArrowDownLeft className="size-4" />
-                        I Borrowed
+                        <ArrowDownLeft className="size-4" />I Borrowed
                       </Button>
                     </div>
                   ) : undefined
@@ -448,7 +483,10 @@ export default function DuesPage() {
               const isExpanded = expandedPeople[group.name.toLowerCase()] ?? true;
               const avatarColor = getAvatarColor(group.name);
               const overdueInGroup = group.dues.filter(
-                (d) => d.status !== "settled" && d.dueDate && new Date(d.dueDate).getTime() < new Date().setHours(0, 0, 0, 0)
+                (d) =>
+                  d.status !== "settled" &&
+                  d.dueDate &&
+                  new Date(d.dueDate).getTime() < new Date().setHours(0, 0, 0, 0)
               ).length;
 
               return (
@@ -461,10 +499,12 @@ export default function DuesPage() {
                       className="flex w-full items-center gap-3 p-4 text-left transition-colors active:bg-muted/30"
                     >
                       {/* Avatar */}
-                      <div className={cn(
-                        "relative flex size-11 shrink-0 items-center justify-center rounded-4xl bg-linear-to-br text-white font-bold text-sm shadow-sm",
-                        avatarColor
-                      )}>
+                      <div
+                        className={cn(
+                          "relative flex size-11 shrink-0 items-center justify-center rounded-4xl bg-linear-to-br text-white font-bold text-sm shadow-sm",
+                          avatarColor
+                        )}
+                      >
                         {getInitials(group.name)}
                         {overdueInGroup > 0 && (
                           <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[0.5rem] font-bold text-white">
@@ -476,7 +516,9 @@ export default function DuesPage() {
                       {/* Name & count */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-foreground text-sm leading-tight truncate">{group.name}</h3>
+                          <h3 className="font-bold text-foreground text-sm leading-tight truncate">
+                            {group.name}
+                          </h3>
                           {group.phone && (
                             <a
                               href={`tel:${group.phone}`}
@@ -490,7 +532,9 @@ export default function DuesPage() {
                         <p className="text-[0.7rem] text-muted-foreground mt-0.5">
                           {group.dues.length} {group.dues.length === 1 ? "due" : "dues"}
                           {overdueInGroup > 0 && (
-                            <span className="ml-1 text-destructive font-semibold">· {overdueInGroup} overdue</span>
+                            <span className="ml-1 text-destructive font-semibold">
+                              · {overdueInGroup} overdue
+                            </span>
                           )}
                         </p>
                       </div>
@@ -498,17 +542,33 @@ export default function DuesPage() {
                       {/* Net amount */}
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
-                          <div className={cn(
-                            "text-base font-black tabular-nums leading-tight",
-                            group.net > 0 ? "text-emerald-600 dark:text-emerald-400" : group.net < 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
-                          )}>
-                            {group.net > 0 ? "+" : ""}{formatCurrency(group.net)}
+                          <div
+                            className={cn(
+                              "text-base font-black tabular-nums leading-tight",
+                              group.net > 0
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : group.net < 0
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : "text-muted-foreground"
+                            )}
+                          >
+                            {group.net > 0 ? "+" : ""}
+                            {formatCurrency(group.net)}
                           </div>
                           <span className="text-[0.6rem] text-muted-foreground leading-tight">
-                            {group.net > 0 ? "owes you" : group.net < 0 ? "you owe" : "settled"}
+                            {group.net > 0
+                              ? "owes you"
+                              : group.net < 0
+                                ? "you owe"
+                                : "settled"}
                           </span>
                         </div>
-                        <ChevronDown className={cn("size-4 text-muted-foreground/60 transition-transform duration-200 shrink-0", isExpanded && "rotate-180")} />
+                        <ChevronDown
+                          className={cn(
+                            "size-4 text-muted-foreground/60 transition-transform duration-200 shrink-0",
+                            isExpanded && "rotate-180"
+                          )}
+                        />
                       </div>
                     </button>
 
@@ -580,12 +640,21 @@ export default function DuesPage() {
 }
 
 // ── Due row sub-component ──
-function DueRow({ due, onSettle, onDetail }: { due: Debt; onSettle: () => void; onDetail: () => void }) {
+function DueRow({
+  due,
+  onSettle,
+  onDetail,
+}: {
+  due: Debt;
+  onSettle: () => void;
+  onDetail: () => void;
+}) {
   const isLent = due.direction === "lent";
   const remaining = Math.max(0, due.principal - (due.settledAmount ?? 0));
-  const progressPercent = due.principal > 0
-    ? Math.min(100, Math.round(((due.settledAmount ?? 0) / due.principal) * 100))
-    : 0;
+  const progressPercent =
+    due.principal > 0
+      ? Math.min(100, Math.round(((due.settledAmount ?? 0) / due.principal) * 100))
+      : 0;
 
   const isOverdue =
     due.status !== "settled" &&
@@ -604,14 +673,16 @@ function DueRow({ due, onSettle, onDetail }: { due: Debt; onSettle: () => void; 
       onClick={onDetail}
     >
       {/* Direction icon */}
-      <div className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-4xl",
-        isSettled
-          ? "bg-muted/60 text-muted-foreground"
-          : isLent
-            ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
-            : "bg-amber-500/12 text-amber-600 dark:text-amber-400"
-      )}>
+      <div
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-4xl",
+          isSettled
+            ? "bg-muted/60 text-muted-foreground"
+            : isLent
+              ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
+              : "bg-amber-500/12 text-amber-600 dark:text-amber-400"
+        )}
+      >
         {isSettled ? (
           <CheckCircle2 className="size-4.5" />
         ) : isLent ? (
@@ -624,16 +695,29 @@ function DueRow({ due, onSettle, onDetail }: { due: Debt; onSettle: () => void; 
       {/* Info */}
       <div className="flex flex-col gap-0.5 flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-sm font-semibold text-foreground truncate">{due.counterparty.name}</span>
+          <span className="text-sm font-semibold text-foreground truncate">
+            {due.counterparty.name}
+          </span>
           {due.status === "partially_settled" && (
-            <Badge variant="secondary" className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full shrink-0">partial</Badge>
+            <Badge
+              variant="secondary"
+              className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full shrink-0"
+            >
+              partial
+            </Badge>
           )}
           {isSettled && (
-            <Badge variant="default" className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full shrink-0 bg-emerald-600">settled</Badge>
+            <Badge
+              variant="default"
+              className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full shrink-0 bg-emerald-600"
+            >
+              settled
+            </Badge>
           )}
           {isOverdue && (
             <span className="inline-flex items-center gap-0.5 text-[0.55rem] font-bold text-destructive bg-destructive/10 rounded-full px-1.5 py-0.5 shrink-0">
-              <AlertTriangle className="size-2.5" />{daysOverdue}d late
+              <AlertTriangle className="size-2.5" />
+              {daysOverdue}d late
             </span>
           )}
         </div>
@@ -659,7 +743,9 @@ function DueRow({ due, onSettle, onDetail }: { due: Debt; onSettle: () => void; 
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <span className="text-[0.6rem] text-muted-foreground tabular-nums">{progressPercent}%</span>
+            <span className="text-[0.6rem] text-muted-foreground tabular-nums">
+              {progressPercent}%
+            </span>
           </div>
         )}
       </div>
@@ -667,10 +753,12 @@ function DueRow({ due, onSettle, onDetail }: { due: Debt; onSettle: () => void; 
       {/* Amount + settle button */}
       <div className="flex items-center gap-2 shrink-0">
         <div className="text-right">
-          <div className={cn(
-            "text-sm font-bold tabular-nums",
-            isSettled ? "text-muted-foreground line-through" : "text-foreground"
-          )}>
+          <div
+            className={cn(
+              "text-sm font-bold tabular-nums",
+              isSettled ? "text-muted-foreground line-through" : "text-foreground"
+            )}
+          >
             {formatCurrency(remaining)}
           </div>
           {(due.settledAmount ?? 0) > 0 && !isSettled && (

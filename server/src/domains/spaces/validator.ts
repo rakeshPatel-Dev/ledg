@@ -12,9 +12,7 @@ export function validateCreateSpace(input: unknown) {
   const result = spaceSchema.safeParse(input);
 
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message || "Invalid space payload"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message || "Invalid space payload");
   }
 
   return result.data;
@@ -24,9 +22,7 @@ export function validateUpdateSpace(input: unknown) {
   const result = spaceUpdateSchema.safeParse(input);
 
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message || "Invalid space payload"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message || "Invalid space payload");
   }
 
   return result.data;
@@ -55,9 +51,7 @@ export function validateMemberInvite(input: unknown) {
 export function validateTransferOwnership(input: unknown) {
   const result = spaceTransferOwnershipSchema.safeParse(input);
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message || "Invalid user id"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message || "Invalid user id");
   }
   return result.data;
 }

@@ -46,10 +46,10 @@ export function TransactionItem({
   const isSharedSpace = Boolean(space?.isShared);
   const isOtherCreator = Boolean(
     showAttribution &&
-      isSharedSpace &&
-      creator?.userId &&
-      user?.userId &&
-      creator.userId !== user.userId
+    isSharedSpace &&
+    creator?.userId &&
+    user?.userId &&
+    creator.userId !== user.userId
   );
   const creatorIsOwner = Boolean(space && creator && space.ownerId === creator.userId);
 
@@ -65,7 +65,7 @@ export function TransactionItem({
         }
       }}
       className={cn(
-        "flex w-full items-center gap-3.5 rounded-3xl border border-white/20 dark:border-white/10 bg-card/75 px-3 py-3 text-left shadow-xs backdrop-blur-md transition-all hover:bg-card/90 hover:shadow-md cursor-pointer select-none",
+        "flex w-full items-center gap-3.5 rounded-3xl border border-border/70 bg-card px-3 py-3 text-left shadow-sm transition-[box-shadow,border-color,background-color] duration-200 hover:border-border hover:shadow-md cursor-pointer select-none",
         className
       )}
     >
@@ -108,7 +108,6 @@ export function TransactionItem({
           )}
         </span>
       </span>
-
 
       <span className="flex shrink-0 flex-col items-end gap-0.5">
         <span

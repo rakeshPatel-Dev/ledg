@@ -154,7 +154,14 @@ export default function SignInPage() {
             disabled={loading}
             className="h-12 w-full text-base font-semibold shadow-md"
           >
-            {loading ? <Loader2 className="size-4 animate-spin" /> : <><LogIn className="size-4 mr-2" />Sign in</>}
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                <LogIn className="size-4 mr-2" />
+                Sign in
+              </>
+            )}
           </Button>
         </form>
 
@@ -182,7 +189,11 @@ export default function SignInPage() {
 
         <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link to="/sign-up" state={location.state} className="font-semibold text-primary hover:underline">
+          <Link
+            to="/sign-up"
+            state={location.state}
+            className="font-semibold text-primary hover:underline"
+          >
             Create one
           </Link>
         </p>
@@ -211,7 +222,8 @@ export default function SignInPage() {
               Your email <strong>{email}</strong> hasn't been verified yet.
             </p>
             <p className="mt-1 text-center text-sm font-medium text-muted-foreground">
-              We've sent a verification link. Check your inbox and click the link to activate your account.
+              We've sent a verification link. Check your inbox and click the link to
+              activate your account.
             </p>
             <Button
               type="button"

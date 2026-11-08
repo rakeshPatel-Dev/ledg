@@ -8,10 +8,7 @@ import {
   type NotificationPreferenceDoc,
 } from "./model.js";
 import { renderNotification, TRANSACTION_ACTIVITY_MODES } from "../../shared/index.js";
-import type {
-  NotificationType,
-  TransactionActivityMode,
-} from "../../shared/index.js";
+import type { NotificationType, TransactionActivityMode } from "../../shared/index.js";
 import { NotFoundError, BadRequestError } from "../../common/errors/index.js";
 import { redis } from "../../config/redis.js";
 import { logger } from "../../config/logger.js";
@@ -35,10 +32,7 @@ function spamKey(actorId: string, spaceId: string): string {
   return `${SPAM_KEY_PREFIX}${actorId}:${spaceId}`;
 }
 
-async function isSpamSuppressed(
-  actorId: string,
-  spaceId?: string
-): Promise<boolean> {
+async function isSpamSuppressed(actorId: string, spaceId?: string): Promise<boolean> {
   if (!spaceId) return false;
   const key = spamKey(actorId, spaceId);
   const now = Date.now();
@@ -80,9 +74,7 @@ async function isSpamSuppressed(
 
 // Per-process fallback (local dev, or when Upstash is unreachable).
 function localSpamCheck(key: string, now: number): boolean {
-  const timestamps = (spamWindow.get(key) || []).filter(
-    (t) => now - t < SPAM_WINDOW_MS
-  );
+  const timestamps = (spamWindow.get(key) || []).filter((t) => now - t < SPAM_WINDOW_MS);
 
   if (timestamps.length >= SPAM_THRESHOLD) {
     return true;
@@ -191,11 +183,7 @@ export async function notify({
   title,
   message,
 }: NotifyParams): Promise<NotificationDoc | null> {
-  const template = renderNotification(
-    type,
-    data as Record<string, unknown>,
-    variant
-  );
+  const template = renderNotification(type, data as Record<string, unknown>, variant);
   // Check recipient preferences
   const prefs = await getPreferences(userId);
 
@@ -205,7 +193,11 @@ export async function notify({
     }
     // Spam suppression only applies to the bulk "added" path; edits are
     // user-initiated and far less frequent.
-    if (type === "transaction_added" && data.actorId && (await isSpamSuppressed(data.actorId, data.spaceId))) {
+    if (
+      type === "transaction_added" &&
+      data.actorId &&
+      (await isSpamSuppressed(data.actorId, data.spaceId))
+    ) {
       return null;
     }
   }
@@ -274,11 +266,7 @@ export async function notifyMembers({
   );
 }
 
-export async function listNotifications(
-  userId: Types.ObjectId,
-  page = 1,
-  pageSize = 20
-) {
+export async function listNotifications(userId: Types.ObjectId, page = 1, pageSize = 20) {
   const skip = (page - 1) * pageSize;
 
   const [items, total, unreadCount] = await Promise.all([
@@ -333,9 +321,7 @@ export async function markAllAsRead(
   return { updatedCount: result.modifiedCount };
 }
 
-function toNotificationDto(
-  doc: Record<string, unknown>
-): NotificationDoc {
+function toNotificationDto(doc: Record<string, unknown>): NotificationDoc {
   return {
     ...doc,
     id: String(doc._id),

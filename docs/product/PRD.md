@@ -673,12 +673,12 @@ Let a space owner invite other users into a specific space so they can view and 
 
 ## Roles
 
-| Role | Can view | Can add/edit transactions | Can manage members | Can delete space |
-|------|----------|---------------------------|---------------------|------------------|
-| Owner | Yes | Yes | Yes | Yes |
-| Admin | Yes | Yes | Yes | No |
-| Member | Yes | Yes | No | No |
-| Viewer | Yes | No | No | No |
+| Role   | Can view | Can add/edit transactions | Can manage members | Can delete space |
+| ------ | -------- | ------------------------- | ------------------ | ---------------- |
+| Owner  | Yes      | Yes                       | Yes                | Yes              |
+| Admin  | Yes      | Yes                       | Yes                | No               |
+| Member | Yes      | Yes                       | No                 | No               |
+| Viewer | Yes      | No                        | No                 | No               |
 
 ## Data Model
 
@@ -686,19 +686,19 @@ Add a `members` array to the Space collection (or a separate `SpaceMember` colle
 
 ```ts
 {
-    spaceId
+  spaceId;
 
-    userId
+  userId;
 
-    role       // owner | admin | member | viewer
+  role; // owner | admin | member | viewer
 
-    status     // invited | active
+  status; // invited | active
 
-    invitedBy
+  invitedBy;
 
-    invitedAt
+  invitedAt;
 
-    acceptedAt
+  acceptedAt;
 }
 ```
 

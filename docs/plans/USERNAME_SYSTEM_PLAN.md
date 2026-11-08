@@ -56,7 +56,7 @@ export interface User {
   betterAuthId: string;
   email: string;
   name: string;
-  username: string | null;   // NEW
+  username: string | null; // NEW
   fullName: string;
   image: string | null;
   emailVerified: boolean;
@@ -77,8 +77,8 @@ export interface ProfileResponse {
   email: string;
   image: string | null;
   emailVerified: boolean;
-  provider: string;      // "credential" | "google" | "unknown"
-  joinedAt?: string;     // ISO timestamp of account creation; may be absent
+  provider: string; // "credential" | "google" | "unknown"
+  joinedAt?: string; // ISO timestamp of account creation; may be absent
 }
 
 // Success envelope
@@ -112,13 +112,13 @@ async function generateUsername(emailPrefix: string): Promise<string> {
   const base = ensureAllowed(sanitized);
 
   // Try base username
-  if (!await UserModel.exists({ username: base })) return base;
+  if (!(await UserModel.exists({ username: base }))) return base;
 
   // Try up to 10 times with 3-digit suffix — each candidate re-checked
   for (let i = 0; i < 10; i++) {
     const suffix = Math.floor(100 + Math.random() * 900);
     const candidate = ensureAllowed(`${base.slice(0, 24)}_${suffix}`);
-    if (!await UserModel.exists({ username: candidate })) return candidate;
+    if (!(await UserModel.exists({ username: candidate }))) return candidate;
   }
 
   // Timestamp fallback — also checked against the reserved list
@@ -138,7 +138,11 @@ This runs only via `$setOnInsert` so existing users are not affected.
 for (let attempt = 0; attempt < MAX_ALLOC_ATTEMPTS; attempt++) {
   const candidate = await generateUsername(emailPrefix);
   try {
-    const user = await UserModel.findOneAndUpdate(filter, { $setOnInsert: { ...attrs, username: candidate } }, { upsert: true, new: true });
+    const user = await UserModel.findOneAndUpdate(
+      filter,
+      { $setOnInsert: { ...attrs, username: candidate } },
+      { upsert: true, new: true }
+    );
     return user;
   } catch (err) {
     if (err.code === 11000 && String(err.keyPattern ?? {}).includes("username")) continue;
@@ -152,20 +156,22 @@ throw new Error("Failed to allocate a unique username");
 
 ## API Endpoints
 
-| Method | Path | Description |
-|:---|:---|:---|
-| `GET` | `/api/v1/me/profile` | Full profile — returns the typed `ProfileResponse` contract (name, username, email, image, emailVerified, provider, joinedAt) |
-| `GET` | `/api/v1/me/username/check?username=x` | Availability — `{ available: boolean }` |
-| `PATCH` | `/api/v1/me/username` | Update username |
-| `PATCH` | `/api/v1/me/profile` | Update name + username |
-| `PATCH` | `/api/v1/me/email` | Change email. Sets `emailVerified: false` immediately and sends a verification link to the new address |
+| Method  | Path                                   | Description                                                                                                                   |
+| :------ | :------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/api/v1/me/profile`                   | Full profile — returns the typed `ProfileResponse` contract (name, username, email, image, emailVerified, provider, joinedAt) |
+| `GET`   | `/api/v1/me/username/check?username=x` | Availability — `{ available: boolean }`                                                                                       |
+| `PATCH` | `/api/v1/me/username`                  | Update username                                                                                                               |
+| `PATCH` | `/api/v1/me/profile`                   | Update name + username                                                                                                        |
+| `PATCH` | `/api/v1/me/email`                     | Change email. Sets `emailVerified: false` immediately and sends a verification link to the new address                        |
 
 ### Email Change Behavior
+
 - **Re-verification state:** after a change, `emailVerified` is reset to `false`; sign-in continues with the password until re-verified.
 - **Recovery:** if the new address is never verified, the user can still sign in and either re-request the verification email or change the address again; support-initiated recovery uses the previous address on record from the audit trail.
 - Duplicate addresses are rejected with `409 Conflict`.
 
 ### Validation Rules
+
 - Length: 3–30 characters
 - Allowed: `a-z`, `0-9`, `_` (no spaces, hyphens, dots, uppercase)
 - Unique (case-insensitive index)
@@ -194,14 +200,14 @@ Password:   [ ••••••••                   ]
 
 The "Edit Profile" button in Settings opens a full-featured sheet:
 
-| Field | Editable |
-|:------|:---------|
-| Avatar (initials fallback) | View only |
-| Full Name | ✅ |
-| `@username` | ✅ (with availability check) |
-| Email | ✅ (triggers re-verification) |
-| Sign-in Provider | View only |
-| Member Since | View only |
+| Field                      | Editable                      |
+| :------------------------- | :---------------------------- |
+| Avatar (initials fallback) | View only                     |
+| Full Name                  | ✅                            |
+| `@username`                | ✅ (with availability check)  |
+| Email                      | ✅ (triggers re-verification) |
+| Sign-in Provider           | View only                     |
+| Member Since               | View only                     |
 
 ---
 
@@ -210,7 +216,7 @@ The "Edit Profile" button in Settings opens a full-featured sheet:
 1. **`@` prefix**: Non-removable `@` character shown as an input adornment (not part of stored value).
 2. **Instant feedback**: Three states — 🔄 Checking / ✅ Available / ❌ Taken.
 3. **Character counter**: `"john_doe"` → `8 / 30` shown subtly below input.
-4. **OAuth hint**: First-time Google users see: *"We created @john_742 for you. You can change it anytime."*
+4. **OAuth hint**: First-time Google users see: _"We created @john_742 for you. You can change it anytime."_
 
 ---
 

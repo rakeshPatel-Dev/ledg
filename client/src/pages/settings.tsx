@@ -41,7 +41,6 @@ import { getApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { TransactionActivityMode } from "@ledg/shared";
 
-
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const {
@@ -74,10 +73,13 @@ export default function SettingsPage() {
   const [authProvider, setAuthProvider] = useState<string | null>(null);
 
   useEffect(() => {
-    getApi().me.getProfile().then((data) => {
-      setUserProfile(data);
-      setAuthProvider(data.provider);
-    }).catch(() => null);
+    getApi()
+      .me.getProfile()
+      .then((data) => {
+        setUserProfile(data);
+        setAuthProvider(data.provider);
+      })
+      .catch(() => null);
   }, []);
 
   const name = user?.name || "Ledg user";
@@ -100,7 +102,7 @@ export default function SettingsPage() {
     system: "Follow the reduced-motion setting on this device.",
   };
 
-   const {
+  const {
     data: notifPrefs,
     isLoading: loadingNotifPrefs,
     isError: notifPrefsError,
@@ -137,7 +139,7 @@ export default function SettingsPage() {
                   @{user?.username || userProfile?.username}
                 </p>
               )}
-               {authProvider && (
+              {authProvider && (
                 <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary capitalize">
                     {authProvider === "google" ? "Google OAuth" : "Email & Password"}
@@ -280,7 +282,9 @@ export default function SettingsPage() {
               <Download className="size-5" />
             </span>
             <span className="flex-1">
-              <span className="block text-sm font-semibold">Export Transactions (CSV)</span>
+              <span className="block text-sm font-semibold">
+                Export Transactions (CSV)
+              </span>
               <span className="block text-xs font-medium text-muted-foreground">
                 Download spreadsheet with all transaction records
               </span>
@@ -408,10 +412,7 @@ export default function SettingsPage() {
         <RequestFeatureForm />
       </Sheet>
 
-      <ImportTransactionsSheet
-        open={importSheetOpen}
-        onOpenChange={setImportSheetOpen}
-      />
+      <ImportTransactionsSheet open={importSheetOpen} onOpenChange={setImportSheetOpen} />
 
       {/* Theme Picker Sheet */}
       <Sheet
@@ -442,7 +443,9 @@ export default function SettingsPage() {
                 <span
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-2xl",
-                    active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   <Icon className="size-5" />
@@ -484,7 +487,9 @@ export default function SettingsPage() {
                 <span
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-2xl",
-                    active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   <Icon className="size-5" />
@@ -600,8 +605,8 @@ export default function SettingsPage() {
                   }
                 />
                 <p className="text-[11px] text-muted-foreground/70">
-                  Applies to new and edited transactions. Space deletion alerts
-                  are always sent regardless of these settings.
+                  Applies to new and edited transactions. Space deletion alerts are always
+                  sent regardless of these settings.
                 </p>
               </div>
 
@@ -616,6 +621,5 @@ export default function SettingsPage() {
         </div>
       </Sheet>
     </div>
-
   );
 }

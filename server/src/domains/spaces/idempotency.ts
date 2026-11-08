@@ -23,40 +23,38 @@ export interface IdempotencyKeyDoc {
   createdAt: Date;
 }
 
-const idempotencyKeySchema = new Schema<IdempotencyKeyDoc>(
-  {
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
-    key: {
-      type: String,
-      required: true,
-    },
-    statusCode: {
-      type: Number,
-      required: true,
-      default: 200,
-    },
-    responseBody: {
-      type: Schema.Types.Mixed,
-      required: true,
-      default: {},
-    },
-    pending: {
-      type: Boolean,
-      required: true,
-      default: true,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-      expires: 86400, // 24 hours TTL
-    },
-  }
-);
+const idempotencyKeySchema = new Schema<IdempotencyKeyDoc>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
+  key: {
+    type: String,
+    required: true,
+  },
+  statusCode: {
+    type: Number,
+    required: true,
+    default: 200,
+  },
+  responseBody: {
+    type: Schema.Types.Mixed,
+    required: true,
+    default: {},
+  },
+  pending: {
+    type: Boolean,
+    required: true,
+    default: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 86400, // 24 hours TTL
+  },
+});
 
 idempotencyKeySchema.index({ userId: 1, key: 1 }, { unique: true });
 
@@ -160,10 +158,7 @@ export async function finalizeLease(
  * key can acquire a fresh lease. Only removes the pending placeholder; a
  * completed (finalized) response is left intact.
  */
-export async function releaseLease(
-  userId: Types.ObjectId,
-  key: string
-): Promise<void> {
+export async function releaseLease(userId: Types.ObjectId, key: string): Promise<void> {
   await IdempotencyKeyModel.deleteOne({ userId, key, pending: true });
 }
 

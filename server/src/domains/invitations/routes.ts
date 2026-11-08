@@ -10,11 +10,7 @@ import * as invitationController from "./controller.js";
 const router = Router();
 
 // Public preview route (no auth) — rate-limited to prevent abuse/DoS
-router.get(
-  "/by-token/:token",
-  publicReadLimiter,
-  invitationController.getPreviewByToken
-);
+router.get("/by-token/:token", publicReadLimiter, invitationController.getPreviewByToken);
 
 // Protected routes
 router.use(authenticate);
@@ -26,7 +22,11 @@ router.post(
   invitationController.acceptByToken
 );
 
-router.post("/by-token/reject", sensitiveActionLimiter, invitationController.rejectByToken);
+router.post(
+  "/by-token/reject",
+  sensitiveActionLimiter,
+  invitationController.rejectByToken
+);
 router.post("/:id/accept", sensitiveActionLimiter, invitationController.acceptById);
 router.post("/:id/reject", sensitiveActionLimiter, invitationController.rejectById);
 router.post("/:id/resend", sensitiveActionLimiter, invitationController.resendById);

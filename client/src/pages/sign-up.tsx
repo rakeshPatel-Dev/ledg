@@ -7,10 +7,7 @@ import { GoogleIcon } from "@/components/common/google-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import {
-  PasswordStrength,
-  passwordRuleError,
-} from "@/components/ui/password-strength";
+import { PasswordStrength, passwordRuleError } from "@/components/ui/password-strength";
 import { authClient } from "@/lib/auth-client";
 import { getAuthEmail, getAuthRedirect } from "@/lib/auth-redirect";
 import { getApi } from "@/lib/api";
@@ -51,7 +48,10 @@ export default function SignUpPage() {
     setError("");
     try {
       const ruleError = passwordRuleError(password);
-      if (ruleError) { setError(ruleError); return; }
+      if (ruleError) {
+        setError(ruleError);
+        return;
+      }
 
       const { error: signUpError } = await (
         authClient.signUp.email as unknown as (data: {
@@ -76,7 +76,9 @@ export default function SignUpPage() {
       // Best effort sync
       try {
         await getApi().me.updateUsername(username);
-      } catch { /* non-blocking */ }
+      } catch {
+        /* non-blocking */
+      }
 
       setVerificationSent(true);
     } catch {
@@ -262,9 +264,7 @@ export default function SignUpPage() {
               </p>
             )}
             {usernameStatus === "invalid" && usernameReason && (
-              <p className="text-[11px] font-medium text-destructive">
-                {usernameReason}
-              </p>
+              <p className="text-[11px] font-medium text-destructive">{usernameReason}</p>
             )}
           </div>
 
@@ -310,15 +310,20 @@ export default function SignUpPage() {
           <Button
             type="submit"
             size="lg"
-              disabled={
-              loading ||
-              usernameStatus === "taken" ||
-              usernameStatus === "invalid"
+            disabled={
+              loading || usernameStatus === "taken" || usernameStatus === "invalid"
             }
 
             className="h-12 w-full text-base font-semibold shadow-md"
           >
-            {loading ? <Loader2 className="size-4 animate-spin" /> : <><UserPlus className="size-4 mr-2" />Create account</>}
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                <UserPlus className="size-4 mr-2" />
+                Create account
+              </>
+            )}
           </Button>
         </form>
 
@@ -346,7 +351,11 @@ export default function SignUpPage() {
 
         <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
           Already have an account?{" "}
-          <Link to="/sign-in" state={location.state} className="font-semibold text-primary hover:underline">
+          <Link
+            to="/sign-in"
+            state={location.state}
+            className="font-semibold text-primary hover:underline"
+          >
             Sign in
           </Link>
         </p>

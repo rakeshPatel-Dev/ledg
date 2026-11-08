@@ -18,8 +18,14 @@ interface DuesSummaryCardProps {
 }
 
 export function DuesSummaryCard({ className }: DuesSummaryCardProps) {
-  const { data: summary, isLoading, isError, error, refetch, isFetching } =
-    useDuesSummary();
+  const {
+    data: summary,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useDuesSummary();
 
   if (isLoading) return null;
 

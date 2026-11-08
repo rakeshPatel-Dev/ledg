@@ -9,7 +9,8 @@ import { ThemeProvider } from "@/lib/theme-provider";
 
 function MotionBridge({ children }: { children: ReactNode }) {
   const { motion } = useMotion();
-  const reducedMotion = motion === "full" ? "never" : motion === "system" ? "user" : "always";
+  const reducedMotion =
+    motion === "full" ? "never" : motion === "system" ? "user" : "always";
 
   return <MotionConfig reducedMotion={reducedMotion}>{children}</MotionConfig>;
 }

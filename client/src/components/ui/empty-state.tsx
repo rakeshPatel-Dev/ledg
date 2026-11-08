@@ -32,8 +32,8 @@ export function EmptyState({
           className={cn(
             "flex size-14 items-center justify-center rounded-3xl ring-4",
             tone === "destructive"
-              ? "bg-destructive/10 text-destructive ring-destructive/5"
-              : "bg-primary/10 text-primary ring-primary/5"
+              ? "bg-destructive/10 text-destructive shadow-sm ring-destructive/5"
+              : "bg-primary/10 text-primary shadow-sm ring-primary/5"
           )}
         >
           {icon}

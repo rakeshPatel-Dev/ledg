@@ -166,16 +166,9 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-const DocumentHeader = ({
-  title,
-  updatedAt,
-}: {
-  title: string;
-  updatedAt: string;
-}) => {
+const DocumentHeader = ({ title, updatedAt }: { title: string; updatedAt: string }) => {
   return (
     <header className="space-y-4 flex items-center flex-col gap-2 text-center">
-
       <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-foreground">
         {title}
       </h1>
@@ -248,10 +241,7 @@ export const LegalDocument = ({ data }: LegalDocumentProps) => {
 
       <FadeInStagger className="mt-8 flex flex-col gap-6">
         <FadeInItem>
-          <DocumentHeader
-            title={data.title}
-            updatedAt={data.updatedAt}
-          />
+          <DocumentHeader title={data.title} updatedAt={data.updatedAt} />
         </FadeInItem>
 
         <FadeInItem>

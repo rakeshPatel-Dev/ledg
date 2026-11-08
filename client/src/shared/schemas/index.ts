@@ -42,7 +42,6 @@ export const spaceMemberInviteSchema = z.object({
 
 export type SpaceMemberInviteInput = z.infer<typeof spaceMemberInviteSchema>;
 
-
 export const spaceTransferOwnershipSchema = z.object({
   userId: z
     .string()
@@ -66,7 +65,6 @@ export const notificationPreferencesSchema = z.object({
 
 export type NotificationPreferencesInput = z.infer<typeof notificationPreferencesSchema>;
 
-
 const dateStringSchema = z
   .string()
   .datetime({ offset: true })
@@ -85,11 +83,9 @@ export const transactionSchema = z.object({
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
-export const transactionUpdateSchema = transactionSchema
-  .partial()
-  .extend({
-    fromSpaceId: z.string().trim().min(1).optional(),
-  });
+export const transactionUpdateSchema = transactionSchema.partial().extend({
+  fromSpaceId: z.string().trim().min(1).optional(),
+});
 
 export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
 

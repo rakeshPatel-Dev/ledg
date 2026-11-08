@@ -1,10 +1,7 @@
 import crypto from "node:crypto";
 import { Types } from "mongoose";
 
-import {
-  SpaceInvitationModel,
-  type SpaceInvitationDoc,
-} from "./model.js";
+import { SpaceInvitationModel, type SpaceInvitationDoc } from "./model.js";
 
 export function hashToken(rawToken: string): string {
   return crypto.createHash("sha256").update(rawToken).digest("hex");
@@ -28,15 +25,10 @@ export async function findPendingInvitationsByEmail(
   // Match by inviteeEmail OR inviteeId so a user who changed their email
   // after being invited still sees their pending invites (see H1).
   filter.$or = userId
-    ? [
-        { inviteeEmail: normalized },
-        { inviteeId: new Types.ObjectId(String(userId)) },
-      ]
+    ? [{ inviteeEmail: normalized }, { inviteeId: new Types.ObjectId(String(userId)) }]
     : [{ inviteeEmail: normalized }];
 
-  const docs = await SpaceInvitationModel.find(filter)
-    .sort({ createdAt: -1 })
-    .lean();
+  const docs = await SpaceInvitationModel.find(filter).sort({ createdAt: -1 }).lean();
 
   return docs.map(toInvitationDto);
 }
@@ -55,9 +47,7 @@ export async function findPendingInvitationsBySpace(
   return docs.map(toInvitationDto);
 }
 
-export async function findInvitationById(
-  id: string
-): Promise<SpaceInvitationDoc | null> {
+export async function findInvitationById(id: string): Promise<SpaceInvitationDoc | null> {
   const doc = await SpaceInvitationModel.findById(id).lean();
   return doc ? toInvitationDto(doc) : null;
 }
@@ -115,9 +105,7 @@ export async function createInvitationDoc(data: {
   return toInvitationDto(doc.toObject());
 }
 
-function toInvitationDto(
-  doc: Record<string, unknown>
-): SpaceInvitationDoc {
+function toInvitationDto(doc: Record<string, unknown>): SpaceInvitationDoc {
   return {
     ...doc,
     id: String(doc._id),

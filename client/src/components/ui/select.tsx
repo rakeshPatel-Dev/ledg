@@ -119,11 +119,7 @@ export function SelectValue({
 
   const display = children ?? selectedLabel ?? placeholder;
 
-  return (
-    <span className={cn("block truncate text-left", className)}>
-      {display}
-    </span>
-  );
+  return <span className={cn("block truncate text-left", className)}>{display}</span>;
 }
 
 export function SelectTrigger({
@@ -143,8 +139,8 @@ export function SelectTrigger({
       disabled={disabled}
       onClick={() => !disabled && setOpen(!open)}
       className={cn(
-        "flex h-12 w-full items-center justify-between gap-2 rounded-2xl border border-input bg-card/80 px-4 text-sm text-foreground shadow-xs backdrop-blur-md transition-all outline-none",
-        "hover:bg-card focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-12 w-full items-center justify-between gap-2 rounded-2xl border border-input bg-card px-4 text-sm text-foreground shadow-elev-field transition-[box-shadow,border-color,background-color] duration-200 outline-none",
+        "hover:border-border hover:bg-card focus-visible:border-ring focus-visible:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
         "min-w-0 overflow-hidden",
         className
       )}
@@ -176,7 +172,7 @@ export function SelectContent({
   return (
     <div
       className={cn(
-        "absolute left-0 z-[100] max-h-60 w-full overflow-y-auto rounded-2xl border border-white/25 dark:border-white/10 bg-card/95 p-1.5 text-foreground shadow-2xl backdrop-blur-2xl backdrop-saturate-180 transition-all outline-none animate-in fade-in-0 zoom-in-95 duration-150",
+        "absolute left-0 z-[100] max-h-60 w-full overflow-y-auto rounded-2xl border border-border/70 bg-card p-1.5 text-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95 duration-150",
         side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
         className
       )}
@@ -257,10 +253,5 @@ export function SelectSeparator({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("-mx-1 my-1 h-px bg-border/60", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("-mx-1 my-1 h-px bg-border/60", className)} {...props} />;
 }

@@ -5,7 +5,13 @@ import { Loader2, Send, CheckCircle2, Sparkles, RotateCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const FORM_ID = "moealgza";
@@ -32,7 +38,8 @@ export function RequestFeatureForm() {
         <div className="space-y-1">
           <h3 className="text-lg font-bold tracking-tight">Thanks for reaching out!</h3>
           <p className="mx-auto max-w-xs text-sm text-muted-foreground">
-            Your request has been submitted. We&apos;ll review it and get back to you if needed.
+            Your request has been submitted. We&apos;ll review it and get back to you if
+            needed.
           </p>
         </div>
         <Button
@@ -67,7 +74,10 @@ export function RequestFeatureForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="feat-name" className="px-1 text-xs font-semibold text-muted-foreground">
+          <label
+            htmlFor="feat-name"
+            className="px-1 text-xs font-semibold text-muted-foreground"
+          >
             Name
           </label>
           <Input
@@ -82,7 +92,10 @@ export function RequestFeatureForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="feat-email" className="px-1 text-xs font-semibold text-muted-foreground">
+          <label
+            htmlFor="feat-email"
+            className="px-1 text-xs font-semibold text-muted-foreground"
+          >
             Email
           </label>
           <Input
@@ -96,7 +109,10 @@ export function RequestFeatureForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="feat-category" className="px-1 text-xs font-semibold text-muted-foreground">
+          <label
+            htmlFor="feat-category"
+            className="px-1 text-xs font-semibold text-muted-foreground"
+          >
             Category
           </label>
           <Select value={category} onValueChange={setCategory}>
@@ -114,7 +130,10 @@ export function RequestFeatureForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="feat-message" className="px-1 text-xs font-semibold text-muted-foreground">
+          <label
+            htmlFor="feat-message"
+            className="px-1 text-xs font-semibold text-muted-foreground"
+          >
             Message
           </label>
           <textarea

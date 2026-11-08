@@ -1,7 +1,7 @@
 # Shared Spaces — Readiness Audit & Build Plan
 
 **Date:** August 2026
-**Companion doc:** `SHARED_SPACES_AND_MEMBERS_PLAN.md` (full architecture & API spec — read that for schemas/endpoint details; this doc is the *execution* plan)
+**Companion doc:** `SHARED_SPACES_AND_MEMBERS_PLAN.md` (full architecture & API spec — read that for schemas/endpoint details; this doc is the _execution_ plan)
 
 ---
 
@@ -22,30 +22,31 @@ Authorization in one line: `ownerId` is the single source of truth for ownership
 
 ## 2. Readiness audit (answer to "is it ready?")
 
-| Component | Status | Detail |
-|---|---|---|
-| Space model (`members[]`, `isShared`) | ✅ Ready | `spaces/model.ts` contains embedded `SpaceMember[]` subdocuments + invariant recomputation helpers + soft deletion leases. |
-| Invitation model + tokens | ✅ Ready | `domains/invitations` domain fully implemented with SHA-256 hashed single-use tokens and atomic state machine. |
-| Notification model + service | ✅ Ready | `domains/notifications` domain fully implemented with 10 event types, preferences gating, and 90-day TTL index. |
-| Transaction attribution (`createdBy`) | ✅ Ready | `createdBy` schema, indexes, multi-member permissions, and idempotent backfill script implemented. |
-| Authorization layer | ✅ Ready | Role-aware `resolveSpaceAccess` & `assertSpaceAccess` matrix implemented across spaces, transactions, and analytics. |
-| Email infrastructure | ✅ Ready | `sendInvitationEmail` inline mailer with fallback HTML and dynamic deep link origin derivation. |
-| Client UI | ✅ Ready | `NotificationCenter`, Space segmentation (`Personal`/`Shared`), Member Avatar stack, Email chips in creation sheet, Member Management Sheet, Deep-link `/invite/:token` screen, and Notification Preferences settings. |
-| Verification | ✅ Ready | Strict TypeScript typechecking (`tsc`) and ESLint passing with 0 errors across client and server; production builds succeeding. |
+| Component                             | Status   | Detail                                                                                                                                                                                                                 |
+| ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Space model (`members[]`, `isShared`) | ✅ Ready | `spaces/model.ts` contains embedded `SpaceMember[]` subdocuments + invariant recomputation helpers + soft deletion leases.                                                                                             |
+| Invitation model + tokens             | ✅ Ready | `domains/invitations` domain fully implemented with SHA-256 hashed single-use tokens and atomic state machine.                                                                                                         |
+| Notification model + service          | ✅ Ready | `domains/notifications` domain fully implemented with 10 event types, preferences gating, and 90-day TTL index.                                                                                                        |
+| Transaction attribution (`createdBy`) | ✅ Ready | `createdBy` schema, indexes, multi-member permissions, and idempotent backfill script implemented.                                                                                                                     |
+| Authorization layer                   | ✅ Ready | Role-aware `resolveSpaceAccess` & `assertSpaceAccess` matrix implemented across spaces, transactions, and analytics.                                                                                                   |
+| Email infrastructure                  | ✅ Ready | `sendInvitationEmail` inline mailer with fallback HTML and dynamic deep link origin derivation.                                                                                                                        |
+| Client UI                             | ✅ Ready | `NotificationCenter`, Space segmentation (`Personal`/`Shared`), Member Avatar stack, Email chips in creation sheet, Member Management Sheet, Deep-link `/invite/:token` screen, and Notification Preferences settings. |
+| Verification                          | ✅ Ready | Strict TypeScript typechecking (`tsc`) and ESLint passing with 0 errors across client and server; production builds succeeding.                                                                                        |
 
 **Verdict: fully built and verified.**
-
 
 ---
 
 ## 3. Build phases (ordered, each phase ships compilable code)
 
 ### Phase 0 — Config groundwork (½ day)
+
 - Deep-link base URL derived from `CORS_ORIGIN`'s first origin (decision #20) — no new env var.
 - Extend `.env.example` where needed.
 - Create Resend template for invites in dashboard → record its id in `lib/email.ts` alongside `VERIFICATION_TEMPLATE_ID`.
 
 ### Phase 1 — Data model (2 days)
+
 Files: `spaces/model.ts`, new `domains/invitations/model.ts`, new `domains/notifications/model.ts`, `transactions/model.ts`, `scripts/backfill-created-by.ts`
 
 - [x] `SpaceMember` subdocument schema + `members[]` + `isShared` on spaceSchema (invariants from design doc §2.1: owner always present, `ownerId` authoritative, atomic recompute of `isShared`).
@@ -57,6 +58,7 @@ Files: `spaces/model.ts`, new `domains/invitations/model.ts`, new `domains/notif
 - ✅ Acceptance: models load, indexes created on a scratch DB, backfill re-runnable.
 
 ### Phase 2 — Access control core (1–2 days)
+
 Files: `domains/spaces/access.ts` (new), touchpoints in `transactions/service.ts`, `analytics/service.ts`, `spaces/service.ts`
 
 - [x] `resolveSpaceAccess(spaceId, userId): { space, role: "owner"|"member" } | null` — one indexed query (`$or: [{ownerId}, {"members.userId"}]`).
@@ -65,8 +67,8 @@ Files: `domains/spaces/access.ts` (new), touchpoints in `transactions/service.ts
 - [x] **Membership-aware analytics:** update `resolveSpaceIds("all")` / dashboard / recurring aggregations to union owned + member-of spaces (decision #14) — otherwise shared activity vanishes from Insights.
 - ✅ Acceptance: existing single-user flows unchanged; member can CRUD their own transactions; member editing another's transaction or space settings → 403.
 
-
 ### Phase 3 — Invitations domain (3 days)
+
 Files: new `domains/invitations/{model,repository,service,controller,routes}.ts`, mount in `routes.ts`
 
 - [x] Token minting: `crypto.randomBytes(32)` → base64url; store SHA-256 hash only.
@@ -98,13 +100,15 @@ Space shows her username/avatar; owner gets invite_accepted notification
 ```
 
 Key rules & edge cases:
-- **No auto-join on signup.** Registration only makes the invitation *claimable*; acceptance is always an explicit tap. Registered and never-registered invitees follow one identical accept/reject path.
+
+- **No auto-join on signup.** Registration only makes the invitation _claimable_; acceptance is always an explicit tap. Registered and never-registered invitees follow one identical accept/reject path.
 - **Email match is the claim key.** Signup with a different address → 403, invitation stays pending for the original email. Tokens are not transferable between accounts.
 - **Preview before auth.** `GET /invitations/by-token/:token` returns non-sensitive context without login so people see what they're joining before creating an account.
 - **Member entry created at accept time** from the accepter's account — no email→username migration exists; the invitation stores only the claim email.
 - Expired token → 410 screen; resend rotates hash (old link dies); reject → terminal state, re-invite possible later; never signs up → invitation silently expires.
 
 ### Phase 4 — Email delivery (1 day)
+
 Files: `lib/email.ts` (extend only — no worker, no outbox, decision #21)
 
 - [x] `sendInvitationEmail({to, spaceName, inviterName, acceptUrl})` using the new Resend template.
@@ -114,40 +118,43 @@ Files: `lib/email.ts` (extend only — no worker, no outbox, decision #21)
 - ✅ Acceptance: resend invalidates prior links; failed send surfaces as a "not delivered" state on the owner's pending list with a working Resend action.
 
 ### Phase 5 — Notifications & preferences (3 days)
+
 Files: new `domains/notifications/{service,controller,routes,model}.ts`
 
 **Finalized event map** (in-app for everything except #1; email = invite delivery only):
 
-| # | Event | In-app recipients | Notes |
-|---|---|---|---|
-| 1 | `space_invite` | invitee | + Resend invite email w/ token link |
-| 2 | `invite_accepted` | owner | — |
-| 3 | `invite_rejected` | owner | — |
-| 4 | `member_joined` | all other members | fired after membership created |
-| 5 | `member_left` | owner + remaining members | — |
-| 6 | `member_removed` | the removed person | — |
-| 7 | `ownership_transferred` | new owner + former owner **only** | other members not notified |
-| 8 | `transaction_added` | other members, per recipient's txn-activity pref | realtime / digest / off |
-| 9 | `transaction_modified` | the transaction's creator | when owner edits/deletes someone else's txn; message says which + by whom |
-| 10 | `space_deleted` | all remaining members | in-app only, no email |
+| #   | Event                   | In-app recipients                                | Notes                                                                     |
+| --- | ----------------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
+| 1   | `space_invite`          | invitee                                          | + Resend invite email w/ token link                                       |
+| 2   | `invite_accepted`       | owner                                            | —                                                                         |
+| 3   | `invite_rejected`       | owner                                            | —                                                                         |
+| 4   | `member_joined`         | all other members                                | fired after membership created                                            |
+| 5   | `member_left`           | owner + remaining members                        | —                                                                         |
+| 6   | `member_removed`        | the removed person                               | —                                                                         |
+| 7   | `ownership_transferred` | new owner + former owner **only**                | other members not notified                                                |
+| 8   | `transaction_added`     | other members, per recipient's txn-activity pref | realtime / digest / off                                                   |
+| 9   | `transaction_modified`  | the transaction's creator                        | when owner edits/deletes someone else's txn; message says which + by whom |
+| 10  | `space_deleted`         | all remaining members                            | in-app only, no email                                                     |
 
 - [x] Service `notify(userId, type, title, message, data)` implementing the map above — never stores tokens, only `invitationId`.
 - [x] Routes: list (paginated + unread count), mark-read, read-all — all filtered by `req.userId`.
-- [x] **Transaction activity (decided): real-time per transaction by default** — on create in a shared space, notify all *other* members whose preference allows it.
+- [x] **Transaction activity (decided): real-time per transaction by default** — on create in a shared space, notify all _other_ members whose preference allows it.
 - [x] **Notification preferences API:** `GET /me/notification-preferences` + `PUT /me/notification-preferences` — per-user config: transaction activity mode (`realtime` | `daily digest` | `off`), toggle groups for invite events and member changes; "off" silences everything.
-- [x] Digest path (note): a true daily summary needs *some* scheduled trigger, which we've deliberately avoided (decision #21). Ship v1 with `realtime` and `off`; when a scheduler eventually exists (e.g. Vercel Cron for other features), add `daily digest` on top — preferences schema already reserves the value so no migration needed.
+- [x] Digest path (note): a true daily summary needs _some_ scheduled trigger, which we've deliberately avoided (decision #21). Ship v1 with `realtime` and `off`; when a scheduler eventually exists (e.g. Vercel Cron for other features), add `daily digest` on top — preferences schema already reserves the value so no migration needed.
 
 ### Phase 6 — Spaces API upgrades (2 days)
+
 Files: `domains/spaces/{service,repository,controller,routes,validator}.ts`
 
 - [x] Create accepts `inviteEmails[]` + required `Idempotency-Key` header (idempotency-key collection replaying first response).
 - [x] Members list (any member, no pending-invite leakage), owner-only pending-invitations endpoint.
 - [x] Remove member (`:members/:userId`), transfer-ownership (atomic single-doc swap + `isShared` recompute), leave (409 for owners until transfer/delete).
 - [x] Cascade deletion upgrade per spec §4.1.1: `deleting` lease → transactions → cancel invitations → delete notifications → cache invalidation → drop space; guard rejects mutations while lease active.
-- [x] **Account-deletion interplay** (decision #10): `deleteUserWithData` blocks with 409 while the user owns shared spaces that still have members (must transfer/delete first); when *deleting* their own account, scrub their `members[]` entries from all shared spaces and notify remaining owners.
+- [x] **Account-deletion interplay** (decision #10): `deleteUserWithData` blocks with 409 while the user owns shared spaces that still have members (must transfer/delete first); when _deleting_ their own account, scrub their `members[]` entries from all shared spaces and notify remaining owners.
 - [x] **Rename fan-out** (decision #13): profile/username updates propagate `name` into every `members[]` entry where the user appears, plus pending-invitation snapshots and `createdBy` transaction snapshots (users/service.ts fan-out). Historical rows are backfilled by scripts rather than left stale.
 
 ### Phase 7 — Client (4–5 days)
+
 Files: `pages/spaces.tsx`, `pages/space-detail.tsx`, new `components/notifications/*`, `lib/queries.ts`, `lib/api.ts`, shared types
 
 - [x] Personal/Shared tabs; avatar stacks on shared cards.
@@ -159,11 +166,11 @@ Files: `pages/spaces.tsx`, `pages/space-detail.tsx`, new `components/notificatio
 - [x] Deep-link route `/invite/:token` → resolve screen → accept/reject → redirect into space.
 
 ### Phase 8 — Hardening & verification (1–2 days)
+
 - [x] Lint/typecheck clean (client and server).
 - [x] Production build passes (`npm run build`).
 - [x] Shared types synchronized (`npm run sync-shared`).
 - [x] Docs and progress tracking updated.
-
 
 ---
 
@@ -196,48 +203,49 @@ test(shared): invitation and access-control suites
 
 ## 6. Effort summary
 
-| Phase | Days |
-|---|---|
-| 0 Config | 0.5 |
-| 1 Data model | 2 |
-| 2 Access control | 1.5 |
-| 3 Invitations | 3 |
-| 4 Email (inline) | 1 |
-| 5 Notifications + preferences | 3 |
-| 6 Spaces API | 2 |
-| 7 Client | 5 |
-| 8 Hardening | 1.5 |
-| **Total** | **~19.5 dev-days** |
+| Phase                         | Days               |
+| ----------------------------- | ------------------ |
+| 0 Config                      | 0.5                |
+| 1 Data model                  | 2                  |
+| 2 Access control              | 1.5                |
+| 3 Invitations                 | 3                  |
+| 4 Email (inline)              | 1                  |
+| 5 Notifications + preferences | 3                  |
+| 6 Spaces API                  | 2                  |
+| 7 Client                      | 5                  |
+| 8 Hardening                   | 1.5                |
+| **Total**                     | **~19.5 dev-days** |
 
 ## 7. Decisions (finalized)
 
-| # | Question | Decision |
-|---|---|---|
-| 1 | Member cap per shared space | **10** — invite rejected with 409 beyond cap |
-| 2 | Transaction activity notifications | **Real-time per transaction by default**, but user-configurable in Settings: Real-time / Daily digest / Off, plus toggles for invite-event and member-change notification groups. Preferences are per-user; the actor never controls who gets notified — each recipient's own setting decides. |
-| 3 | Inviting unregistered emails | **Yes** — invitation pends keyed to the normalized email; redeemable when a user signs up with that email (recipient authorization matches on `inviteeId` OR normalized email) |
-| 4 | Ownership transfer eligibility | **Any current member, no default preselection** — owner picks from a flat member list in the transfer sheet |
-| 5 | Member transaction scope | **Members CRUD only their own transactions; owner can CRUD anyone's** — server-enforced 403, UI hides edit/delete on others' txns for non-owners |
-| 6 | Email policy | **In-app only beyond the invite email** — Resend is used exclusively for invitation delivery |
-| 7 | Owner edits/deletes another's txn | **Notify the creator** (`transaction_modified`) |
-| 8 | Ownership transfer visibility | **New + former owner only** — other members are not notified |
-| 9 | Member leaves / is removed | **Transactions stay**, still attributed to the creator |
-| 10 | Account deletion while owning shared spaces | **Blocked** — user must transfer ownership or delete those spaces first. Symmetrically, a *member* deleting their account is cleaned out of every `members[]` they appear in |
-| 11 | Invite enumeration | **Uniform response** — `POST invite` replies identically whether the email is registered or not; registration status never leaks |
-| 12 | Member-cap enforcement | **Atomic** at accept time (conditional space-doc update) — no race to 11 members |
-| 13 | Stale denormalized names | **Fan-out on rename** via existing profile-update hook; minor staleness tolerated for historical `createdBy` snapshots |
-| 14 | Analytics scope | **Membership-aware everywhere** — dashboard/analytics/all-transactions include shared spaces the user belongs to |
-| 15 | Cross-space moves | Members move **their own** txns personal↔shared; others' txns are owner-only on the move path too |
-| 16 | Invite abuse ceiling | Max ~20 outstanding pending invites per owner + daily email budget |
-| 17 | Notification retention | TTL index ~90 days on notifications |
-| 18 | Bulk-create spam guard | Suppress realtime `transaction_added` when >K txns created within M minutes by one actor |
-| 19 | Token hygiene | 7-day expiry, strict Referrer-Policy on invite route, raw tokens never logged |
-| 20 | Deep-link base URL | Derived from `CORS_ORIGIN`'s first origin — no separate `APP_URL` env |
-| 21 | Email delivery mechanism | **Inline await, same pattern as verification emails** — no outbox collection, no worker, no cron. Owner's Resend button doubles as the manual retry path (mints fresh token). Space-creation invites send in parallel via `Promise.allSettled`. |
+| #   | Question                                    | Decision                                                                                                                                                                                                                                                                                       |
+| --- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Member cap per shared space                 | **10** — invite rejected with 409 beyond cap                                                                                                                                                                                                                                                   |
+| 2   | Transaction activity notifications          | **Real-time per transaction by default**, but user-configurable in Settings: Real-time / Daily digest / Off, plus toggles for invite-event and member-change notification groups. Preferences are per-user; the actor never controls who gets notified — each recipient's own setting decides. |
+| 3   | Inviting unregistered emails                | **Yes** — invitation pends keyed to the normalized email; redeemable when a user signs up with that email (recipient authorization matches on `inviteeId` OR normalized email)                                                                                                                 |
+| 4   | Ownership transfer eligibility              | **Any current member, no default preselection** — owner picks from a flat member list in the transfer sheet                                                                                                                                                                                    |
+| 5   | Member transaction scope                    | **Members CRUD only their own transactions; owner can CRUD anyone's** — server-enforced 403, UI hides edit/delete on others' txns for non-owners                                                                                                                                               |
+| 6   | Email policy                                | **In-app only beyond the invite email** — Resend is used exclusively for invitation delivery                                                                                                                                                                                                   |
+| 7   | Owner edits/deletes another's txn           | **Notify the creator** (`transaction_modified`)                                                                                                                                                                                                                                                |
+| 8   | Ownership transfer visibility               | **New + former owner only** — other members are not notified                                                                                                                                                                                                                                   |
+| 9   | Member leaves / is removed                  | **Transactions stay**, still attributed to the creator                                                                                                                                                                                                                                         |
+| 10  | Account deletion while owning shared spaces | **Blocked** — user must transfer ownership or delete those spaces first. Symmetrically, a _member_ deleting their account is cleaned out of every `members[]` they appear in                                                                                                                   |
+| 11  | Invite enumeration                          | **Uniform response** — `POST invite` replies identically whether the email is registered or not; registration status never leaks                                                                                                                                                               |
+| 12  | Member-cap enforcement                      | **Atomic** at accept time (conditional space-doc update) — no race to 11 members                                                                                                                                                                                                               |
+| 13  | Stale denormalized names                    | **Fan-out on rename** via existing profile-update hook; minor staleness tolerated for historical `createdBy` snapshots                                                                                                                                                                         |
+| 14  | Analytics scope                             | **Membership-aware everywhere** — dashboard/analytics/all-transactions include shared spaces the user belongs to                                                                                                                                                                               |
+| 15  | Cross-space moves                           | Members move **their own** txns personal↔shared; others' txns are owner-only on the move path too                                                                                                                                                                                              |
+| 16  | Invite abuse ceiling                        | Max ~20 outstanding pending invites per owner + daily email budget                                                                                                                                                                                                                             |
+| 17  | Notification retention                      | TTL index ~90 days on notifications                                                                                                                                                                                                                                                            |
+| 18  | Bulk-create spam guard                      | Suppress realtime `transaction_added` when >K txns created within M minutes by one actor                                                                                                                                                                                                       |
+| 19  | Token hygiene                               | 7-day expiry, strict Referrer-Policy on invite route, raw tokens never logged                                                                                                                                                                                                                  |
+| 20  | Deep-link base URL                          | Derived from `CORS_ORIGIN`'s first origin — no separate `APP_URL` env                                                                                                                                                                                                                          |
+| 21  | Email delivery mechanism                    | **Inline await, same pattern as verification emails** — no outbox collection, no worker, no cron. Owner's Resend button doubles as the manual retry path (mints fresh token). Space-creation invites send in parallel via `Promise.allSettled`.                                                |
 
 ### ✅ Previously deferred — resolved
 
 - ~~Email delivery mechanism on Vercel~~ → decision #21. The outbox/worker/cron subsystem was dropped: serverless background work is unreliable, and the resend button provides the retry guarantee an outbox would have bought. Token lifecycle is unaffected — minted at invite time, rotated on resend.
 
 ### Derived work from decision #2
+
 - `NotificationPreferenceModel` (Phase 1), preferences API endpoints and dispatch gating (Phase 5), Settings UI section (Phases 5/7) — already folded into the phases above (+1.5 days vs original estimate). Digest mode deferred until a scheduler exists (decision #21 follow-up).

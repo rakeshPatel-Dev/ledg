@@ -26,22 +26,22 @@ User action (e.g., someone adds transaction to shared space)
 
 ### 1.2 The Three Pieces
 
-| Piece | Role | Location |
-|---|---|---|
-| **Service Worker** | Background script — receives push events, shows notifications, handles clicks | `client/public/sw.js` |
-| **Push Subscription** | Browser generates an endpoint URL + encryption keys per device | Client JS (on subscribe) |
-| **VAPID Keys** | Server identity — signs every push request so push services know it's legit | Private key on server, public key in client bundle |
+| Piece                 | Role                                                                          | Location                                           |
+| --------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| **Service Worker**    | Background script — receives push events, shows notifications, handles clicks | `client/public/sw.js`                              |
+| **Push Subscription** | Browser generates an endpoint URL + encryption keys per device                | Client JS (on subscribe)                           |
+| **VAPID Keys**        | Server identity — signs every push request so push services know it's legit   | Private key on server, public key in client bundle |
 
 ### 1.3 Browser Support (2026)
 
-| Browser | Push support | Requirement |
-|---|---|---|
-| Chrome (desktop + Android) | Full | Tab open or closed |
-| Firefox (desktop + Android) | Full | Tab open or closed |
-| Edge | Full | Tab open or closed |
-| Safari macOS 16.4+ | Full | Tab open or closed |
-| Safari iOS 16.4+ | Yes | PWA must be installed to home screen |
-| Safari iOS (EU) | No | Removed under Digital Markets Act |
+| Browser                     | Push support | Requirement                          |
+| --------------------------- | ------------ | ------------------------------------ |
+| Chrome (desktop + Android)  | Full         | Tab open or closed                   |
+| Firefox (desktop + Android) | Full         | Tab open or closed                   |
+| Edge                        | Full         | Tab open or closed                   |
+| Safari macOS 16.4+          | Full         | Tab open or closed                   |
+| Safari iOS 16.4+            | Yes          | PWA must be installed to home screen |
+| Safari iOS (EU)             | No           | Removed under Digital Markets Act    |
 
 ### 1.4 Subscription Lifecycle
 
@@ -59,19 +59,20 @@ User action (e.g., someone adds transaction to shared space)
 ```typescript
 interface PushSubscriptionDoc {
   _id: Types.ObjectId;
-  userId: Types.ObjectId;       // owning user
-  endpoint: string;             // push service URL (unique per device)
+  userId: Types.ObjectId; // owning user
+  endpoint: string; // push service URL (unique per device)
   keys: {
-    p256dh: string;             // encryption key
-    auth: string;               // auth secret
+    p256dh: string; // encryption key
+    auth: string; // auth secret
   };
-  userAgent: string;            // browser/device fingerprint for debugging
+  userAgent: string; // browser/device fingerprint for debugging
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
 **Indexes:**
+
 - `{ userId: 1 }` — lookup all subscriptions for a user when sending
 - `{ endpoint: 1 }` — unique — prevent duplicate subscriptions
 - `{ createdAt: 1 }` — TTL cleanup of stale records
@@ -91,6 +92,7 @@ VAPID_SUBJECT="mailto:admin@ledg.app"  # contact email for push services
 ```
 
 VAPID keys are generated once with:
+
 ```bash
 npx web-push generate-vapid-keys
 ```
@@ -101,13 +103,14 @@ npx web-push generate-vapid-keys
 
 All push endpoints require authentication (`req.userId`).
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET /api/v1/push/vapid-public-key` | Returns the VAPID public key (client needs this to subscribe) |
-| `POST /api/v1/push/subscribe` | Save a new push subscription for the authenticated user |
-| `DELETE /api/v1/push/subscribe` | Remove a subscription (by endpoint) — client calls on unsubscribe |
+| Method                              | Endpoint                                                          | Description |
+| ----------------------------------- | ----------------------------------------------------------------- | ----------- |
+| `GET /api/v1/push/vapid-public-key` | Returns the VAPID public key (client needs this to subscribe)     |
+| `POST /api/v1/push/subscribe`       | Save a new push subscription for the authenticated user           |
+| `DELETE /api/v1/push/subscribe`     | Remove a subscription (by endpoint) — client calls on unsubscribe |
 
 **POST /push/subscribe body:**
+
 ```json
 {
   "endpoint": "https://fcm.googleapis.com/fcm/send/...",
@@ -119,6 +122,7 @@ All push endpoints require authentication (`req.userId`).
 ```
 
 **DELETE /push/subscribe body:**
+
 ```json
 {
   "endpoint": "https://fcm.googleapis.com/fcm/send/..."
@@ -131,33 +135,50 @@ All push endpoints require authentication (`req.userId`).
 
 ### 5.1 New Files
 
-| File | Purpose |
-|---|---|
-| `server/src/domains/push/model.ts` | Mongoose schema + model for `PushSubscription` |
-| `server/src/domains/push/service.ts` | `subscribe()`, `unsubscribe()`, `sendPushToUser()`, `cleanupStale()` |
-| `server/src/domains/push/controller.ts` | Route handlers |
-| `server/src/domains/push/routes.ts` | Route definitions |
-| `server/src/lib/push.ts` | `web-push` wrapper — initializes VAPID, exports `sendNotification()` |
+| File                                    | Purpose                                                              |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| `server/src/domains/push/model.ts`      | Mongoose schema + model for `PushSubscription`                       |
+| `server/src/domains/push/service.ts`    | `subscribe()`, `unsubscribe()`, `sendPushToUser()`, `cleanupStale()` |
+| `server/src/domains/push/controller.ts` | Route handlers                                                       |
+| `server/src/domains/push/routes.ts`     | Route definitions                                                    |
+| `server/src/lib/push.ts`                | `web-push` wrapper — initializes VAPID, exports `sendNotification()` |
 
 ### 5.2 Modified Files
 
-| File | Change |
-|---|---|
-| `server/src/config/env.ts` | Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` to env validation |
-| `server/src/routes.ts` | Mount `pushRoutes` under `/api/v1/push` |
-| `server/src/domains/notifications/service.ts` | On notification creation, call `sendPushToUser()` as fire-and-forget |
+| File                                          | Change                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------ |
+| `server/src/config/env.ts`                    | Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` to env validation |
+| `server/src/routes.ts`                        | Mount `pushRoutes` under `/api/v1/push`                                        |
+| `server/src/domains/notifications/service.ts` | On notification creation, call `sendPushToUser()` as fire-and-forget           |
 
 ### 5.3 Sending Logic
 
 ```typescript
 // In notification service — after creating the Notification doc:
-async function notify(userId: string, type: NotificationType, title: string, message: string, data: NotificationData) {
+async function notify(
+  userId: string,
+  type: NotificationType,
+  title: string,
+  message: string,
+  data: NotificationData
+) {
   // 1. Store in-app notification
-  const notification = await NotificationModel.create({ userId, type, title, message, data, read: false });
+  const notification = await NotificationModel.create({
+    userId,
+    type,
+    title,
+    message,
+    data,
+    read: false,
+  });
 
   // 2. Fire-and-forget push delivery
-  sendPushToUser(userId, { title, body: message, icon: '/web-app-manifest-192x192.png', data: { url: `/spaces/${data.spaceId}` } })
-    .catch(err => logger.warn({ err, userId }, 'Push delivery failed'));
+  sendPushToUser(userId, {
+    title,
+    body: message,
+    icon: "/web-app-manifest-192x192.png",
+    data: { url: `/spaces/${data.spaceId}` },
+  }).catch((err) => logger.warn({ err, userId }, "Push delivery failed"));
 }
 ```
 
@@ -169,15 +190,13 @@ When sending a push fails with `410 Gone`, the subscription is stale and must be
 async function sendPushToUser(userId: string, payload: PushPayload) {
   const subscriptions = await PushSubscription.find({ userId });
   const results = await Promise.allSettled(
-    subscriptions.map(sub =>
-      webpush.sendNotification(sub, JSON.stringify(payload))
-    )
+    subscriptions.map((sub) => webpush.sendNotification(sub, JSON.stringify(payload)))
   );
 
   // Clean up expired subscriptions
   const staleEndpoints: string[] = [];
   for (let i = 0; i < results.length; i++) {
-    if (results[i].status === 'rejected' && results[i].reason?.statusCode === 410) {
+    if (results[i].status === "rejected" && results[i].reason?.statusCode === 410) {
       staleEndpoints.push(subscriptions[i].endpoint);
     }
   }
@@ -193,53 +212,55 @@ async function sendPushToUser(userId: string, payload: PushPayload) {
 
 ### 6.1 New Files
 
-| File | Purpose |
-|---|---|
-| `client/public/sw.js` | Service worker — handles `push` and `notificationclick` events |
+| File                     | Purpose                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `client/public/sw.js`    | Service worker — handles `push` and `notificationclick` events                   |
 | `client/src/lib/push.ts` | Subscription management — register SW, request permission, subscribe/unsubscribe |
 
 ### 6.2 Modified Files
 
-| File | Change |
-|---|---|
-| `client/src/app/App.tsx` | Call `registerServiceWorker()` on mount |
+| File                                      | Change                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------- |
+| `client/src/app/App.tsx`                  | Call `registerServiceWorker()` on mount                                 |
 | `client/src/components/layout/header.tsx` | Bell icon shows push toggle + unread count (replaces placeholder toast) |
-| `client/src/pages/settings.tsx` | Add "Notifications" section with push enable/disable toggle |
-| `client/src/lib/api.ts` | Add `getVapidPublicKey()`, `subscribePush()`, `unsubscribePush()` |
-| `client/src/shared/types/index.ts` | Add `PushSubscriptionInfo` type |
+| `client/src/pages/settings.tsx`           | Add "Notifications" section with push enable/disable toggle             |
+| `client/src/lib/api.ts`                   | Add `getVapidPublicKey()`, `subscribePush()`, `unsubscribePush()`       |
+| `client/src/shared/types/index.ts`        | Add `PushSubscriptionInfo` type                                         |
 
 ### 6.3 Service Worker (`client/public/sw.js`)
 
 ```javascript
-self.addEventListener('push', (event) => {
+self.addEventListener("push", (event) => {
   if (!event.data) return;
   const data = event.data.json();
 
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || '/web-app-manifest-192x192.png',
-      badge: data.badge || '/favicon-96x96.png',
+      icon: data.icon || "/web-app-manifest-192x192.png",
+      badge: data.badge || "/favicon-96x96.png",
       data: data.data || {},
       tag: data.tag,
     })
   );
 });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/';
+  const url = event.notification.data?.url || "/";
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Focus existing tab if open, otherwise open new
-      for (const client of windowClients) {
-        if (client.url.includes(url) && 'focus' in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        // Focus existing tab if open, otherwise open new
+        for (const client of windowClients) {
+          if (client.url.includes(url) && "focus" in client) {
+            return client.focus();
+          }
         }
-      }
-      return clients.openWindow(url);
-    })
+        return clients.openWindow(url);
+      })
   );
 });
 ```
@@ -247,11 +268,11 @@ self.addEventListener('notificationclick', (event) => {
 ### 6.4 Client Push Module (`client/src/lib/push.ts`)
 
 ```typescript
-const VAPID_PUBLIC_KEY = ''; // fetched from server
+const VAPID_PUBLIC_KEY = ""; // fetched from server
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
@@ -261,11 +282,14 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
-  return navigator.serviceWorker.register('/sw.js');
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+  return navigator.serviceWorker.register("/sw.js");
 }
 
-export async function subscribePush(api: { getVapidPublicKey: () => Promise<string>; subscribePush: (sub: any) => Promise<void> }) {
+export async function subscribePush(api: {
+  getVapidPublicKey: () => Promise<string>;
+  subscribePush: (sub: any) => Promise<void>;
+}) {
   const reg = await navigator.serviceWorker.ready;
   const existing = await reg.pushManager.getSubscription();
   if (existing) return existing;
@@ -285,7 +309,9 @@ export async function subscribePush(api: { getVapidPublicKey: () => Promise<stri
   return subscription;
 }
 
-export async function unsubscribePush(api: { unsubscribePush: (endpoint: string) => Promise<void> }) {
+export async function unsubscribePush(api: {
+  unsubscribePush: (endpoint: string) => Promise<void>;
+}) {
   const reg = await navigator.serviceWorker.ready;
   const subscription = await reg.pushManager.getSubscription();
   if (!subscription) return;
@@ -302,13 +328,13 @@ export async function unsubscribePush(api: { unsubscribePush: (endpoint: string)
 
 Push delivery respects the existing notification preference system from Shared Spaces:
 
-| User preference | Push behavior |
-|---|---|
-| `transaction_added: "realtime"` | Send push immediately |
-| `transaction_added: "off"` | No push (in-app only) |
-| `transaction_added: "daily digest"` | No push in v1 (needs scheduler — defer) |
+| User preference                                         | Push behavior                                 |
+| ------------------------------------------------------- | --------------------------------------------- |
+| `transaction_added: "realtime"`                         | Send push immediately                         |
+| `transaction_added: "off"`                              | No push (in-app only)                         |
+| `transaction_added: "daily digest"`                     | No push in v1 (needs scheduler — defer)       |
 | Invite events (`space_invite`, `invite_accepted`, etc.) | Always send push (independent of preferences) |
-| `member_joined`, `member_left`, `member_removed` | Always send push |
+| `member_joined`, `member_left`, `member_removed`        | Always send push                              |
 
 ---
 
@@ -342,6 +368,7 @@ Push delivery respects the existing notification preference system from Shared S
 ## 9. Implementation Phases
 
 ### Phase 1 — Server infrastructure (1 day)
+
 - [ ] Generate VAPID keys, add env vars
 - [ ] Install `web-push` npm package
 - [ ] Create `PushSubscription` model
@@ -350,6 +377,7 @@ Push delivery respects the existing notification preference system from Shared S
 - [ ] Mount routes in `server/src/routes.ts`
 
 ### Phase 2 — Client infrastructure (1 day)
+
 - [ ] Create `client/public/sw.js` service worker
 - [ ] Create `client/src/lib/push.ts` subscription module
 - [ ] Add `registerServiceWorker()` call in `App.tsx`
@@ -357,12 +385,14 @@ Push delivery respects the existing notification preference system from Shared S
 - [ ] Add types to `shared/types/index.ts`
 
 ### Phase 3 — Integration (1 day)
+
 - [ ] Modify notification service to call `sendPushToUser()` on creation
 - [ ] Handle 410 cleanup in push sending logic
 - [ ] Wire push toggle in Settings page
 - [ ] Test end-to-end: create notification → push arrives on device
 
 ### Phase 4 — Polish & edge cases (0.5-1 day)
+
 - [ ] Handle `pushsubscriptionchange` event in service worker
 - [ ] Graceful degradation when push is blocked by user
 - [ ] Clean up subscriptions when user deletes account
@@ -393,15 +423,15 @@ Push delivery respects the existing notification preference system from Shared S
 
 ## 11. Decisions
 
-| # | Decision | Rationale |
-|---|---|---|
-| 1 | Raw Web Push API, no Firebase/OneSignal | Zero cost, zero vendor dependency, full control |
-| 2 | `web-push` npm package for encryption | Handles RFC 8291 encryption + VAPID signing — no need to implement crypto |
-| 3 | Service worker in `public/sw.js` | Vite serves `public/` at root — SW scope covers entire app |
-| 4 | One subscription per device/browser | Standard approach — user may have multiple (phone + laptop + tablet) |
-| 5 | Fire-and-forget push delivery | Push failures should never block notification creation or API responses |
-| 6 | Push preferences tied to notification preferences | Single preference system controls both in-app and push channels |
-| 7 | No daily digest in v1 | Requires a scheduler (e.g., Vercel Cron) which doesn't exist yet; schema reserves the value |
+| #   | Decision                                          | Rationale                                                                                   |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1   | Raw Web Push API, no Firebase/OneSignal           | Zero cost, zero vendor dependency, full control                                             |
+| 2   | `web-push` npm package for encryption             | Handles RFC 8291 encryption + VAPID signing — no need to implement crypto                   |
+| 3   | Service worker in `public/sw.js`                  | Vite serves `public/` at root — SW scope covers entire app                                  |
+| 4   | One subscription per device/browser               | Standard approach — user may have multiple (phone + laptop + tablet)                        |
+| 5   | Fire-and-forget push delivery                     | Push failures should never block notification creation or API responses                     |
+| 6   | Push preferences tied to notification preferences | Single preference system controls both in-app and push channels                             |
+| 7   | No daily digest in v1                             | Requires a scheduler (e.g., Vercel Cron) which doesn't exist yet; schema reserves the value |
 
 ---
 

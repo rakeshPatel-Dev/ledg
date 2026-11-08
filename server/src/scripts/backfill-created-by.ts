@@ -54,10 +54,7 @@ export async function backfillCreatedBy(): Promise<{ updated: number; total: num
             username: null,
           };
 
-    await TransactionModel.updateOne(
-      { _id: txn._id },
-      { $set: { createdBy } }
-    );
+    await TransactionModel.updateOne({ _id: txn._id }, { $set: { createdBy } });
     updatedCount++;
   }
 
@@ -65,10 +62,7 @@ export async function backfillCreatedBy(): Promise<{ updated: number; total: num
 }
 
 // Standalone execution
-if (
-  process.argv[1] &&
-  /backfill-created-by\.(ts|js)$/.test(process.argv[1])
-) {
+if (process.argv[1] && /backfill-created-by\.(ts|js)$/.test(process.argv[1])) {
   const mongoUri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB_NAME;
 
@@ -81,7 +75,9 @@ if (
   console.log("Connected to MongoDB, running backfill...");
 
   const result = await backfillCreatedBy();
-  console.log(`Backfill completed: ${result.updated} / ${result.total} transactions updated.`);
+  console.log(
+    `Backfill completed: ${result.updated} / ${result.total} transactions updated.`
+  );
 
   await mongoose.disconnect();
   process.exit(0);

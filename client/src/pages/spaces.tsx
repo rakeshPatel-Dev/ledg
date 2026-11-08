@@ -25,12 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
-import {
-  useSpaces,
-  useCreateSpace,
-  useUpdateSpace,
-  useDeleteSpace,
-} from "@/lib/queries";
+import { useSpaces, useCreateSpace, useUpdateSpace, useDeleteSpace } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 import { useAnalytics } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-provider";
@@ -52,17 +47,9 @@ const TYPE_OPTIONS = SPACE_TYPES.map((t) => ({
 }));
 
 export default function SpacesPage() {
-
   const navigate = useNavigate();
   const { user } = useAuth();
-  const {
-    data: spaces,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isFetching,
-  } = useSpaces();
+  const { data: spaces, isLoading, isError, error, refetch, isFetching } = useSpaces();
   const analytics = useAnalytics();
   const createSpace = useCreateSpace();
   const updateSpace = useUpdateSpace();
@@ -123,9 +110,7 @@ export default function SpacesPage() {
     setEditing(space);
     setName(space.name);
     setType(space.type);
-    setMonthlyBudget(
-      space.monthlyBudget != null ? String(space.monthlyBudget) : ""
-    );
+    setMonthlyBudget(space.monthlyBudget != null ? String(space.monthlyBudget) : "");
     setSheetOpen(true);
   };
 
@@ -185,7 +170,6 @@ export default function SpacesPage() {
     }
   };
 
-
   const handleRemoveInviteChip = (identifierToRemove: string) => {
     setInviteIdentifiers((prev) => prev.filter((i) => i !== identifierToRemove));
   };
@@ -207,7 +191,8 @@ export default function SpacesPage() {
       name: trimmed,
       type,
       monthlyBudget: parsedBudget,
-      inviteeIdentifiers: !editing && inviteIdentifiers.length > 0 ? inviteIdentifiers : undefined,
+      inviteeIdentifiers:
+        !editing && inviteIdentifiers.length > 0 ? inviteIdentifiers : undefined,
     });
 
     if (!parsed.success) {
@@ -259,9 +244,7 @@ export default function SpacesPage() {
       }
       setSheetOpen(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Something went wrong"
-      );
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
   };
 
@@ -272,14 +255,11 @@ export default function SpacesPage() {
       toast.success(`Deleted "${deletingSpace.name}"`);
       setDeletingSpace(null);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Something went wrong"
-      );
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
   };
 
-  const summaryFor = (id: string) =>
-    analytics.bySpace.find((s) => s.space.id === id);
+  const summaryFor = (id: string) => analytics.bySpace.find((s) => s.space.id === id);
   const deletingSummary = deletingSpace ? summaryFor(deletingSpace.id) : undefined;
 
   return (
@@ -288,9 +268,7 @@ export default function SpacesPage() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">Spaces</h1>
-            <p className="text-sm text-muted-foreground">
-              Organise money by purpose
-            </p>
+            <p className="text-sm text-muted-foreground">Organise money by purpose</p>
           </div>
           <Button
             onClick={openCreate}
@@ -320,25 +298,25 @@ export default function SpacesPage() {
 
       {/* Search Bar */}
       {!isLoading && !isError ? (
-      <FadeInItem>
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search spaces..."
-            className="pl-10 pr-10 rounded-full bg-muted/50 border-0 focus-visible:ring-1"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
-      </FadeInItem>
+        <FadeInItem>
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search spaces..."
+              className="pl-10 pr-10 rounded-full bg-muted/50 border-0 focus-visible:ring-1"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+        </FadeInItem>
       ) : null}
 
       {isLoading ? (
@@ -374,298 +352,326 @@ export default function SpacesPage() {
           ) : null}
 
           {!filteredSpaces || filteredSpaces.length === 0 ? (
-        <FadeInItem>
-          <Card className="rounded-4xl p-2 border border-border/60">
-            <EmptyState
-              icon={<Wallet className="size-7" />}
-              title={
-                searchQuery
-                  ? "No results found"
-                  : tab === "shared"
-                    ? "No shared spaces yet"
-                    : "No spaces yet"
-              }
-              description={
-                searchQuery
-                  ? `No spaces match "${searchQuery}"`
-                  : tab === "shared"
-                    ? "Invite friends or family to collaborate on a shared space."
-                    : "Create a space like Personal, Trip or Business to start tracking money there."
-              }
-              action={
-                !searchQuery ? (
-                  <Button onClick={openCreate} className="rounded-full">
-                    <Plus className="size-4 mr-2" />
-                    Create a space
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setSearchQuery("")}
-                    variant="outline"
-                    className="rounded-full"
-                  >
-                    <X className="size-4 mr-2" />
-                    Clear search
-                  </Button>
-                )
-              }
-            />
-          </Card>
-        </FadeInItem>
-      ) : (
-        <div className="grid gap-3">
-          {filteredSpaces.map((space) => {
-            const Icon = SPACE_TYPE_ICONS[space.type] ?? Wallet;
-            const typeBg = SPACE_TYPE_BG[space.type];
-            const typeText = SPACE_TYPE_TEXT[space.type];
-            const typeBadge = SPACE_TYPE_BADGE[space.type];
-            const summary = summaryFor(space.id);
-            const balance = summary?.balance;
-            const balanceColor = getBalanceColor(balance);
-            const isOwner = space.role === "owner" || (!space.role && space.ownerId === user?.id);
-            const members = space.members || [];
+            <FadeInItem>
+              <Card className="rounded-4xl p-2 border border-border/60">
+                <EmptyState
+                  icon={<Wallet className="size-7" />}
+                  title={
+                    searchQuery
+                      ? "No results found"
+                      : tab === "shared"
+                        ? "No shared spaces yet"
+                        : "No spaces yet"
+                  }
+                  description={
+                    searchQuery
+                      ? `No spaces match "${searchQuery}"`
+                      : tab === "shared"
+                        ? "Invite friends or family to collaborate on a shared space."
+                        : "Create a space like Personal, Trip or Business to start tracking money there."
+                  }
+                  action={
+                    !searchQuery ? (
+                      <Button onClick={openCreate} className="rounded-full">
+                        <Plus className="size-4 mr-2" />
+                        Create a space
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => setSearchQuery("")}
+                        variant="outline"
+                        className="rounded-full"
+                      >
+                        <X className="size-4 mr-2" />
+                        Clear search
+                      </Button>
+                    )
+                  }
+                />
+              </Card>
+            </FadeInItem>
+          ) : (
+            <div className="grid gap-3">
+              {filteredSpaces.map((space) => {
+                const Icon = SPACE_TYPE_ICONS[space.type] ?? Wallet;
+                const typeBg = SPACE_TYPE_BG[space.type];
+                const typeText = SPACE_TYPE_TEXT[space.type];
+                const typeBadge = SPACE_TYPE_BADGE[space.type];
+                const summary = summaryFor(space.id);
+                const balance = summary?.balance;
+                const balanceColor = getBalanceColor(balance);
+                const isOwner =
+                  space.role === "owner" || (!space.role && space.ownerId === user?.id);
+                const members = space.members || [];
 
-            return (
-              <FadeInItem key={space.id}>
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.005 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                >
-                  <Card
-                    className={cn(
-                      "relative flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
-                      "cursor-pointer hover:border-primary/20",
-                      space.isShared && "border-primary/20 bg-primary/2 dark:bg-primary/5"
-                    )}
-                  >
-                    <button
-                      type="button"
-                      aria-label={`Open ${space.name}`}
-                      onClick={() => handleSpaceClick(space)}
-                      className="absolute inset-0 z-0 rounded-4xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    />
-                    <div className="pointer-events-none relative z-10 flex w-full flex-col">
-                    <div className="flex items-center gap-3 w-full">
-                      <span
+                return (
+                  <FadeInItem key={space.id}>
+                    <motion.div
+                      whileHover={{ y: -3, scale: 1.005 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    >
+                      <Card
                         className={cn(
-                          "flex size-11 shrink-0 items-center justify-center rounded-2xl transition-colors",
-                          typeBg,
-                          typeText
+                          "relative flex flex-col rounded-4xl p-4 transition-shadow shadow-xs hover:shadow-md",
+                          "cursor-pointer hover:border-primary/20",
+                          space.isShared &&
+                            "border-primary/20 bg-primary/2 dark:bg-primary/5"
                         )}
                       >
-                        <Icon className="size-5" />
-                      </span>
+                        <button
+                          type="button"
+                          aria-label={`Open ${space.name}`}
+                          onClick={() => handleSpaceClick(space)}
+                          className="absolute inset-0 z-0 rounded-4xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        />
+                        <div className="pointer-events-none relative z-10 flex w-full flex-col">
+                          <div className="flex items-center gap-3 w-full">
+                            <span
+                              className={cn(
+                                "flex size-11 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                                typeBg,
+                                typeText
+                              )}
+                            >
+                              <Icon className="size-5" />
+                            </span>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate font-bold text-foreground text-sm">
-                            {space.name}
-                          </p>
-                          {space.isShared && (
-                            <>
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                                {isOwner ? (
-                                  <span className="inline-flex items-center text-primary font-semibold">
-                                    <Shield className="size-3 mr-0.5" />
-                                    Owner
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center text-muted-foreground">
-                                    <User className="size-3 mr-0.5" />
-                                    Member
-                                  </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate font-bold text-foreground text-sm">
+                                  {space.name}
+                                </p>
+                                {space.isShared && (
+                                  <>
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                                      {isOwner ? (
+                                        <span className="inline-flex items-center text-primary font-semibold">
+                                          <Shield className="size-3 mr-0.5" />
+                                          Owner
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center text-muted-foreground">
+                                          <User className="size-3 mr-0.5" />
+                                          Member
+                                        </span>
+                                      )}
+                                    </span>
+                                  </>
                                 )}
-                              </span>
-                            </>
-                          )}
-                        </div>
+                              </div>
 
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                              typeBadge
-                            )}
-                          >
-                            {space.type}
-                          </span>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                                    typeBadge
+                                  )}
+                                >
+                                  {space.type}
+                                </span>
 
-                          <span className="text-xs text-muted-foreground/60">·</span>
-                          <span className="text-xs text-muted-foreground">
-                            {summary
-                              ? `${summary.transactionCount} ${
-                                  summary.transactionCount !== 1 ? "txns" : "txn"
-                                }`
-                              : "—"}
-                          </span>
-                        </div>
+                                <span className="text-xs text-muted-foreground/60">
+                                  ·
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {summary
+                                    ? `${summary.transactionCount} ${
+                                        summary.transactionCount !== 1 ? "txns" : "txn"
+                                      }`
+                                    : "—"}
+                                </span>
+                              </div>
 
-                        {/* Member Avatar Stack on Shared Space Cards */}
-                        {space.isShared && members.length > 0 && (
-                          <div className="flex items-center gap-1.5 mt-2">
-                            <div className="flex -space-x-2 overflow-hidden">
-                              {members.slice(0, 4).map((member, idx) => {
-                                const initials = (member.name || "U")
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .slice(0, 2)
-                                  .join("")
-                                  .toUpperCase();
-                                return (
-                                  <div
-                                    key={member.userId || idx}
-                                    title={`${member.name} (${member.role})`}
-                                    className="inline-flex size-6 items-center justify-center rounded-full ring-2 ring-card bg-primary/20 text-[10px] font-bold text-primary shadow-xs"
-                                  >
-                                    {initials}
+                              {/* Member Avatar Stack on Shared Space Cards */}
+                              {space.isShared && members.length > 0 && (
+                                <div className="flex items-center gap-1.5 mt-2">
+                                  <div className="flex -space-x-2 overflow-hidden">
+                                    {members.slice(0, 4).map((member, idx) => {
+                                      const initials = (member.name || "U")
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .slice(0, 2)
+                                        .join("")
+                                        .toUpperCase();
+                                      return (
+                                        <div
+                                          key={member.userId || idx}
+                                          title={`${member.name} (${member.role})`}
+                                          className="inline-flex size-6 items-center justify-center rounded-full ring-2 ring-card bg-primary/20 text-[10px] font-bold text-primary shadow-xs"
+                                        >
+                                          {initials}
+                                        </div>
+                                      );
+                                    })}
+                                    {members.length > 4 && (
+                                      <div className="inline-flex size-6 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[9px] font-bold text-muted-foreground">
+                                        +{members.length - 4}
+                                      </div>
+                                    )}
                                   </div>
-                                );
-                              })}
-                              {members.length > 4 && (
-                                <div className="inline-flex size-6 items-center justify-center rounded-full ring-2 ring-card bg-muted text-[9px] font-bold text-muted-foreground">
-                                  +{members.length - 4}
+                                  <span className="text-[11px] font-medium text-muted-foreground">
+                                    {members.length}{" "}
+                                    {members.length === 1 ? "member" : "members"}
+                                  </span>
                                 </div>
                               )}
                             </div>
-                            <span className="text-[11px] font-medium text-muted-foreground">
-                              {members.length} {members.length === 1 ? "member" : "members"}
-                            </span>
-                          </div>
-                        )}
-                      </div>
 
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <p
-                          className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                          title="Income minus spending, excluding loans"
-                        >
-                          Net saved
-                        </p>
-                        <p
-                          className={cn(
-                            "text-base font-bold tabular-nums",
-                            balanceColor
-                          )}
-                        >
-                          {balance != null ? formatCurrency(balance) : "—"}
-                        </p>
-
-                        {isOwner && (
-                          <div className="pointer-events-auto flex gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => openEdit(e, space)}
-                              aria-label={`Edit ${space.name}`}
-                              className="relative flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingSpace(space);
-                              }}
-                              aria-label={`Delete ${space.name}`}
-                              className="relative flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-destructive/20 active:scale-95 cursor-pointer"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {space.monthlyBudget != null && space.monthlyBudget > 0 ? (() => {
-                      const spent = summary?.monthExpense;
-                      const budget = space.monthlyBudget;
-                      if (spent == null) {
-                        return (
-                          <div className="mt-3 w-full space-y-1.5 border-t border-border/40 pt-2.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium text-muted-foreground">
-                                Monthly budget
-                              </span>
-                              <span className="font-bold tabular-nums text-muted-foreground">
-                                — / {formatCurrency(budget)}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      }
-                      const isOver = spent > budget;
-                      const percent = budget > 0
-                        ? Math.round((spent / budget) * 100)
-                        : isOver ? 100 : 0;
-                      const overAmount = spent - budget;
-                      const budgetWidth = isOver ? (budget / spent) * 100 : Math.min(100, percent);
-                      const overWidth = isOver ? (overAmount / spent) * 100 : 0;
-
-                      return (
-                        <div className="mt-3 pt-2.5 border-t border-border/40 space-y-1.5 w-full">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground font-medium">Monthly budget</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className={cn("font-bold tabular-nums", isOver ? "text-destructive" : "text-foreground")}>
-                                {formatCurrency(spent)}
-                              </span>
-                              <span className="text-muted-foreground text-[11px]">/ {formatCurrency(budget)}</span>
-                            </div>
-                          </div>
-
-                          {isOver ? (
-                            <div className="h-2 w-full flex overflow-hidden rounded-full bg-muted/60 gap-0.5 p-0.5">
-                              <div
-                                className="h-full rounded-l-full bg-primary/70 transition-all duration-500"
-                                style={{ width: `${budgetWidth}%` }}
-                                title={`Budget: ${formatCurrency(budget)}`}
-                              />
-                              <div
-                                className="h-full rounded-r-full bg-destructive transition-all duration-500"
-                                style={{ width: `${overWidth}%` }}
-                                title={`Over by: ${formatCurrency(overAmount)}`}
-                              />
-                            </div>
-                          ) : (
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted/60">
-                              <div
+                            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                              <p
+                                className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                                title="Income minus spending, excluding loans"
+                              >
+                                Net saved
+                              </p>
+                              <p
                                 className={cn(
-                                  "h-full rounded-full transition-all duration-500",
-                                  percent >= 75 ? "bg-amber-500" : "bg-primary"
+                                  "text-base font-bold tabular-nums",
+                                  balanceColor
                                 )}
-                                style={{ width: `${budgetWidth}%` }}
-                              />
-                            </div>
-                          )}
+                              >
+                                {balance != null ? formatCurrency(balance) : "—"}
+                              </p>
 
-                          <div className="flex items-center justify-between text-[10px]">
-                            {isOver ? (
-                              <>
-                                <span className="text-muted-foreground">Budget: {formatCurrency(budget)}</span>
-                                <span className="font-semibold text-destructive">
-                                  +{formatCurrency(overAmount)} over ({percent}%)
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-muted-foreground">{percent}% spent</span>
-                                <span className="text-muted-foreground font-medium">
-                                  {formatCurrency(budget - spent)} remaining
-                                </span>
-                              </>
-                            )}
+                              {isOwner && (
+                                <div className="pointer-events-auto flex gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => openEdit(e, space)}
+                                    aria-label={`Edit ${space.name}`}
+                                    className="relative flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer"
+                                  >
+                                    <Pencil className="size-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeletingSpace(space);
+                                    }}
+                                    aria-label={`Delete ${space.name}`}
+                                    className="relative flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-destructive/20 active:scale-95 cursor-pointer"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
+
+                          {space.monthlyBudget != null && space.monthlyBudget > 0
+                            ? (() => {
+                                const spent = summary?.monthExpense;
+                                const budget = space.monthlyBudget;
+                                if (spent == null) {
+                                  return (
+                                    <div className="mt-3 w-full space-y-1.5 border-t border-border/40 pt-2.5">
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="font-medium text-muted-foreground">
+                                          Monthly budget
+                                        </span>
+                                        <span className="font-bold tabular-nums text-muted-foreground">
+                                          — / {formatCurrency(budget)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                const isOver = spent > budget;
+                                const percent =
+                                  budget > 0
+                                    ? Math.round((spent / budget) * 100)
+                                    : isOver
+                                      ? 100
+                                      : 0;
+                                const overAmount = spent - budget;
+                                const budgetWidth = isOver
+                                  ? (budget / spent) * 100
+                                  : Math.min(100, percent);
+                                const overWidth = isOver ? (overAmount / spent) * 100 : 0;
+
+                                return (
+                                  <div className="mt-3 pt-2.5 border-t border-border/40 space-y-1.5 w-full">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-muted-foreground font-medium">
+                                        Monthly budget
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span
+                                          className={cn(
+                                            "font-bold tabular-nums",
+                                            isOver
+                                              ? "text-destructive"
+                                              : "text-foreground"
+                                          )}
+                                        >
+                                          {formatCurrency(spent)}
+                                        </span>
+                                        <span className="text-muted-foreground text-[11px]">
+                                          / {formatCurrency(budget)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {isOver ? (
+                                      <div className="h-2 w-full flex overflow-hidden rounded-full bg-muted/60 gap-0.5 p-0.5">
+                                        <div
+                                          className="h-full rounded-l-full bg-primary/70 transition-all duration-500"
+                                          style={{ width: `${budgetWidth}%` }}
+                                          title={`Budget: ${formatCurrency(budget)}`}
+                                        />
+                                        <div
+                                          className="h-full rounded-r-full bg-destructive transition-all duration-500"
+                                          style={{ width: `${overWidth}%` }}
+                                          title={`Over by: ${formatCurrency(overAmount)}`}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted/60">
+                                        <div
+                                          className={cn(
+                                            "h-full rounded-full transition-all duration-500",
+                                            percent >= 75 ? "bg-amber-500" : "bg-primary"
+                                          )}
+                                          style={{ width: `${budgetWidth}%` }}
+                                        />
+                                      </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between text-[10px]">
+                                      {isOver ? (
+                                        <>
+                                          <span className="text-muted-foreground">
+                                            Budget: {formatCurrency(budget)}
+                                          </span>
+                                          <span className="font-semibold text-destructive">
+                                            +{formatCurrency(overAmount)} over ({percent}
+                                            %)
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-muted-foreground">
+                                            {percent}% spent
+                                          </span>
+                                          <span className="text-muted-foreground font-medium">
+                                            {formatCurrency(budget - spent)} remaining
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()
+                            : null}
                         </div>
-                      );
-                    })() : null}
-                    </div>
-                  </Card>
-                </motion.div>
-              </FadeInItem>
-            );
-          })}
-        </div>
+                      </Card>
+                    </motion.div>
+                  </FadeInItem>
+                );
+              })}
+            </div>
           )}
         </>
       )}
@@ -699,11 +705,7 @@ export default function SpacesPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Type
             </p>
-            <Segmented
-              options={TYPE_OPTIONS}
-              value={type}
-              onChange={setType}
-            />
+            <Segmented options={TYPE_OPTIONS} value={type} onChange={setType} />
           </div>
 
           <div className="space-y-1.5">

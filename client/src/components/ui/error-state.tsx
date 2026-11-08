@@ -84,7 +84,5 @@ export function ErrorState({
 
   if (!contained) return content;
 
-  return (
-    <Card className="rounded-4xl border border-border/60 p-2">{content}</Card>
-  );
+  return <Card className="rounded-4xl border border-border/60 p-2">{content}</Card>;
 }

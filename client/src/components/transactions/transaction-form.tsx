@@ -85,9 +85,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
   const [category, setCategory] = useState("Food");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [space, setSpace] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -140,9 +138,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     safeSpaces[0]?.id ??
     "";
   const activeSpaceId = space || defaultSpaceId;
-  const selectedSpaceName = safeSpaces.find(
-    (s) => s.id === activeSpaceId
-  )?.name;
+  const selectedSpaceName = safeSpaces.find((s) => s.id === activeSpaceId)?.name;
 
   const activeCategories = useMemo(
     () => getCategoriesByType(type, editing?.source === "dues"),
@@ -186,9 +182,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
       setAmount(String(editing.amount));
       setNote(editing.note ?? "");
       setDate(
-        editing.date
-          ? editing.date.slice(0, 10)
-          : new Date().toISOString().slice(0, 10)
+        editing.date ? editing.date.slice(0, 10) : new Date().toISOString().slice(0, 10)
       );
       setPaymentMethod(editing.paymentMethod ?? "cash");
       setSpace(editing.spaceId || formState.preselectedSpaceId || "");
@@ -325,10 +319,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
       closeForm();
     } catch (error) {
       toast.error(
-        getUserFacingError(
-          error,
-          "Couldn't save the transaction. Please try again."
-        )
+        getUserFacingError(error, "Couldn't save the transaction. Please try again.")
       );
     }
   };
@@ -385,9 +376,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
               size="lg"
               className="w-full text-base"
               disabled={
-                createMutation.isPending ||
-                updateMutation.isPending ||
-                !canSubmit
+                createMutation.isPending || updateMutation.isPending || !canSubmit
               }
             >
               {createMutation.isPending || updateMutation.isPending ? (
@@ -415,18 +404,13 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
             <span id="type-label" className="sr-only">
               Transaction type
             </span>
-            <Segmented
-              options={TYPE_OPTIONS}
-              value={type}
-              onChange={handleTypeChange}
-            />
+            <Segmented options={TYPE_OPTIONS} value={type} onChange={handleTypeChange} />
           </div>
 
           {editing?.source === "dues" && (
             <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-3 text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-              This entry came from a due. Changing it here will not update the
-              due. Manage the loan from{" "}
-              <span className="font-semibold">Dues</span>.
+              This entry came from a due. Changing it here will not update the due. Manage
+              the loan from <span className="font-semibold">Dues</span>.
             </div>
           )}
 
@@ -448,10 +432,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                       onClick={() => repeatTransaction(tx)}
                       className="flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-card/75 px-3 py-2 text-left transition-colors hover:bg-accent/60 cursor-pointer"
                     >
-                      <Icon
-                        className="size-4 shrink-0"
-                        style={{ color: meta.color }}
-                      />
+                      <Icon className="size-4 shrink-0" style={{ color: meta.color }} />
                       <span className="min-w-0">
                         <span className="block max-w-[9rem] truncate text-xs font-semibold">
                           {tx.note || tx.category}
@@ -479,9 +460,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                 Amount
               </label>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-muted-foreground">
-                  Rs.{" "}
-                </span>
+                <span className="text-xl font-bold text-muted-foreground">Rs. </span>
                 <input
                   id="amount"
                   ref={amountRef}
@@ -490,14 +469,10 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                   autoFocus
                   value={amount}
                   aria-invalid={Boolean(fieldErrors.amount)}
-                  aria-describedby={
-                    fieldErrors.amount ? "amount-error" : undefined
-                  }
+                  aria-describedby={fieldErrors.amount ? "amount-error" : undefined}
                   onChange={(e) => {
                     setAmount(
-                      e.target.value
-                        .replace(/[^0-9.]/g, "")
-                        .replace(/(\..*)\./g, "$1")
+                      e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
                     );
                     clearFieldError("amount");
                   }}
@@ -675,9 +650,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                   disabled={Boolean(formState.lockSpace)}
                   className="relative pl-10"
                   aria-invalid={Boolean(fieldErrors.space)}
-                  aria-describedby={
-                    fieldErrors.space ? "space-error" : undefined
-                  }
+                  aria-describedby={fieldErrors.space ? "space-error" : undefined}
                 >
                   <Wallet className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <SelectValue placeholder="Select space">
@@ -691,10 +664,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
                     </SelectItem>
                   ))}
                   <SelectSeparator />
-                  <SelectItem
-                    value="__new__"
-                    className="font-medium text-primary"
-                  >
+                  <SelectItem value="__new__" className="font-medium text-primary">
                     + New space…
                   </SelectItem>
                 </SelectContent>
@@ -803,9 +773,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
             size="lg"
             className="w-full text-base"
             onClick={handleCreateSpace}
-            disabled={
-              !newSpaceName.trim() || createSpaceMutation.isPending
-            }
+            disabled={!newSpaceName.trim() || createSpaceMutation.isPending}
           >
             {createSpaceMutation.isPending ? (
               <>

@@ -67,8 +67,7 @@ export function DueDetailSheet({
 
   const daysOverdue = isOverdue
     ? Math.round(
-        (new Date().setHours(0, 0, 0, 0) -
-          new Date(due.dueDate!).setHours(0, 0, 0, 0)) /
+        (new Date().setHours(0, 0, 0, 0) - new Date(due.dueDate!).setHours(0, 0, 0, 0)) /
           86_400_000
       )
     : 0;
@@ -142,24 +141,28 @@ export function DueDetailSheet({
       ) : (
         <div className="flex flex-col gap-0">
           {/* ── Hero header ── */}
-          <div className={cn(
-            "relative -mx-5 -mt-1 mb-5 px-5 pt-4 pb-5",
-            isSettled
-              ? "bg-muted/40"
-              : isLent
-                ? "bg-linear-to-br from-emerald-500/10 to-emerald-600/5"
-                : "bg-linear-to-br from-amber-500/10 to-amber-600/5"
-          )}>
+          <div
+            className={cn(
+              "relative -mx-5 -mt-1 mb-5 px-5 pt-4 pb-5",
+              isSettled
+                ? "bg-muted/40"
+                : isLent
+                  ? "bg-linear-to-br from-emerald-500/10 to-emerald-600/5"
+                  : "bg-linear-to-br from-amber-500/10 to-amber-600/5"
+            )}
+          >
             {/* Top row: avatar + name + status */}
             <div className="flex items-start gap-3 mb-4">
-              <div className={cn(
-                "flex size-12 shrink-0 items-center justify-center rounded-2xl text-white font-black text-base shadow-md",
-                isSettled
-                  ? "bg-muted text-muted-foreground shadow-none"
-                  : isLent
-                    ? "bg-linear-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/30"
-                    : "bg-linear-to-br from-amber-500 to-amber-600 shadow-amber-500/30"
-              )}>
+              <div
+                className={cn(
+                  "flex size-12 shrink-0 items-center justify-center rounded-2xl text-white font-black text-base shadow-md",
+                  isSettled
+                    ? "bg-muted text-muted-foreground shadow-none"
+                    : isLent
+                      ? "bg-linear-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/30"
+                      : "bg-linear-to-br from-amber-500 to-amber-600 shadow-amber-500/30"
+                )}
+              >
                 {isSettled ? (
                   <CheckCircle2 className="size-6 text-muted-foreground" />
                 ) : isLent ? (
@@ -175,7 +178,13 @@ export function DueDetailSheet({
                     {due.counterparty.name}
                   </h2>
                   <Badge
-                    variant={isSettled ? "default" : due.status === "partially_settled" ? "secondary" : "outline"}
+                    variant={
+                      isSettled
+                        ? "default"
+                        : due.status === "partially_settled"
+                          ? "secondary"
+                          : "outline"
+                    }
                     className={cn(
                       "text-[0.55rem] px-1.5 py-0 h-4 rounded-full uppercase tracking-wider font-bold",
                       isSettled && "bg-emerald-600"
@@ -202,10 +211,16 @@ export function DueDetailSheet({
 
             {/* Big remaining amount */}
             <div className="mb-4">
-              <p className={cn(
-                "text-3xl font-black tabular-nums tracking-tight leading-none",
-                isSettled ? "text-muted-foreground" : isLent ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
-              )}>
+              <p
+                className={cn(
+                  "text-3xl font-black tabular-nums tracking-tight leading-none",
+                  isSettled
+                    ? "text-muted-foreground"
+                    : isLent
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-amber-600 dark:text-amber-400"
+                )}
+              >
                 {isSettled ? "Settled" : formatCurrency(remaining)}
               </p>
               {!isSettled && (
@@ -218,16 +233,29 @@ export function DueDetailSheet({
             {/* 3-col stats */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               {[
-                { label: "Principal", value: formatCurrency(due.principal), color: "text-foreground" },
+                {
+                  label: "Principal",
+                  value: formatCurrency(due.principal),
+                  color: "text-foreground",
+                },
                 {
                   label: "Settled",
                   value: formatCurrency(due.settledAmount ?? 0),
                   color: "text-emerald-600 dark:text-emerald-400",
                 },
-                { label: "Remaining", value: formatCurrency(remaining), color: isSettled ? "text-muted-foreground" : "text-primary" },
+                {
+                  label: "Remaining",
+                  value: formatCurrency(remaining),
+                  color: isSettled ? "text-muted-foreground" : "text-primary",
+                },
               ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-xl bg-background/50 border border-border/30 p-2.5 text-center">
-                  <p className="text-[0.58rem] font-bold uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+                <div
+                  key={label}
+                  className="rounded-xl bg-background/50 border border-border/30 p-2.5 text-center"
+                >
+                  <p className="text-[0.58rem] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                    {label}
+                  </p>
                   <p className={cn("text-sm font-black tabular-nums", color)}>{value}</p>
                 </div>
               ))}
@@ -258,12 +286,14 @@ export function DueDetailSheet({
               </div>
 
               {due.dueDate && (
-                <div className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold",
-                  isOverdue
-                    ? "bg-destructive/15 text-destructive border border-destructive/20"
-                    : "bg-background/60 text-muted-foreground border border-border/30"
-                )}>
+                <div
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold",
+                    isOverdue
+                      ? "bg-destructive/15 text-destructive border border-destructive/20"
+                      : "bg-background/60 text-muted-foreground border border-border/30"
+                  )}
+                >
                   {isOverdue ? (
                     <>
                       <AlertTriangle className="size-3" />
@@ -345,21 +375,22 @@ export function DueDetailSheet({
               </Button>
             )}
 
-            {due.status === "open" && (!due.settlements || due.settlements.length === 0) && (
-              <Button
-                variant="outline"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="w-full h-10 rounded-2xl text-destructive border-destructive/30 hover:bg-destructive/8 hover:text-destructive font-semibold"
-              >
-                {isDeleting ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-2 size-4" />
-                )}
-                Delete Due
-              </Button>
-            )}
+            {due.status === "open" &&
+              (!due.settlements || due.settlements.length === 0) && (
+                <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="w-full h-10 rounded-2xl text-destructive border-destructive/30 hover:bg-destructive/8 hover:text-destructive font-semibold"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 size-4" />
+                  )}
+                  Delete Due
+                </Button>
+              )}
           </div>
         </div>
       )}
@@ -393,7 +424,10 @@ function SettlementRow({
             {formatCurrency(settlement.amount)}
           </span>
           {settlement.paymentMethod && (
-            <Badge variant="outline" className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full">
+            <Badge
+              variant="outline"
+              className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full"
+            >
               {PAYMENT_LABELS[settlement.paymentMethod]}
             </Badge>
           )}

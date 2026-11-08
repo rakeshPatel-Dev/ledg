@@ -225,9 +225,9 @@ Global Express Error Handler
 Standard API response
 
 {
-    success: false,
-    message: "...",
-    errors: []
+success: false,
+message: "...",
+errors: []
 }
 
 ---

@@ -40,14 +40,16 @@ const EMPTY_DASHBOARD: DashboardSummary = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function resolveSpaceIds(spaceId: string, userId: Types.ObjectId): Promise<Types.ObjectId[]> {
+async function resolveSpaceIds(
+  spaceId: string,
+  userId: Types.ObjectId
+): Promise<Types.ObjectId[]> {
   if (spaceId === "all") {
     return spaceRepository.findSpaceIdsForUser(userId);
   }
   const access = await assertSpaceAccess(spaceId, userId);
   return [access.space._id];
 }
-
 
 type Period = "today" | "month" | "3months" | "year" | "all" | "custom";
 
@@ -71,12 +73,7 @@ export function zonedParts(date: Date): { y: number; m: number; d: number } {
   };
 }
 
-export function zonedBoundary(
-  y: number,
-  m: number,
-  d: number,
-  endOfDay = false
-): Date {
+export function zonedBoundary(y: number, m: number, d: number, endOfDay = false): Date {
   const ms = endOfDay
     ? Date.UTC(y, m, d, 23, 59, 59, 999)
     : Date.UTC(y, m, d, 0, 0, 0, 0);
@@ -158,10 +155,16 @@ export function prevDateRangeForPeriod(
   }
 
   if (period === "month") {
-    return { from: firstOfZonedMonth(-1), to: new Date(firstOfZonedMonth(0).getTime() - 1) };
+    return {
+      from: firstOfZonedMonth(-1),
+      to: new Date(firstOfZonedMonth(0).getTime() - 1),
+    };
   }
   if (period === "3months") {
-    return { from: firstOfZonedMonth(-5), to: new Date(firstOfZonedMonth(-2).getTime() - 1) };
+    return {
+      from: firstOfZonedMonth(-5),
+      to: new Date(firstOfZonedMonth(-2).getTime() - 1),
+    };
   }
 
   // year
@@ -281,8 +284,7 @@ function buildInsights(
   // Overall spend change
   if (previous.totalExpense > 0 && current.totalExpense > 0) {
     const changePct = Math.round(
-      ((current.totalExpense - previous.totalExpense) / previous.totalExpense) *
-        100
+      ((current.totalExpense - previous.totalExpense) / previous.totalExpense) * 100
     );
     if (Math.abs(changePct) >= 5) {
       insights.push(
@@ -309,9 +311,7 @@ function buildInsights(
   // Top category vs last period
   if (currentCategories.length > 0 && prevCategories.length > 0) {
     const topCurrent = currentCategories[0];
-    const prevMatch = prevCategories.find(
-      (p) => p.category === topCurrent.category
-    );
+    const prevMatch = prevCategories.find((p) => p.category === topCurrent.category);
     if (prevMatch && prevMatch.amount > 0) {
       const pct = Math.round(
         ((topCurrent.amount - prevMatch.amount) / prevMatch.amount) * 100
@@ -329,9 +329,7 @@ function buildInsights(
   // Deficit alert
   if (current.totalExpense > current.totalIncome && current.totalIncome > 0) {
     const deficit = current.totalExpense - current.totalIncome;
-    insights.push(
-      `You're over budget by ${deficit.toFixed(2)} — try to cut back`
-    );
+    insights.push(`You're over budget by ${deficit.toFixed(2)} — try to cut back`);
   }
 
   return insights.slice(0, 5);
@@ -368,30 +366,20 @@ export async function getAnalyticsSummary(
 
   const trend = fillTrend(data.trend, trendBucketKeys(range, granularity, new Date()));
 
-  const insights = buildInsights(
-    current,
-    previous,
-    currentExpCats,
-    prevExpCats,
-    period
-  );
+  const insights = buildInsights(current, previous, currentExpCats, prevExpCats, period);
 
   // Month-over-month or period-over-period deltas
   const expenseDelta =
     previous.totalExpense > 0
       ? Math.round(
-          ((current.totalExpense - previous.totalExpense) /
-            previous.totalExpense) *
-            100
+          ((current.totalExpense - previous.totalExpense) / previous.totalExpense) * 100
         )
       : null;
 
   const incomeDelta =
     previous.totalIncome > 0
       ? Math.round(
-          ((current.totalIncome - previous.totalIncome) /
-            previous.totalIncome) *
-            100
+          ((current.totalIncome - previous.totalIncome) / previous.totalIncome) * 100
         )
       : null;
 
@@ -447,10 +435,7 @@ export async function getDashboardSummary(ownerId: Types.ObjectId) {
   const monthStart = zonedBoundary(now.y, now.m, 1);
 
   const startedAt = Date.now();
-  const data = await analyticsRepository.getDashboardData(
-    resolvedSpaceIds,
-    monthStart
-  );
+  const data = await analyticsRepository.getDashboardData(resolvedSpaceIds, monthStart);
   const elapsedMs = Date.now() - startedAt;
 
   // Surface the aggregation separately from the request total so a slow cache
@@ -477,4 +462,3 @@ export async function getDashboardSummary(ownerId: Types.ObjectId) {
 
   return payload;
 }
-

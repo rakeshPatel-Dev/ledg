@@ -128,8 +128,7 @@ export async function inviteMember(
   const alreadyMember = space.members.some(
     (m: { email: string; userId: Types.ObjectId }) =>
       m.email.toLowerCase() === normalizedEmail ||
-      (resolved.userId != null &&
-        m.userId.toString() === resolved.userId.toString())
+      (resolved.userId != null && m.userId.toString() === resolved.userId.toString())
   );
   if (alreadyMember) {
     throw new ConflictError("User is already a member of this space");
@@ -148,9 +147,7 @@ export async function inviteMember(
   // reservation, but combined with the atomic accept cap it prevents
   // over-booking).
   if (!invitation) {
-    const pendingCount = await invitationRepo.countPendingInvitationsBySpace(
-      space._id
-    );
+    const pendingCount = await invitationRepo.countPendingInvitationsBySpace(space._id);
     if (space.members.length + pendingCount >= MAX_MEMBERS_PER_SPACE) {
       throw new ConflictError(
         `Space is full or has outstanding invitations covering the remaining ${MAX_MEMBERS_PER_SPACE - space.members.length} slot(s)`
@@ -170,9 +167,7 @@ export async function inviteMember(
 
   // Mint fresh single-use token & 7-day expiry
   const { rawToken, tokenHash } = invitationRepo.generateInviteToken();
-  const expiresAt = new Date(
-    Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-  );
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
   if (invitation) {
     // Refresh token, expiry and identity snapshots
@@ -235,17 +230,19 @@ export async function inviteMember(
       await invitation.save();
     }
 
-    await notificationService.notify({
-      userId: existingUser._id,
-      type: "space_invite",
-      data: {
-        spaceId: String(space._id),
-        spaceName: space.name,
-        invitationId: String(invitation._id),
-        actorId: String(inviter.userId),
-        actorName: inviter.name,
-      },
-    }).catch((e) => logger.error({ error: e }, "In-app invite notify failed"));
+    await notificationService
+      .notify({
+        userId: existingUser._id,
+        type: "space_invite",
+        data: {
+          spaceId: String(space._id),
+          spaceName: space.name,
+          invitationId: String(invitation._id),
+          actorId: String(inviter.userId),
+          actorName: inviter.name,
+        },
+      })
+      .catch((e) => logger.error({ error: e }, "In-app invite notify failed"));
   }
 
   return {
@@ -276,7 +273,10 @@ export async function getInvitationPreviewByToken(rawToken: string) {
     inviterName: invitation.inviterName,
     inviterUsername: invitation.inviterUsername ?? null,
     inviteeEmail: invitation.inviteeEmail,
-    inviteeEmailMasked: invitation.inviteeEmail.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + "*".repeat(b.length)),
+    inviteeEmailMasked: invitation.inviteeEmail.replace(
+      /(.{2})(.*)(?=@)/,
+      (_, a, b) => a + "*".repeat(b.length)
+    ),
     inviteeId: invitation.inviteeId ? String(invitation.inviteeId) : null,
     inviteeUsername: invitation.inviteeUsername ?? null,
     expiresAt: invitation.expiresAt.toISOString(),
@@ -286,10 +286,7 @@ export async function getInvitationPreviewByToken(rawToken: string) {
 /**
  * Accepts an invitation using a raw token.
  */
-export async function acceptInvitationByToken(
-  rawToken: string,
-  user: InviteeContext
-) {
+export async function acceptInvitationByToken(rawToken: string, user: InviteeContext) {
   const tokenHash = invitationRepo.hashToken(rawToken);
   const invitation = await SpaceInvitationModel.findOne({
     tokenHash,
@@ -306,8 +303,7 @@ export async function acceptInvitationByToken(
   // Recipient authorization check
   if (
     invitation.inviteeEmail.toLowerCase() !== user.email.toLowerCase() &&
-    (!invitation.inviteeId ||
-      invitation.inviteeId.toString() !== user.userId.toString())
+    (!invitation.inviteeId || invitation.inviteeId.toString() !== user.userId.toString())
   ) {
     throw new ForbiddenError(
       `This invitation was sent to ${invitation.inviteeEmail}. Please log in with that account to accept.`
@@ -320,10 +316,7 @@ export async function acceptInvitationByToken(
 /**
  * Accepts an invitation by invitation ID (from in-app notifications/pending list).
  */
-export async function acceptInvitationById(
-  invitationId: string,
-  user: InviteeContext
-) {
+export async function acceptInvitationById(invitationId: string, user: InviteeContext) {
   const invitation = await SpaceInvitationModel.findOne({
     _id: invitationId,
     status: "pending",
@@ -339,8 +332,7 @@ export async function acceptInvitationById(
   // Recipient authorization check
   if (
     invitation.inviteeEmail.toLowerCase() !== user.email.toLowerCase() &&
-    (!invitation.inviteeId ||
-      invitation.inviteeId.toString() !== user.userId.toString())
+    (!invitation.inviteeId || invitation.inviteeId.toString() !== user.userId.toString())
   ) {
     throw new ForbiddenError(
       `This invitation was sent to ${invitation.inviteeEmail}. Please log in with that account to accept.`
@@ -353,10 +345,7 @@ export async function acceptInvitationById(
 /**
  * Shared atomic acceptance transition, membership update, and notifications.
  */
-async function executeAcceptance(
-  invitation: SpaceInvitationDoc,
-  user: InviteeContext
-) {
+async function executeAcceptance(invitation: SpaceInvitationDoc, user: InviteeContext) {
   // Check member cap on space atomically
   const space = await SpaceModel.findOne({
     _id: invitation.spaceId,
@@ -434,17 +423,19 @@ async function executeAcceptance(
   );
 
   // Notify owner
-  await notificationService.notify({
-    userId: invitation.inviterId,
-    type: "invite_accepted",
-    data: {
-      spaceId: String(space._id),
-      spaceName: space.name,
-      invitationId: String(invitation._id),
-      actorId: String(user.userId),
-      actorName: user.name,
-    },
-  }).catch((e) => logger.error({ error: e }, "Failed to notify owner on accept"));
+  await notificationService
+    .notify({
+      userId: invitation.inviterId,
+      type: "invite_accepted",
+      data: {
+        spaceId: String(space._id),
+        spaceName: space.name,
+        invitationId: String(invitation._id),
+        actorId: String(user.userId),
+        actorName: user.name,
+      },
+    })
+    .catch((e) => logger.error({ error: e }, "Failed to notify owner on accept"));
 
   // Notify other existing members
   const otherMemberIds = space.members
@@ -456,16 +447,18 @@ async function executeAcceptance(
     .map((m: { userId: Types.ObjectId }) => m.userId);
 
   if (otherMemberIds.length > 0) {
-    await notificationService.notifyMembers({
-      recipientIds: otherMemberIds,
-      type: "member_joined",
-      data: {
-        spaceId: String(space._id),
-        spaceName: space.name,
-        actorId: String(user.userId),
-        actorName: user.name,
-      },
-    }).catch((e) => logger.error({ error: e }, "Failed to notify members on join"));
+    await notificationService
+      .notifyMembers({
+        recipientIds: otherMemberIds,
+        type: "member_joined",
+        data: {
+          spaceId: String(space._id),
+          spaceName: space.name,
+          actorId: String(user.userId),
+          actorName: user.name,
+        },
+      })
+      .catch((e) => logger.error({ error: e }, "Failed to notify members on join"));
   }
 
   return {
@@ -478,10 +471,7 @@ async function executeAcceptance(
 /**
  * Rejects an invitation by ID.
  */
-export async function rejectInvitation(
-  invitationId: string,
-  user: InviteeContext
-) {
+export async function rejectInvitation(invitationId: string, user: InviteeContext) {
   const invitation = await SpaceInvitationModel.findOne({
     _id: invitationId,
     status: "pending",
@@ -499,10 +489,7 @@ export async function rejectInvitation(
  * Mirrors acceptInvitationByToken: only a pending, unexpired invitation is
  * eligible.
  */
-export async function rejectInvitationByToken(
-  rawToken: string,
-  user: InviteeContext
-) {
+export async function rejectInvitationByToken(rawToken: string, user: InviteeContext) {
   const tokenHash = invitationRepo.hashToken(rawToken);
   const invitation = await SpaceInvitationModel.findOne({
     tokenHash,
@@ -517,14 +504,10 @@ export async function rejectInvitationByToken(
   return executeRejection(invitation, user);
 }
 
-async function executeRejection(
-  invitation: SpaceInvitationDoc,
-  user: InviteeContext
-) {
+async function executeRejection(invitation: SpaceInvitationDoc, user: InviteeContext) {
   if (
     invitation.inviteeEmail.toLowerCase() !== user.email.toLowerCase() &&
-    (!invitation.inviteeId ||
-      invitation.inviteeId.toString() !== user.userId.toString())
+    (!invitation.inviteeId || invitation.inviteeId.toString() !== user.userId.toString())
   ) {
     throw new ForbiddenError("You are not authorized to decline this invitation");
   }
@@ -538,17 +521,19 @@ async function executeRejection(
   );
 
   // Notify owner
-  await notificationService.notify({
-    userId: invitation.inviterId,
-    type: "invite_rejected",
-    data: {
-      spaceId: String(invitation.spaceId),
-      spaceName: invitation.spaceName,
-      invitationId: String(invitation._id),
-      actorId: String(user.userId),
-      actorName: user.name,
-    },
-  }).catch((e) => logger.error({ error: e }, "Failed to notify owner on reject"));
+  await notificationService
+    .notify({
+      userId: invitation.inviterId,
+      type: "invite_rejected",
+      data: {
+        spaceId: String(invitation.spaceId),
+        spaceName: invitation.spaceName,
+        invitationId: String(invitation._id),
+        actorId: String(user.userId),
+        actorName: user.name,
+      },
+    })
+    .catch((e) => logger.error({ error: e }, "Failed to notify owner on reject"));
 
   return { success: true };
 }
@@ -556,10 +541,7 @@ async function executeRejection(
 /**
  * Owner resends invitation (re-mints token, rotates hash, sends email inline).
  */
-export async function resendInvitation(
-  invitationId: string,
-  ownerId: Types.ObjectId
-) {
+export async function resendInvitation(invitationId: string, ownerId: Types.ObjectId) {
   const invitation = await SpaceInvitationModel.findOne({
     _id: invitationId,
   });
@@ -576,9 +558,7 @@ export async function resendInvitation(
     ownerId,
   });
   if (!space) {
-    throw new ForbiddenError(
-      "Only the current space owner can resend invitations"
-    );
+    throw new ForbiddenError("Only the current space owner can resend invitations");
   }
 
   if (invitation.status !== "pending") {
@@ -586,9 +566,7 @@ export async function resendInvitation(
   }
 
   const { rawToken, tokenHash } = invitationRepo.generateInviteToken();
-  const expiresAt = new Date(
-    Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-  );
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
   invitation.tokenHash = tokenHash;
   invitation.expiresAt = expiresAt;
@@ -624,10 +602,7 @@ export async function resendInvitation(
 /**
  * Owner cancels / revokes invitation.
  */
-export async function cancelInvitation(
-  invitationId: string,
-  ownerId: Types.ObjectId
-) {
+export async function cancelInvitation(invitationId: string, ownerId: Types.ObjectId) {
   const invitation = await SpaceInvitationModel.findOne({
     _id: invitationId,
   });
@@ -644,9 +619,7 @@ export async function cancelInvitation(
     ownerId,
   });
   if (!space) {
-    throw new ForbiddenError(
-      "Only the current space owner can cancel invitations"
-    );
+    throw new ForbiddenError("Only the current space owner can cancel invitations");
   }
 
   await SpaceInvitationModel.updateOne(
@@ -667,10 +640,7 @@ export async function listPendingInvitationsForEmail(
   return invitationRepo.findPendingInvitationsByEmail(inviteeEmail, userId);
 }
 
-export async function listPendingForSpace(
-  spaceId: string,
-  ownerId: Types.ObjectId
-) {
+export async function listPendingForSpace(spaceId: string, ownerId: Types.ObjectId) {
   const space = await SpaceModel.findOne({
     _id: spaceId,
     ownerId,

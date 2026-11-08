@@ -46,9 +46,7 @@ export async function createSpace(
   return toSpaceDto(doc.toObject(), "owner");
 }
 
-export async function findSpacesForUser(
-  userId: Types.ObjectId
-): Promise<SpaceDoc[]> {
+export async function findSpacesForUser(userId: Types.ObjectId): Promise<SpaceDoc[]> {
   const docs = await SpaceModel.find({
     status: { $ne: "deleting" },
     $or: [{ ownerId: userId }, { "members.userId": userId }],
@@ -90,9 +88,7 @@ export async function findMemberUserIds(
   return (doc?.members ?? []).map((member) => String(member.userId));
 }
 
-export async function findSpacesByOwner(
-  ownerId: Types.ObjectId
-): Promise<SpaceDoc[]> {
+export async function findSpacesByOwner(ownerId: Types.ObjectId): Promise<SpaceDoc[]> {
   const docs = await SpaceModel.find({ ownerId, status: { $ne: "deleting" } })
     .sort({ createdAt: -1 })
     .lean();
@@ -113,7 +109,6 @@ export async function findSpaceById(
   const role: "owner" | "member" =
     doc.ownerId.toString() === (ownerId?.toString() ?? "") ? "owner" : "member";
   return toSpaceDto(doc, role);
-
 }
 
 export async function updateSpace(
@@ -156,10 +151,7 @@ export async function clearSpaceDeletingLease(
   return doc ? toSpaceDto(doc, "owner") : null;
 }
 
-export async function deleteSpace(
-  id: string,
-  ownerId: Types.ObjectId
-): Promise<boolean> {
+export async function deleteSpace(id: string, ownerId: Types.ObjectId): Promise<boolean> {
   const result = await SpaceModel.deleteOne({ _id: id, ownerId });
   return result.deletedCount > 0;
 }
@@ -168,9 +160,7 @@ export async function countUserSpaces(ownerId: Types.ObjectId): Promise<number> 
   return SpaceModel.countDocuments({ ownerId, status: { $ne: "deleting" } });
 }
 
-export async function ensureDefaultSpace(
-  owner: OwnerUserInfo
-): Promise<SpaceDoc> {
+export async function ensureDefaultSpace(owner: OwnerUserInfo): Promise<SpaceDoc> {
   const existing = await SpaceModel.findOne({
     ownerId: owner.userId,
     type: "personal",

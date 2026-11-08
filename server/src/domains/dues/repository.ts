@@ -1,7 +1,17 @@
 import { Types } from "mongoose";
 
-import { DebtModel, DebtSettlementModel, type DebtDoc, type DebtSettlementDoc } from "./model.js";
-import type { DebtDirection, DebtStatus, DuesSummary, PersonDuesSummary } from "../../shared/index.js";
+import {
+  DebtModel,
+  DebtSettlementModel,
+  type DebtDoc,
+  type DebtSettlementDoc,
+} from "./model.js";
+import type {
+  DebtDirection,
+  DebtStatus,
+  DuesSummary,
+  PersonDuesSummary,
+} from "../../shared/index.js";
 
 export async function createDebt(data: Partial<DebtDoc>): Promise<DebtDoc> {
   const debt = await DebtModel.create(data);
@@ -48,7 +58,11 @@ export async function findDebtsByUser(
   const skip = (page - 1) * pageSize;
 
   const [items, total] = await Promise.all([
-    DebtModel.find(match).sort({ date: -1, _id: -1 }).skip(skip).limit(pageSize).lean<DebtDoc[]>(),
+    DebtModel.find(match)
+      .sort({ date: -1, _id: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .lean<DebtDoc[]>(),
     DebtModel.countDocuments(match),
   ]);
 
@@ -85,7 +99,9 @@ export async function createSettlement(
 export async function findSettlementsByDebt(
   debtId: string | Types.ObjectId
 ): Promise<DebtSettlementDoc[]> {
-  return DebtSettlementModel.find({ debtId }).sort({ date: -1, _id: -1 }).lean<DebtSettlementDoc[]>();
+  return DebtSettlementModel.find({ debtId })
+    .sort({ date: -1, _id: -1 })
+    .lean<DebtSettlementDoc[]>();
 }
 
 export async function findSettlementById(

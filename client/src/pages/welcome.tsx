@@ -24,7 +24,10 @@ export default function WelcomePage() {
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-10">
       {/* Top Header / Branding */}
       <header className="flex flex-col items-center gap-4 text-center pt-8">
-        <AppLogo className="size-20 rounded-3xl shadow-xl shadow-primary/25" imgClassName="size-12" />
+        <AppLogo
+          className="size-20 rounded-3xl shadow-xl shadow-primary/25"
+          imgClassName="size-12"
+        />
         <div className="space-y-1">
           <h1
             id="welcome-heading"
@@ -47,7 +50,9 @@ export default function WelcomePage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">5-Second Logging</p>
-              <p className="text-xs text-muted-foreground">Snap or type expenses instantly on the go.</p>
+              <p className="text-xs text-muted-foreground">
+                Snap or type expenses instantly on the go.
+              </p>
             </div>
           </div>
 
@@ -57,7 +62,9 @@ export default function WelcomePage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">Smart Analytics</p>
-              <p className="text-xs text-muted-foreground">Understand where your money goes monthly.</p>
+              <p className="text-xs text-muted-foreground">
+                Understand where your money goes monthly.
+              </p>
             </div>
           </div>
 
@@ -66,8 +73,12 @@ export default function WelcomePage() {
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Private & Cloud Synced</p>
-              <p className="text-xs text-muted-foreground">Your financial data is encrypted and safe.</p>
+              <p className="text-sm font-semibold text-foreground">
+                Private & Cloud Synced
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your financial data is encrypted and safe.
+              </p>
             </div>
           </div>
         </div>
@@ -75,11 +86,21 @@ export default function WelcomePage() {
 
       {/* Action Buttons */}
       <footer className="flex flex-col gap-3">
-        <Button variant="default" size="lg" className="h-13 w-full rounded-full text-base font-semibold shadow-md" render={<Link to="/sign-up" />}>
+        <Button
+          variant="default"
+          size="lg"
+          className="h-13 w-full rounded-full text-base font-semibold shadow-md"
+          render={<Link to="/sign-up" />}
+        >
           <ArrowRight className="size-4 mr-2" />
           Get Started
         </Button>
-        <Button variant="outline" size="lg" className="h-13 w-full rounded-full text-base font-semibold" render={<Link to="/sign-in" />}>
+        <Button
+          variant="outline"
+          size="lg"
+          className="h-13 w-full rounded-full text-base font-semibold"
+          render={<Link to="/sign-in" />}
+        >
           <LogIn className="size-4 mr-2" />
           Sign in to your account
         </Button>
@@ -97,4 +118,3 @@ export default function WelcomePage() {
     </div>
   );
 }
-

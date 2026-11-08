@@ -23,9 +23,7 @@ export function errorHandler(
     res.status(422).json({
       success: false,
       message: "Validation failed",
-      errors: error.issues.map(
-        (issue) => `${issue.path.join(".")}: ${issue.message}`
-      ),
+      errors: error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`),
     });
     return;
   }

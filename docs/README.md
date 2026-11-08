@@ -1,13 +1,13 @@
 # Documentation Index
 
-| Folder | Contents |
-|---|---|
+| Folder          | Contents                                                                              |
+| --------------- | ------------------------------------------------------------------------------------- |
 | `architecture/` | How the system is built — architecture, database design, API design, folder structure |
-| `product/` | What we're building — PRD, feature proposals, analytics roadmap, design language |
-| `guides/` | How we work — coding standards, UI guidelines, security policy, template knowledge |
-| `plans/` | Feature execution plans with finalized decisions and phase breakdowns |
-| `quality/` | Codebase audits, bug trackers, upgrade checklists |
-| `superpowers/` | Agent-generated specs and plans (tooling-managed) |
+| `product/`      | What we're building — PRD, feature proposals, analytics roadmap, design language      |
+| `guides/`       | How we work — coding standards, UI guidelines, security policy, template knowledge    |
+| `plans/`        | Feature execution plans with finalized decisions and phase breakdowns                 |
+| `quality/`      | Codebase audits, bug trackers, upgrade checklists                                     |
+| `superpowers/`  | Agent-generated specs and plans (tooling-managed)                                     |
 
 ## Active plans
 

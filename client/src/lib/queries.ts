@@ -53,11 +53,7 @@ export const queryKeys = {
   due: (id: string) => ["dues", id] as const,
 };
 
-
-type TransactionListQuery = Omit<
-  TransactionQuery,
-  "page" | "pageSize"
-> & {
+type TransactionListQuery = Omit<TransactionQuery, "page" | "pageSize"> & {
   page?: number;
   pageSize?: number;
 };
@@ -74,7 +70,10 @@ function tempId() {
 function updateTransactionLists(
   client: QueryClient,
   spaceId: string,
-  update: (items: Transaction[], total: number) => {
+  update: (
+    items: Transaction[],
+    total: number
+  ) => {
     items: Transaction[];
     total: number;
   }
@@ -140,10 +139,7 @@ export function useSpaces() {
 export function useSpaceLookup(): Map<string, Space> {
   const { data } = useSpaces();
 
-  return useMemo(
-    () => new Map((data ?? []).map((space) => [space.id, space])),
-    [data]
-  );
+  return useMemo(() => new Map((data ?? []).map((space) => [space.id, space])), [data]);
 }
 
 export function useCreateSpace() {
@@ -154,8 +150,7 @@ export function useCreateSpace() {
   let pendingKey: string | null = null;
   return useMutation({
     mutationFn: async (data: SpaceInput) => {
-      const idempotencyKey =
-        pendingKey ?? (pendingKey = crypto.randomUUID());
+      const idempotencyKey = pendingKey ?? (pendingKey = crypto.randomUUID());
       return getApi().spaces.create(data, idempotencyKey);
     },
     onMutate: async (data) => {
@@ -173,7 +168,6 @@ export function useCreateSpace() {
         createdAt: now,
         updatedAt: now,
       };
-
 
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) => [
         ...(old ?? []),
@@ -210,9 +204,7 @@ export function useUpdateSpace() {
 
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
         (old ?? []).map((s) =>
-          s.id === id
-            ? { ...s, ...data, updatedAt: new Date().toISOString() }
-            : s
+          s.id === id ? { ...s, ...data, updatedAt: new Date().toISOString() } : s
         )
       );
 
@@ -237,9 +229,7 @@ export function useDeleteSpace() {
       await queryClient.cancelQueries({ queryKey: queryKeys.spaces });
       await queryClient.cancelQueries({ queryKey: transactionListKey(id) });
 
-      const previousSpaces = queryClient.getQueryData<Space[]>(
-        queryKeys.spaces
-      );
+      const previousSpaces = queryClient.getQueryData<Space[]>(queryKeys.spaces);
       const previousTransactions = snapshotTransactionLists(queryClient, id);
 
       queryClient.setQueryData<Space[]>(queryKeys.spaces, (old) =>
@@ -266,10 +256,7 @@ export function useDeleteSpace() {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-export function useTransactions(
-  spaceId: string,
-  query: TransactionListQuery = {}
-) {
+export function useTransactions(spaceId: string, query: TransactionListQuery = {}) {
   return useQuery({
     queryKey: queryKeys.transactions(spaceId, query),
     queryFn: () => getApi().transactions.list(spaceId, query),
@@ -313,10 +300,7 @@ export function useCreateTransaction() {
         type: data.type,
         amount: data.amount,
         note: data.note ?? "",
-        date:
-          typeof data.date === "string"
-            ? data.date
-            : data.date.toISOString(),
+        date: typeof data.date === "string" ? data.date : data.date.toISOString(),
         paymentMethod: data.paymentMethod ?? null,
         source: data.source ?? "manual",
         createdAt: now,
@@ -343,12 +327,7 @@ export function useCreateTransaction() {
       return { previous, tempId: optimisticId };
     },
     onSuccess: (real, variables, context) => {
-      replaceInTransactionLists(
-        queryClient,
-        variables.spaceId,
-        context.tempId,
-        real
-      );
+      replaceInTransactionLists(queryClient, variables.spaceId, context.tempId, real);
       queryClient.setQueriesData<{ items: Transaction[]; total: number }>(
         { queryKey: ["transactions", "all"] },
         (old) => {
@@ -1009,8 +988,9 @@ export function useUpdateNotificationPreferences() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Parameters<ReturnType<typeof getApi>["notifications"]["updatePreferences"]>[0]) =>
-      getApi().notifications.updatePreferences(data),
+    mutationFn: (
+      data: Parameters<ReturnType<typeof getApi>["notifications"]["updatePreferences"]>[0]
+    ) => getApi().notifications.updatePreferences(data),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.notificationPreferences, updated);
     },
@@ -1062,4 +1042,3 @@ export type {
   SpaceUpdateInput,
   Transaction,
 };
-

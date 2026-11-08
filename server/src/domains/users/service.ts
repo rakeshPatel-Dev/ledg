@@ -83,10 +83,7 @@ export async function changePassword(
   const { hashPassword } = await import("better-auth/crypto");
   const newHash = await hashPassword(newPassword);
 
-  await accounts.updateOne(
-    { _id: account._id },
-    { $set: { password: newHash } }
-  );
+  await accounts.updateOne({ _id: account._id }, { $set: { password: newHash } });
 
   // Invalidate all sessions except current
   await sessions.deleteMany({
@@ -96,9 +93,7 @@ export async function changePassword(
   return { success: true };
 }
 
-export async function getAuthProvider(
-  authUser: AuthUser
-): Promise<{ provider: string }> {
+export async function getAuthProvider(authUser: AuthUser): Promise<{ provider: string }> {
   await connectDatabase();
 
   const db = mongoose.connection.getClient().db(process.env.MONGODB_DB_NAME);
@@ -114,24 +109,28 @@ export async function getAuthProvider(
 export async function getProfile(authUser: AuthUser) {
   await connectDatabase();
 
-  const user = await UserModel.findOne({ betterAuthId: authUser.id })
+  const user = (await UserModel.findOne({ betterAuthId: authUser.id })
     .select("name fullName username email image emailVerified createdAt")
-    .lean() as {
-      _id: mongoose.Types.ObjectId;
-      name?: string;
-      fullName?: string;
-      username?: string;
-      email?: string;
-      image?: string | null;
-      emailVerified?: boolean;
-      createdAt?: string;
-    } | null;
+    .lean()) as {
+    _id: mongoose.Types.ObjectId;
+    name?: string;
+    fullName?: string;
+    username?: string;
+    email?: string;
+    image?: string | null;
+    emailVerified?: boolean;
+    createdAt?: string;
+  } | null;
 
   if (!user) throw new BadRequestError("User not found");
 
   let username = user.username ?? null;
   if (!username) {
-    const emailPrefix = (user.email ?? authUser.email ?? "").split("@")[0] || user.name || authUser.name || "user";
+    const emailPrefix =
+      (user.email ?? authUser.email ?? "").split("@")[0] ||
+      user.name ||
+      authUser.name ||
+      "user";
     username = await writeUniqueUsername(user._id, emailPrefix);
   }
 
@@ -217,10 +216,7 @@ async function reconcileAuthUsername(
   let lastError: unknown;
   for (let attempt = 0; attempt < RECONCILE_ATTEMPTS; attempt++) {
     try {
-      await users.updateOne(
-        { ...filter, username: failedUsername },
-        revert
-      );
+      await users.updateOne({ ...filter, username: failedUsername }, revert);
       // A leftover record here only replays an idempotent no-op revert.
       await repairs.deleteOne({ _id: betterAuthId }).catch(() => undefined);
       return true;
@@ -240,9 +236,7 @@ async function reconcileAuthUsername(
 async function applyPendingUsernameRepair(betterAuthId: string): Promise<void> {
   const db = mongoose.connection.getClient().db(process.env.MONGODB_DB_NAME);
   const repairs = db.collection<UsernameSyncRepairDoc>(USERNAME_SYNC_REPAIRS);
-  const repair = await repairs
-    .findOne({ _id: betterAuthId })
-    .catch(() => null);
+  const repair = await repairs.findOne({ _id: betterAuthId }).catch(() => null);
 
   if (!repair) return;
 
@@ -267,16 +261,19 @@ export async function checkUsernameAvailable(
   const normalized = username.trim().toLowerCase();
 
   if (!USERNAME_REGEX.test(normalized)) {
-    return { available: false, reason: "Only letters, numbers, and underscores (3–30 chars)" };
+    return {
+      available: false,
+      reason: "Only letters, numbers, and underscores (3–30 chars)",
+    };
   }
   if (RESERVED_USERNAMES.has(normalized)) {
     return { available: false, reason: "Username is reserved" };
   }
 
   // Check if owned by another user
-  const existing = await UserModel.findOne({ username: normalized })
+  const existing = (await UserModel.findOne({ username: normalized })
     .select("betterAuthId")
-    .lean() as { betterAuthId?: string } | null;
+    .lean()) as { betterAuthId?: string } | null;
 
   if (existing && existing.betterAuthId !== authUser.id) {
     return { available: false, reason: "Username is already taken" };
@@ -301,17 +298,17 @@ export async function updateUsername(
     throw new BadRequestError("Username is reserved");
   }
 
-  const conflict = await UserModel.findOne({ username: normalized })
+  const conflict = (await UserModel.findOne({ username: normalized })
     .select("betterAuthId")
-    .lean() as { betterAuthId?: string } | null;
+    .lean()) as { betterAuthId?: string } | null;
 
   if (conflict && conflict.betterAuthId !== authUser.id) {
     throw new ConflictError("Username is already taken");
   }
 
-  const current = await UserModel.findOne({ betterAuthId: authUser.id })
+  const current = (await UserModel.findOne({ betterAuthId: authUser.id })
     .select("username")
-    .lean() as { username?: string | null } | null;
+    .lean()) as { username?: string | null } | null;
 
   const db = mongoose.connection.getClient().db(process.env.MONGODB_DB_NAME);
   const users = db.collection("user");
@@ -322,7 +319,10 @@ export async function updateUsername(
   // after the domain record has moved ahead of it. When the deployment
   // supports it both writes share one transaction so neither store can be
   // left behind; otherwise the fallback below reconciles explicitly.
-  const hello = (await db.admin().command({ hello: 1 }).catch(() => null)) as {
+  const hello = (await db
+    .admin()
+    .command({ hello: 1 })
+    .catch(() => null)) as {
     setName?: string;
     msg?: string;
   } | null;
@@ -335,11 +335,7 @@ export async function updateUsername(
     try {
       try {
         await session.withTransaction(async () => {
-          await users.updateOne(
-            filter,
-            { $set: { username: normalized } },
-            { session }
-          );
+          await users.updateOne(filter, { $set: { username: normalized } }, { session });
           await UserModel.updateOne(
             { betterAuthId: authUser.id },
             { $set: { username: normalized } },
@@ -416,13 +412,13 @@ export async function updateProfile(
     throw new BadRequestError("No fields to update");
   }
 
-  const updated = await UserModel.findOneAndUpdate(
+  const updated = (await UserModel.findOneAndUpdate(
     { betterAuthId: authUser.id },
     { $set: updates },
     { returnDocument: "after" }
   )
     .select("name username")
-    .lean() as { name?: string; username?: string } | null;
+    .lean()) as { name?: string; username?: string } | null;
 
   // Keep the Better Auth user record in sync with a successful name change
   if (updates.name) {
@@ -434,7 +430,9 @@ export async function updateProfile(
 
   // Identity fan-out: keep space member snapshots in sync with name/username changes
   if (updates.name || updates.username) {
-    const user = await UserModel.findOne({ betterAuthId: authUser.id }).select("_id").lean();
+    const user = await UserModel.findOne({ betterAuthId: authUser.id })
+      .select("_id")
+      .lean();
     if (user) {
       const memberSet: Record<string, string> = {};
       if (updates.name) memberSet["members.$[elem].name"] = updates.name;
@@ -444,7 +442,9 @@ export async function updateProfile(
         { "members.userId": user._id },
         { $set: memberSet },
         { arrayFilters: [{ "elem.userId": user._id }] }
-      ).catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to space members"));
+      ).catch((err) =>
+        logger.error({ error: err }, "Failed to fan-out identity update to space members")
+      );
 
       // Fan out to pending invitations where the renamed user is the inviter,
       // so the invitee sees the current inviter identity (mirrors the re-invite
@@ -453,23 +453,29 @@ export async function updateProfile(
       if (updates.name) inviterSet["inviterName"] = updates.name;
       if (updates.username) inviterSet["inviterUsername"] = updates.username;
 
-      await SpaceInvitationModel
-        .updateMany(
-          { inviterId: user._id, status: "pending" },
-          { $set: inviterSet }
+      await SpaceInvitationModel.updateMany(
+        { inviterId: user._id, status: "pending" },
+        { $set: inviterSet }
+      ).catch((err) =>
+        logger.error(
+          { error: err },
+          "Failed to fan-out identity update to inviter invitations"
         )
-        .catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to inviter invitations"));
+      );
 
       // Fan out the invitee username snapshot where the renamed user is the
       // invitee (matches by inviteeId, since pending invites track the target
       // user id for registered accounts).
       if (updates.username) {
-        await SpaceInvitationModel
-          .updateMany(
-            { inviteeId: user._id, status: "pending" },
-            { $set: { inviteeUsername: updates.username } }
+        await SpaceInvitationModel.updateMany(
+          { inviteeId: user._id, status: "pending" },
+          { $set: { inviteeUsername: updates.username } }
+        ).catch((err) =>
+          logger.error(
+            { error: err },
+            "Failed to fan-out identity update to invitee invitations"
           )
-          .catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to invitee invitations"));
+        );
       }
 
       // Fan out to transactions where the renamed user is the creator, so
@@ -481,7 +487,9 @@ export async function updateProfile(
       await TransactionModel.updateMany(
         { "createdBy.userId": user._id },
         { $set: txnSet }
-      ).catch((err) => logger.error({ error: err }, "Failed to fan-out identity update to transactions"));
+      ).catch((err) =>
+        logger.error({ error: err }, "Failed to fan-out identity update to transactions")
+      );
     }
   }
 
@@ -490,4 +498,3 @@ export async function updateProfile(
     username: updated?.username ?? null,
   };
 }
-

@@ -70,10 +70,7 @@ export async function getCachedDashboard<T>(userId: string): Promise<T | null> {
   }
 }
 
-export async function setCachedDashboard<T>(
-  userId: string,
-  data: T
-): Promise<void> {
+export async function setCachedDashboard<T>(userId: string, data: T): Promise<void> {
   if (!redis || circuitOpen()) return;
 
   try {
@@ -93,9 +90,7 @@ export async function invalidateDashboardCache(
 ): Promise<void> {
   if (!redis || circuitOpen() || userIds.length === 0) return;
 
-  const keys = [...new Set(userIds.map((id) => String(id)))].map(
-    dashboardCacheKey
-  );
+  const keys = [...new Set(userIds.map((id) => String(id)))].map(dashboardCacheKey);
 
   try {
     await redis.del(...keys);

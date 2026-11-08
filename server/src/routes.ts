@@ -1,7 +1,9 @@
 import { Router } from "express";
 
 import spaceRoutes from "./domains/spaces/routes.js";
-import transactionRoutes, { allTransactionsRouter } from "./domains/transactions/routes.js";
+import transactionRoutes, {
+  allTransactionsRouter,
+} from "./domains/transactions/routes.js";
 import analyticsRoutes, { dashboardRouter } from "./domains/analytics/routes.js";
 import duesRoutes from "./domains/dues/routes.js";
 import userRoutes from "./domains/users/routes.js";
@@ -25,4 +27,4 @@ router.use("/me/notification-preferences", notificationPreferencesRouter);
 router.use("/me", userRoutes);
 router.use("/import", importRoutes);
 
-export default router;
+export default router;

@@ -49,12 +49,8 @@ async function syncAuthUserFields(
   fields: Record<string, unknown>
 ): Promise<void> {
   try {
-    const db = mongoose.connection
-      .getClient()
-      .db(process.env.MONGODB_DB_NAME);
-    await db
-      .collection("user")
-      .updateOne(authUserFilter(betterAuthId), { $set: fields });
+    const db = mongoose.connection.getClient().db(process.env.MONGODB_DB_NAME);
+    await db.collection("user").updateOne(authUserFilter(betterAuthId), { $set: fields });
   } catch (error) {
     logger.warn({ error }, "Failed to sync auth user fields");
   }
@@ -68,15 +64,13 @@ async function allocateAndPersistUsername(
   user: { id: string; email?: string | null; name?: string | null },
   domainUserId?: mongoose.Types.ObjectId
 ): Promise<string> {
-  const emailPrefix =
-    (user.email ?? "").split("@")[0] || user.name || "user";
+  const emailPrefix = (user.email ?? "").split("@")[0] || user.name || "user";
   const username = await generateUsername(emailPrefix);
 
   if (domainUserId) {
-    await UserModel.updateOne(
-      { _id: domainUserId },
-      { $set: { username } }
-    ).catch(() => null);
+    await UserModel.updateOne({ _id: domainUserId }, { $set: { username } }).catch(
+      () => null
+    );
   }
 
   await syncAuthUserFields(user.id, { username });
@@ -122,7 +116,10 @@ async function createAuth() {
                 // Google's OIDC profile includes `picture` for the avatar.
                 // BetterAuth's GoogleProfile type doesn't declare it, so we
                 // access it safely via the raw profile object.
-                const raw = profile as unknown as { picture?: string; given_name?: string };
+                const raw = profile as unknown as {
+                  picture?: string;
+                  given_name?: string;
+                };
                 logger.info(
                   { picture: raw.picture, name: profile.name },
                   "Google profile mapped to user"
@@ -179,9 +176,9 @@ async function createAuth() {
         let userId = sessionUser.userId ?? null;
 
         if (!username || !userId) {
-          const domainUser = await UserModel.findOne({ betterAuthId: user.id })
+          const domainUser = (await UserModel.findOne({ betterAuthId: user.id })
             .select("_id username")
-            .lean() as {
+            .lean()) as {
             _id: mongoose.Types.ObjectId;
             username?: string | null;
           } | null;
@@ -239,8 +236,7 @@ async function createAuth() {
                 email: user.email ?? "",
                 name: user.name ?? "Ledg User",
                 username:
-                  (user as unknown as { username?: string | null }).username ??
-                  null,
+                  (user as unknown as { username?: string | null }).username ?? null,
               });
             } catch (error) {
               logger.error({ error }, "Failed to sync app user on create");
@@ -263,7 +259,9 @@ async function createAuth() {
         },
         delete: {
           before: async (user) => {
-            const domainUser = await UserModel.findOne({ betterAuthId: user.id }).select("_id").lean();
+            const domainUser = await UserModel.findOne({ betterAuthId: user.id })
+              .select("_id")
+              .lean();
             if (domainUser) {
               const ownedShared = await mongoose.model("Space").countDocuments({
                 ownerId: domainUser._id,
@@ -284,7 +282,6 @@ async function createAuth() {
             }
           },
         },
-
       },
     },
 

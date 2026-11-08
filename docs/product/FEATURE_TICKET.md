@@ -59,10 +59,12 @@
 - Optimistic Updates on all mutations with rollback
 
 ### Hardcoded Categories (13)
+
 - Expense: Food, Groceries, Transport, Rent, Bills, Shopping, Entertainment, Health, Travel, Education, Other
 - Income: Salary, Business
 
 ### Payment Methods
+
 - Cash, Card, Bank Transfer, Wallet
 
 ---

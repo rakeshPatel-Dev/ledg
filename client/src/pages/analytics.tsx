@@ -1,5 +1,16 @@
 import { useState, useMemo } from "react";
-import { ArrowDownLeft, ArrowUpRight, Banknote, Calendar as CalendarIcon, CreditCard, Landmark, PieChart, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Banknote,
+  Calendar as CalendarIcon,
+  CreditCard,
+  Landmark,
+  PieChart,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { DEFAULT_CURRENCY, PAYMENT_LABELS, type PaymentMethod } from "@ledg/shared";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,7 +22,12 @@ import { Segmented } from "@/components/ui/segmented";
 import { DatePicker } from "@/components/ui/date-picker";
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency, localDateKey } from "@/lib/format";
-import { useSpaces, useAnalyticsSummary, useAnalyticsRecurring, useAllData } from "@/lib/queries";
+import {
+  useSpaces,
+  useAnalyticsSummary,
+  useAnalyticsRecurring,
+  useAllData,
+} from "@/lib/queries";
 import type { AnalyticsPeriod } from "@/lib/api";
 import { InsightsCard } from "@/components/analytics/insights-card";
 import { CategoryDrilldownSheet } from "@/components/analytics/category-drilldown-sheet";
@@ -38,7 +54,13 @@ const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
 
 // ─── Delta badge ──────────────────────────────────────────────────────────────
 
-function DeltaBadge({ delta, inverse = false }: { delta: number | null; inverse?: boolean }) {
+function DeltaBadge({
+  delta,
+  inverse = false,
+}: {
+  delta: number | null;
+  inverse?: boolean;
+}) {
   if (delta === null) return null;
   const isImprovement = inverse ? delta < 0 : delta > 0;
   // The arrow follows the number; the colour says whether that is good news.
@@ -70,14 +92,31 @@ function SavingsRing({ income, expense }: { income: number; expense: number }) {
   return (
     <div className="relative size-20 shrink-0">
       <svg viewBox="0 0 80 80" className="size-full -rotate-90">
-        <circle cx="40" cy="40" r="34" fill="none" strokeWidth="8" className="stroke-muted/30" />
         <circle
-          cx="40" cy="40" r="34" fill="none" strokeWidth="8" strokeLinecap="round"
+          cx="40"
+          cy="40"
+          r="34"
+          fill="none"
+          strokeWidth="8"
+          className="stroke-muted/30"
+        />
+        <circle
+          cx="40"
+          cy="40"
+          r="34"
+          fill="none"
+          strokeWidth="8"
+          strokeLinecap="round"
           strokeDasharray={`${spendingArc} ${circumference}`}
           className="stroke-destructive transition-all duration-1000"
         />
         <circle
-          cx="40" cy="40" r="34" fill="none" strokeWidth="8" strokeLinecap="round"
+          cx="40"
+          cy="40"
+          r="34"
+          fill="none"
+          strokeWidth="8"
+          strokeLinecap="round"
           strokeDasharray={`${circumference - spendingArc} ${circumference}`}
           strokeDashoffset={-spendingArc}
           className="stroke-success transition-all duration-1000"
@@ -92,7 +131,11 @@ function SavingsRing({ income, expense }: { income: number; expense: number }) {
   );
 }
 
-function getPeriodDisplayLabel(period: AnalyticsPeriod, dateFrom?: string, dateTo?: string) {
+function getPeriodDisplayLabel(
+  period: AnalyticsPeriod,
+  dateFrom?: string,
+  dateTo?: string
+) {
   if (period === "today") return "today";
   if (period === "month") return "this month";
   if (period === "3months") return "last 3 months";
@@ -234,9 +277,7 @@ export default function AnalyticsPage() {
   const totalExpense = summary.current.totalExpense;
   const transactionCount = summary.current.transactionCount;
   const savingsRate =
-    totalIncome > 0
-      ? Math.max(0, ((totalIncome - totalExpense) / totalIncome) * 100)
-      : 0;
+    totalIncome > 0 ? Math.max(0, ((totalIncome - totalExpense) / totalIncome) * 100) : 0;
 
   const displayPeriod = getPeriodDisplayLabel(period, customFrom, customTo);
   const compLabel = getPeriodComparisonLabel(period);
@@ -298,11 +339,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* ── Period Selector ── */}
-      <Segmented
-        options={PERIOD_OPTIONS}
-        value={period}
-        onChange={setPeriod}
-      />
+      <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
 
       {/* ── Custom Date Range Filter ── */}
       <AnimatePresence>
@@ -351,9 +388,7 @@ export default function AnalyticsPage() {
               </div>
               <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/30">
                 <span>
-                  {customFrom === customTo
-                    ? "Viewing single day"
-                    : "Viewing date range"}
+                  {customFrom === customTo ? "Viewing single day" : "Viewing date range"}
                 </span>
                 <button
                   type="button"
@@ -443,7 +478,8 @@ export default function AnalyticsPage() {
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-success" />
                 <span className="text-[10px] text-muted-foreground">
-                  Saved {formatCurrency(Math.max(0, totalIncome - totalExpense), currency)}
+                  Saved{" "}
+                  {formatCurrency(Math.max(0, totalIncome - totalExpense), currency)}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -478,8 +514,7 @@ export default function AnalyticsPage() {
                 {summary!.byExpenseCategory.map(({ category, amount, count }) => {
                   const meta = getCategoryMeta(category, "expense");
                   const Icon = meta.icon;
-                  const percentage =
-                    totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+                  const percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
 
                   return (
                     <motion.button
@@ -539,8 +574,7 @@ export default function AnalyticsPage() {
                 {summary!.byIncomeCategory.map(({ category, amount, count }) => {
                   const meta = getCategoryMeta(category, "income");
                   const Icon = meta.icon;
-                  const percentage =
-                    totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
+                  const percentage = totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
 
                   return (
                     <div key={category} className="flex items-center gap-3">
@@ -652,7 +686,9 @@ export default function AnalyticsPage() {
       {/* ── Category drill-down sheet (using period-filtered transactions) ── */}
       <CategoryDrilldownSheet
         open={!!drillCategory}
-        onOpenChange={(open) => { if (!open) setDrillCategory(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDrillCategory(null);
+        }}
         category={drillCategory}
         transactions={filteredTransactions}
         error={allData.error}

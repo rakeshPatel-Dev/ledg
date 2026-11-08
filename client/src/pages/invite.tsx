@@ -30,7 +30,6 @@ import {
 import AppLogo from "@/components/common/app-logo";
 import { cn } from "@/lib/utils";
 
-
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -59,9 +58,7 @@ export default function InvitePage() {
       toast.success(`You joined "${result.spaceName}"!`);
       navigate(`/spaces/${result.spaceId}`, { replace: true });
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to accept invitation"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to accept invitation");
       setAccepting(false);
     }
   };
@@ -74,9 +71,7 @@ export default function InvitePage() {
       toast.info("Invitation declined");
       navigate("/spaces", { replace: true });
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to decline invitation"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to decline invitation");
       setRejecting(false);
     }
   };
@@ -175,10 +170,8 @@ export default function InvitePage() {
               <strong className="text-foreground font-semibold">
                 {preview.inviterName}
               </strong>{" "}
-              {preview.inviterUsername
-                ? `(@${preview.inviterUsername})`
-                : null}{" "}
-              invited you to collaborate in this shared space.
+              {preview.inviterUsername ? `(@${preview.inviterUsername})` : null} invited
+              you to collaborate in this shared space.
             </p>
           </div>
         </div>
@@ -186,9 +179,7 @@ export default function InvitePage() {
         <div className="my-5 rounded-2xl bg-muted/40 p-3.5 border border-border/40 text-xs text-muted-foreground flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="font-medium">Invited email:</span>
-            <span className="font-semibold text-foreground">
-              {preview.inviteeEmail}
-            </span>
+            <span className="font-semibold text-foreground">{preview.inviteeEmail}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="font-medium">Expires:</span>
@@ -237,9 +228,9 @@ export default function InvitePage() {
             <div className="rounded-2xl bg-destructive/10 p-3 border border-destructive/20 text-xs text-destructive flex items-start gap-2">
               <AlertCircle className="size-4 shrink-0 mt-0.5" />
               <p>
-                You are currently signed in as <strong>{user?.email}</strong>.
-                This invite was sent to <strong>{preview.inviteeEmail}</strong>.
-                Please sign in with that email to claim this invitation.
+                You are currently signed in as <strong>{user?.email}</strong>. This invite
+                was sent to <strong>{preview.inviteeEmail}</strong>. Please sign in with
+                that email to claim this invitation.
               </p>
             </div>
             <Button

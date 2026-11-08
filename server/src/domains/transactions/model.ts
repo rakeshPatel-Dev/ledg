@@ -114,8 +114,5 @@ export interface TransactionDoc {
   updatedAt: Date;
 }
 
-
 export const TransactionModel =
-  mongoose.models.Transaction ||
-  model<TransactionDoc>("Transaction", transactionSchema);
-
+  mongoose.models.Transaction || model<TransactionDoc>("Transaction", transactionSchema);

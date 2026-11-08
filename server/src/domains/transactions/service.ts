@@ -13,7 +13,6 @@ import * as notificationService from "../notifications/service.js";
 import { invalidateDashboardCache } from "../analytics/cache.js";
 import { logger } from "../../config/logger.js";
 
-
 export async function createUserTransaction(
   userId: Types.ObjectId,
   spaceId: string,
@@ -42,19 +41,23 @@ export async function createUserTransaction(
     );
 
     if (otherMembers.length > 0) {
-      await notificationService.notifyMembers({
-        recipientIds: otherMembers.map((m) => m.userId),
-        type: "transaction_added",
-        data: {
-          spaceId: String(space._id),
-          spaceName: space.name,
-          transactionId: transaction.id,
-          actorId: String(userId),
-          actorName: user.name,
-          transactionType: transaction.type,
-          amount: transaction.amount,
-        },
-      }).catch((e) => logger.error({ error: e }, "Failed to notify on transaction added"));
+      await notificationService
+        .notifyMembers({
+          recipientIds: otherMembers.map((m) => m.userId),
+          type: "transaction_added",
+          data: {
+            spaceId: String(space._id),
+            spaceName: space.name,
+            transactionId: transaction.id,
+            actorId: String(userId),
+            actorName: user.name,
+            transactionType: transaction.type,
+            amount: transaction.amount,
+          },
+        })
+        .catch((e) =>
+          logger.error({ error: e }, "Failed to notify on transaction added")
+        );
     }
   }
 
@@ -156,9 +159,7 @@ export async function updateUserTransaction(
     existingTxn.createdBy.userId.toString() === userId.toString();
 
   if (sourceAccess.role !== "owner" && !isCreator) {
-    throw new ForbiddenError(
-      "You can only edit transactions created by yourself"
-    );
+    throw new ForbiddenError("You can only edit transactions created by yourself");
   }
 
   let updatedTransaction;
@@ -191,19 +192,21 @@ export async function updateUserTransaction(
     existingTxn.createdBy?.userId &&
     existingTxn.createdBy.userId.toString() !== userId.toString()
   ) {
-    await notificationService.notify({
-      userId: existingTxn.createdBy.userId,
-      type: "transaction_modified",
-      variant: "edited",
-      data: {
-        spaceId: String(sourceAccess.space._id),
-        spaceName: sourceAccess.space.name,
-        transactionId: updatedTransaction.id,
-        actorId: String(userId),
-        actorName: user.name,
-        amount: updatedTransaction.amount,
-      },
-    }).catch((e) => logger.error({ error: e }, "Failed to notify creator of txn edit"));
+    await notificationService
+      .notify({
+        userId: existingTxn.createdBy.userId,
+        type: "transaction_modified",
+        variant: "edited",
+        data: {
+          spaceId: String(sourceAccess.space._id),
+          spaceName: sourceAccess.space.name,
+          transactionId: updatedTransaction.id,
+          actorId: String(userId),
+          actorName: user.name,
+          amount: updatedTransaction.amount,
+        },
+      })
+      .catch((e) => logger.error({ error: e }, "Failed to notify creator of txn edit"));
   }
 
   const affectedUsers = new Set<string>([
@@ -230,10 +233,7 @@ export async function deleteUserCreatedTransactions(
 ) {
   if (ids.length === 0) return { deleted: 0 };
 
-  const rows = await transactionRepository.findUserCreatedTransactionIds(
-    ids,
-    userId
-  );
+  const rows = await transactionRepository.findUserCreatedTransactionIds(ids, userId);
   if (rows.length === 0) return { deleted: 0 };
 
   const deleted = await transactionRepository.deleteUserCreatedTransactions(
@@ -256,7 +256,8 @@ export async function deleteUserTransaction(
   userId: Types.ObjectId,
   spaceId: string,
   transactionId: string
-) {  const { space, role } = await assertSpaceAccess(spaceId, userId);
+) {
+  const { space, role } = await assertSpaceAccess(spaceId, userId);
   const user = await getUserContext(userId);
 
   const existingTxn = await transactionRepository.findTransactionById(
@@ -273,9 +274,7 @@ export async function deleteUserTransaction(
     existingTxn.createdBy.userId.toString() === userId.toString();
 
   if (role !== "owner" && !isCreator) {
-    throw new ForbiddenError(
-      "You can only delete transactions created by yourself"
-    );
+    throw new ForbiddenError("You can only delete transactions created by yourself");
   }
 
   // Dues own their ledger entry. Deleting it here would leave the due pointing
@@ -286,10 +285,7 @@ export async function deleteUserTransaction(
     );
   }
 
-  const deleted = await transactionRepository.deleteTransaction(
-    transactionId,
-    space._id
-  );
+  const deleted = await transactionRepository.deleteTransaction(transactionId, space._id);
 
   if (!deleted) {
     throw new NotFoundError("Transaction");
@@ -301,18 +297,22 @@ export async function deleteUserTransaction(
     existingTxn.createdBy?.userId &&
     existingTxn.createdBy.userId.toString() !== userId.toString()
   ) {
-    await notificationService.notify({
-      userId: existingTxn.createdBy.userId,
-      type: "transaction_modified",
-      variant: "deleted",
-      data: {
-        spaceId: String(space._id),
-        spaceName: space.name,
-        actorId: String(userId),
-        actorName: user.name,
-        amount: existingTxn.amount,
-      },
-    }).catch((e) => logger.error({ error: e }, "Failed to notify creator of txn deletion"));
+    await notificationService
+      .notify({
+        userId: existingTxn.createdBy.userId,
+        type: "transaction_modified",
+        variant: "deleted",
+        data: {
+          spaceId: String(space._id),
+          spaceName: space.name,
+          actorId: String(userId),
+          actorName: user.name,
+          amount: existingTxn.amount,
+        },
+      })
+      .catch((e) =>
+        logger.error({ error: e }, "Failed to notify creator of txn deletion")
+      );
   }
 
   await invalidateDashboardCache([

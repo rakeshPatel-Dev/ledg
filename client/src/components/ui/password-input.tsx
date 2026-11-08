@@ -5,19 +5,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export function PasswordInput({
-  className,
-  ...props
-}: ComponentProps<typeof Input>) {
+export function PasswordInput({ className, ...props }: ComponentProps<typeof Input>) {
   const [visible, setVisible] = useState(false);
 
   return (
     <div className={cn("relative", className)}>
-      <Input
-        {...props}
-        type={visible ? "text" : "password"}
-        className="pl-4 pr-12"
-      />
+      <Input {...props} type={visible ? "text" : "password"} className="pl-4 pr-12" />
       <button
         type="button"
         aria-label={visible ? "Hide password" : "Show password"}

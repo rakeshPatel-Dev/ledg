@@ -8,7 +8,8 @@ if (process.env.MONGOOSE_DEBUG === "true") {
 let cached: Promise<typeof mongoose> | null = null;
 
 export function connectDatabase() {
-  const ready = mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2;
+  const ready =
+    mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2;
   if (ready && cached) {
     return cached;
   }

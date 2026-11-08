@@ -2,15 +2,15 @@
 
 **A user-centred review of the Ledg web app: what works, what gets in the way, and what to fix first.**
 
-| | |
-|---|---|
-| **Review date** | 4 November 2026 |
-| **Product** | Ledg, personal finance and shared-expense tracker |
-| **Surfaces reviewed** | Home, Add/Edit transaction, Activity, Insights, Spaces, Space detail, Members, Dues, Create due, Due detail, Settle due, Settings, Profile, Notifications, Welcome, Sign in, Sign up, Invite |
-| **Viewports** | 390 × 844 (primary mobile), 360 × 640 (small Android), 1280 × 900 (desktop) |
-| **Themes** | Light and dark |
-| **Data** | Seeded review account with 3 spaces, 58 transactions, 5 dues, notifications and pending invitations |
-| **Method** | Full walkthrough of the running app with realistic data, paired with a screen-by-screen review of the rendered interface, copy and interaction behaviour, then source verification of every data and state claim |
+|                           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Review date**           | 4 November 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Product**               | Ledg, personal finance and shared-expense tracker                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Surfaces reviewed**     | Home, Add/Edit transaction, Activity, Insights, Spaces, Space detail, Members, Dues, Create due, Due detail, Settle due, Settings, Profile, Notifications, Welcome, Sign in, Sign up, Invite                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Viewports**             | 390 × 844 (primary mobile), 360 × 640 (small Android), 1280 × 900 (desktop)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Themes**                | Light and dark                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Data**                  | Seeded review account with 3 spaces, 58 transactions, 5 dues, notifications and pending invitations                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Method**                | Full walkthrough of the running app with realistic data, paired with a screen-by-screen review of the rendered interface, copy and interaction behaviour, then source verification of every data and state claim                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | **Implementation status** | ✅ Items 1 (“Make the money truthful”), 2 (“Make failure visible”), 3 (“Make the common path short”) and 4 (“Make navigation honest”) of the priority list are implemented as of 7 November 2026. ✅ The accessibility set (Acc1–Acc10), the invite redirect (S1), keyboard space cards (S2), personal-space persistence (T4), import undo (T5) and reduced-motion defaults (Set2) are also implemented. ◐ Some lower-priority findings remain open, notably the desktop layout (V1/N4), the Settings IA (Set1), notification-centre refinements and full colour-semantics consistency (Acc8/D6); route-change announcements are still missing. |
 
 ---
@@ -91,20 +91,20 @@ The review covered:
 
 ### Severity scale
 
-| Level | Meaning |
-|---|---|
+| Level        | Meaning                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------- |
 | **Critical** | Breaks trust in the numbers or can cause data loss. Fix before calling the product reliable. |
-| **High** | Blocks or significantly slows a core task, or excludes a group of users. |
-| **Medium** | Causes confusion, extra effort or a visibly unfinished feel. |
-| **Low** | Polish, consistency and small delights. |
+| **High**     | Blocks or significantly slows a core task, or excludes a group of users.                     |
+| **Medium**   | Causes confusion, extra effort or a visibly unfinished feel.                                 |
+| **Low**      | Polish, consistency and small delights.                                                      |
 
 ### Status markers
 
-| Marker | Meaning |
-|---|---|
-| ✅ | Fixed in the working tree as of 7 November 2026 |
-| ◐ | Partly fixed; the remaining work is noted in the finding |
-| — | Open |
+| Marker | Meaning                                                  |
+| ------ | -------------------------------------------------------- |
+| ✅     | Fixed in the working tree as of 7 November 2026          |
+| ◐      | Partly fixed; the remaining work is noted in the finding |
+| —      | Open                                                     |
 
 Each finding below includes what the user sees, why it matters, and a recommended fix. Screen names match the app’s own labels. Source references are collected in the appendix so the report stays readable.
 
@@ -118,26 +118,26 @@ Findings are based on the running app at 390 × 844, 360 × 640 and 1280 × 900,
 
 The table below is the short version. Every row is expanded later.
 
-| # | Severity | Finding | Area | Why it comes first |
-|---|---|---|---|---|
-| 1 | **Critical** | ✅ Lending and borrowing are written into the ledger as expense and income | Dues, Home, Insights | Every spending, income, budget and savings number becomes untrustworthy |
-| 2 | **Critical** | ✅ Failed requests render as Rs. 0 or an empty state, not an error | Home, Insights, Spaces, Space detail | The user believes their money disappeared, or that they have none |
-| 3 | **High** | ✅ “+ New space…” inside the transaction sheet discards the form | Add transaction | Loses typed data and interrupts the most common task |
-| 4 | **High** | The primary action sits below a long scroll in the add sheet | Add transaction | Adds friction to every single entry |
-| 5 | **High** | A signed-out invitee loses the invitation after sign-in or sign-up | Invite, Sign in, Sign up | Blocks the shared-space onboarding path |
-| 6 | **High** | ✅ Dues was not reachable from every tab and had no active state | Navigation | A headline feature is effectively hidden |
-| 7 | **High** | ✅ The global “+” adds to Personal, even while viewing another space | Space detail, Navigation | Transactions land in the wrong space |
-| 8 | **High** | Primary and hero text fail contrast; nav labels are 8.8 px | Accessibility | Core labels are hard to read for low-vision users |
-| 9 | **High** | Space cards are mouse-only; swipe-to-delete has no keyboard path | Spaces, Activity | Keyboard and switch users cannot open or delete |
-| 10 | **High** | ✅ “Total Balance” has no definition and ignores money owed | Home | The headline number is not a balance of anything recognisable |
-| 11 | **High** | Motion defaults to Full and ignores the OS reduced-motion setting | Settings, Accessibility | Motion-sensitive users are exposed before they can opt out |
-| 12 | **High** | “Invitations sent” is shown even when invites fail | Create space | The user believes people were invited when they were not |
-| 13 | **High** | The default Personal space reappears after deletion | Spaces | The user cannot remove a space they deleted |
-| 14 | **High** | Bulk import has no undo | Import | One mistaken file can create dozens of records with no rollback |
-| 15 | **Medium** | Expense decreases show a green upward arrow | Insights | A correct number is read as the opposite trend |
-| 16 | **Medium** | Desktop is a 448 px phone column in a 1280 px canvas | Layout | The app looks unfinished on laptop and tablet |
-| 17 | **Medium** | Custom range opens on a single day and often empties the page | Insights | The user thinks there is no data |
-| 18 | **Medium** | Validation is delivered as a toast, not beside the field | Add/Edit, Auth | Errors are easy to miss and hard to correct |
+| #   | Severity     | Finding                                                                    | Area                                 | Why it comes first                                                      |
+| --- | ------------ | -------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
+| 1   | **Critical** | ✅ Lending and borrowing are written into the ledger as expense and income | Dues, Home, Insights                 | Every spending, income, budget and savings number becomes untrustworthy |
+| 2   | **Critical** | ✅ Failed requests render as Rs. 0 or an empty state, not an error         | Home, Insights, Spaces, Space detail | The user believes their money disappeared, or that they have none       |
+| 3   | **High**     | ✅ “+ New space…” inside the transaction sheet discards the form           | Add transaction                      | Loses typed data and interrupts the most common task                    |
+| 4   | **High**     | The primary action sits below a long scroll in the add sheet               | Add transaction                      | Adds friction to every single entry                                     |
+| 5   | **High**     | A signed-out invitee loses the invitation after sign-in or sign-up         | Invite, Sign in, Sign up             | Blocks the shared-space onboarding path                                 |
+| 6   | **High**     | ✅ Dues was not reachable from every tab and had no active state           | Navigation                           | A headline feature is effectively hidden                                |
+| 7   | **High**     | ✅ The global “+” adds to Personal, even while viewing another space       | Space detail, Navigation             | Transactions land in the wrong space                                    |
+| 8   | **High**     | Primary and hero text fail contrast; nav labels are 8.8 px                 | Accessibility                        | Core labels are hard to read for low-vision users                       |
+| 9   | **High**     | Space cards are mouse-only; swipe-to-delete has no keyboard path           | Spaces, Activity                     | Keyboard and switch users cannot open or delete                         |
+| 10  | **High**     | ✅ “Total Balance” has no definition and ignores money owed                | Home                                 | The headline number is not a balance of anything recognisable           |
+| 11  | **High**     | Motion defaults to Full and ignores the OS reduced-motion setting          | Settings, Accessibility              | Motion-sensitive users are exposed before they can opt out              |
+| 12  | **High**     | “Invitations sent” is shown even when invites fail                         | Create space                         | The user believes people were invited when they were not                |
+| 13  | **High**     | The default Personal space reappears after deletion                        | Spaces                               | The user cannot remove a space they deleted                             |
+| 14  | **High**     | Bulk import has no undo                                                    | Import                               | One mistaken file can create dozens of records with no rollback         |
+| 15  | **Medium**   | Expense decreases show a green upward arrow                                | Insights                             | A correct number is read as the opposite trend                          |
+| 16  | **Medium**   | Desktop is a 448 px phone column in a 1280 px canvas                       | Layout                               | The app looks unfinished on laptop and tablet                           |
+| 17  | **Medium**   | Custom range opens on a single day and often empties the page              | Insights                             | The user thinks there is no data                                        |
+| 18  | **Medium**   | Validation is delivered as a toast, not beside the field                   | Add/Edit, Auth                       | Errors are easy to miss and hard to correct                             |
 
 ### The order to fix things
 
@@ -1820,92 +1820,92 @@ Run 5–8 sessions with people who track expenses, including at least two who us
 
 ### Screen inventory
 
-| Screen | Route | Main component |
-|---|---|---|
-| Welcome | `/welcome` | `client/src/pages/welcome.tsx` |
-| Sign in | `/sign-in` | `client/src/pages/sign-in.tsx` |
-| Sign up | `/sign-up` | `client/src/pages/sign-up.tsx` |
-| Invite | `/invite/:token` | `client/src/pages/invite.tsx` |
-| Home | `/` | `client/src/pages/dashboard.tsx` |
-| Activity | `/transactions` | `client/src/pages/transactions.tsx` |
-| Insights | `/analytics` | `client/src/pages/analytics.tsx` |
-| Spaces | `/spaces` | `client/src/pages/spaces.tsx` |
-| Space detail | `/spaces/:id` | `client/src/pages/space-detail.tsx` |
-| Dues | `/dues` | `client/src/pages/dues.tsx` |
-| Settings | `/settings` | `client/src/pages/settings.tsx` |
-| Profile | `/profile` | `client/src/pages/profile.tsx` |
-| Privacy | `/privacy` | `client/src/pages/privacy-policy.tsx` |
-| Terms | `/terms` | `client/src/pages/terms-of-service.tsx` |
+| Screen       | Route            | Main component                          |
+| ------------ | ---------------- | --------------------------------------- |
+| Welcome      | `/welcome`       | `client/src/pages/welcome.tsx`          |
+| Sign in      | `/sign-in`       | `client/src/pages/sign-in.tsx`          |
+| Sign up      | `/sign-up`       | `client/src/pages/sign-up.tsx`          |
+| Invite       | `/invite/:token` | `client/src/pages/invite.tsx`           |
+| Home         | `/`              | `client/src/pages/dashboard.tsx`        |
+| Activity     | `/transactions`  | `client/src/pages/transactions.tsx`     |
+| Insights     | `/analytics`     | `client/src/pages/analytics.tsx`        |
+| Spaces       | `/spaces`        | `client/src/pages/spaces.tsx`           |
+| Space detail | `/spaces/:id`    | `client/src/pages/space-detail.tsx`     |
+| Dues         | `/dues`          | `client/src/pages/dues.tsx`             |
+| Settings     | `/settings`      | `client/src/pages/settings.tsx`         |
+| Profile      | `/profile`       | `client/src/pages/profile.tsx`          |
+| Privacy      | `/privacy`       | `client/src/pages/privacy-policy.tsx`   |
+| Terms        | `/terms`         | `client/src/pages/terms-of-service.tsx` |
 
 ### Key source references
 
-| Area | File and lines | What it shows |
-|---|---|---|
-| Dues create writes a transaction | `server/src/domains/dues/service.ts:91-160` | `txnType = isLent ? "expense" : "income"`; `TransactionModel.create` |
-| Dues settle writes the reverse | `server/src/domains/dues/service.ts:187-267` | `txnType = isLent ? "income" : "expense"` |
-| Dues undo/delete cleanup | `server/src/domains/dues/service.ts:269-345` | Deletes linked transactions and settlements |
-| Total Balance formula | `server/src/domains/analytics/service.ts:463-465` | `allTime.totalIncome - allTime.totalExpense` |
-| Insights deltas | `server/src/domains/analytics/service.ts:376-410` | Period-over-period percentages |
-| Insights copy | `server/src/domains/analytics/service.ts:275-334` | Savings, category and “over budget” strings |
-| Home hero and fallbacks | `client/src/pages/dashboard.tsx:90-160` | “Total Balance”, `?? 0`, compact formatting |
-| Home categories | `client/src/pages/dashboard.tsx:180-244` | No title, period or total |
-| Home recent activity | `client/src/pages/dashboard.tsx:323-350` | Swipeable rows |
-| Add sheet layout | `client/src/components/transactions/transaction-form.tsx:300-500` | Long scroll, CTA at the bottom |
-| New-space branch | `client/src/components/transactions/transaction-form.tsx:417-447` | `closeForm(); navigate("/spaces")` |
-| Default space | `client/src/lib/transaction-form.tsx:38-44` | Prefers `type === "personal"` |
-| Sheet shell | `client/src/components/ui/sheet.tsx:25-69` | No close button; internal scroll |
-| Swipe delete | `client/src/components/transactions/swipeable-transaction-item.tsx:28-75` | Gesture-only delete |
-| Activity filters | `client/src/pages/transactions.tsx:146-230` | Search, type, space only |
-| Activity pagination | `client/src/pages/transactions.tsx:326-368` | Gaps without ellipses |
-| Activity error state | `client/src/pages/transactions.tsx:241-252` | A real error message instead of zero; other pages lack one |
-| Custom range default | `client/src/pages/analytics.tsx:124-127` | Both dates set to today |
-| Delta badge | `client/src/pages/analytics.tsx:40-57` | Arrow encodes sentiment, not direction |
-| Savings ring | `client/src/pages/analytics.tsx:61-90` | Spending/savings arcs and center rate |
-| Negative savings clamp | `client/src/pages/analytics.tsx:203-209` | `Math.max(0, ...)` |
-| Dues FABs | `client/src/pages/dues.tsx:485-510` | Fixed `bottom-24 right-5` |
-| Dues grouping | `client/src/pages/dues.tsx:107-126` | Lowercased name as key |
-| Dues create copy | `client/src/components/dues/create-due-sheet.tsx:174-210` | “creates an expense transaction” |
-| Dues reminder copy | `client/src/components/dues/create-due-sheet.tsx:318-345` | “Set a repayment reminder” |
-| Due detail actions | `client/src/components/dues/due-detail-sheet.tsx:314-345` | No edit; delete only when open and unsettled |
-| Space card | `client/src/pages/spaces.tsx:360-385` | `Card onClick`, no keyboard access |
-| Space card actions | `client/src/pages/spaces.tsx:480-506` | Edit/delete icons |
-| Create-space toast | `client/src/pages/spaces.tsx:218-231` | Always “invitations sent” |
-| Server invite results | `server/src/domains/spaces/service.ts:30-62` | `invited` / `failed` per identifier |
-| Default space recreation | `server/src/domains/spaces/repository.ts:171-215` | Creates “Personal” when missing |
-| Invite auth handoff | `client/src/pages/invite.tsx:180-210` | Passes `state.from` |
-| Sign-in redirect | `client/src/pages/sign-in.tsx:42` | Always `navigate("/")` |
-| Sign-up verification | `client/src/pages/sign-up.tsx:53-66,113-160` | `callbackURL` is `/` |
-| Settings IA | `client/src/pages/settings.tsx:103-380` | “You”, preferences, data, legal, sign out |
-| Motion default | `client/src/app/providers/index.tsx:19-21` | `defaultMotion="full"` |
-| Motion provider | `client/src/lib/animation-provider.tsx:21-46` | Reduced only when selected |
-| Bottom nav | `client/src/components/layout/bottom-nav.tsx:22-28,91` | Four tabs, 8.8 px labels |
-| App shell | `client/src/components/layout/app-shell.tsx:11` | `max-w-md` |
-| Colour tokens | `client/src/global.css:52-67,90-105` | Primary and dark palette |
-| Reduced-motion CSS | `client/src/global.css:153-160` | CSS only, not Framer Motion |
-| Notification badge | `client/src/components/notifications/notification-center.tsx:110` | Unread + pending invites |
-| Notification click | `client/src/components/notifications/notification-center.tsx:138-147` | Only navigates with `spaceId` |
-| Import sheet | `client/src/components/settings/import-transactions-sheet.tsx:106-135,338-402` | No undo |
-| Import service | `server/src/domains/import/service.ts:97-266` | Dedupe, batch creation, space creation |
-| Profile security | `client/src/pages/profile.tsx:288-340` | Password, email, delete account |
+| Area                             | File and lines                                                                 | What it shows                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Dues create writes a transaction | `server/src/domains/dues/service.ts:91-160`                                    | `txnType = isLent ? "expense" : "income"`; `TransactionModel.create` |
+| Dues settle writes the reverse   | `server/src/domains/dues/service.ts:187-267`                                   | `txnType = isLent ? "income" : "expense"`                            |
+| Dues undo/delete cleanup         | `server/src/domains/dues/service.ts:269-345`                                   | Deletes linked transactions and settlements                          |
+| Total Balance formula            | `server/src/domains/analytics/service.ts:463-465`                              | `allTime.totalIncome - allTime.totalExpense`                         |
+| Insights deltas                  | `server/src/domains/analytics/service.ts:376-410`                              | Period-over-period percentages                                       |
+| Insights copy                    | `server/src/domains/analytics/service.ts:275-334`                              | Savings, category and “over budget” strings                          |
+| Home hero and fallbacks          | `client/src/pages/dashboard.tsx:90-160`                                        | “Total Balance”, `?? 0`, compact formatting                          |
+| Home categories                  | `client/src/pages/dashboard.tsx:180-244`                                       | No title, period or total                                            |
+| Home recent activity             | `client/src/pages/dashboard.tsx:323-350`                                       | Swipeable rows                                                       |
+| Add sheet layout                 | `client/src/components/transactions/transaction-form.tsx:300-500`              | Long scroll, CTA at the bottom                                       |
+| New-space branch                 | `client/src/components/transactions/transaction-form.tsx:417-447`              | `closeForm(); navigate("/spaces")`                                   |
+| Default space                    | `client/src/lib/transaction-form.tsx:38-44`                                    | Prefers `type === "personal"`                                        |
+| Sheet shell                      | `client/src/components/ui/sheet.tsx:25-69`                                     | No close button; internal scroll                                     |
+| Swipe delete                     | `client/src/components/transactions/swipeable-transaction-item.tsx:28-75`      | Gesture-only delete                                                  |
+| Activity filters                 | `client/src/pages/transactions.tsx:146-230`                                    | Search, type, space only                                             |
+| Activity pagination              | `client/src/pages/transactions.tsx:326-368`                                    | Gaps without ellipses                                                |
+| Activity error state             | `client/src/pages/transactions.tsx:241-252`                                    | A real error message instead of zero; other pages lack one           |
+| Custom range default             | `client/src/pages/analytics.tsx:124-127`                                       | Both dates set to today                                              |
+| Delta badge                      | `client/src/pages/analytics.tsx:40-57`                                         | Arrow encodes sentiment, not direction                               |
+| Savings ring                     | `client/src/pages/analytics.tsx:61-90`                                         | Spending/savings arcs and center rate                                |
+| Negative savings clamp           | `client/src/pages/analytics.tsx:203-209`                                       | `Math.max(0, ...)`                                                   |
+| Dues FABs                        | `client/src/pages/dues.tsx:485-510`                                            | Fixed `bottom-24 right-5`                                            |
+| Dues grouping                    | `client/src/pages/dues.tsx:107-126`                                            | Lowercased name as key                                               |
+| Dues create copy                 | `client/src/components/dues/create-due-sheet.tsx:174-210`                      | “creates an expense transaction”                                     |
+| Dues reminder copy               | `client/src/components/dues/create-due-sheet.tsx:318-345`                      | “Set a repayment reminder”                                           |
+| Due detail actions               | `client/src/components/dues/due-detail-sheet.tsx:314-345`                      | No edit; delete only when open and unsettled                         |
+| Space card                       | `client/src/pages/spaces.tsx:360-385`                                          | `Card onClick`, no keyboard access                                   |
+| Space card actions               | `client/src/pages/spaces.tsx:480-506`                                          | Edit/delete icons                                                    |
+| Create-space toast               | `client/src/pages/spaces.tsx:218-231`                                          | Always “invitations sent”                                            |
+| Server invite results            | `server/src/domains/spaces/service.ts:30-62`                                   | `invited` / `failed` per identifier                                  |
+| Default space recreation         | `server/src/domains/spaces/repository.ts:171-215`                              | Creates “Personal” when missing                                      |
+| Invite auth handoff              | `client/src/pages/invite.tsx:180-210`                                          | Passes `state.from`                                                  |
+| Sign-in redirect                 | `client/src/pages/sign-in.tsx:42`                                              | Always `navigate("/")`                                               |
+| Sign-up verification             | `client/src/pages/sign-up.tsx:53-66,113-160`                                   | `callbackURL` is `/`                                                 |
+| Settings IA                      | `client/src/pages/settings.tsx:103-380`                                        | “You”, preferences, data, legal, sign out                            |
+| Motion default                   | `client/src/app/providers/index.tsx:19-21`                                     | `defaultMotion="full"`                                               |
+| Motion provider                  | `client/src/lib/animation-provider.tsx:21-46`                                  | Reduced only when selected                                           |
+| Bottom nav                       | `client/src/components/layout/bottom-nav.tsx:22-28,91`                         | Four tabs, 8.8 px labels                                             |
+| App shell                        | `client/src/components/layout/app-shell.tsx:11`                                | `max-w-md`                                                           |
+| Colour tokens                    | `client/src/global.css:52-67,90-105`                                           | Primary and dark palette                                             |
+| Reduced-motion CSS               | `client/src/global.css:153-160`                                                | CSS only, not Framer Motion                                          |
+| Notification badge               | `client/src/components/notifications/notification-center.tsx:110`              | Unread + pending invites                                             |
+| Notification click               | `client/src/components/notifications/notification-center.tsx:138-147`          | Only navigates with `spaceId`                                        |
+| Import sheet                     | `client/src/components/settings/import-transactions-sheet.tsx:106-135,338-402` | No undo                                                              |
+| Import service                   | `server/src/domains/import/service.ts:97-266`                                  | Dedupe, batch creation, space creation                               |
+| Profile security                 | `client/src/pages/profile.tsx:288-340`                                         | Password, email, delete account                                      |
 
 ### Screenshot coverage
 
 Screenshots were captured as working evidence during the review, not checked into the repository. The table records what was captured so the review can be repeated.
 
-| Screen | 390 × 844 | 360 × 640 | 1280 × 900 |
-|---|---|---|---|
-| Welcome, sign in, sign up | Yes | — | — |
-| Home, light | Yes | Yes | Yes |
-| Home, dark | Yes | — | — |
-| Add transaction, top and bottom | Yes | Yes | — |
-| Activity, default and filters | Yes | — | — |
-| Insights, month, custom and dark | Yes | — | Yes |
-| Spaces, create space | Yes | — | — |
-| Space detail, members | Yes | — | — |
-| Dues, grouped, flat and create due | Yes | Yes | — |
-| Due detail, settle due | Yes | — | — |
-| Settings, top and bottom, profile | Yes | — | — |
-| Notifications, invite states | Yes | — | — |
+| Screen                             | 390 × 844 | 360 × 640 | 1280 × 900 |
+| ---------------------------------- | --------- | --------- | ---------- |
+| Welcome, sign in, sign up          | Yes       | —         | —          |
+| Home, light                        | Yes       | Yes       | Yes        |
+| Home, dark                         | Yes       | —         | —          |
+| Add transaction, top and bottom    | Yes       | Yes       | —          |
+| Activity, default and filters      | Yes       | —         | —          |
+| Insights, month, custom and dark   | Yes       | —         | Yes        |
+| Spaces, create space               | Yes       | —         | —          |
+| Space detail, members              | Yes       | —         | —          |
+| Dues, grouped, flat and create due | Yes       | Yes       | —          |
+| Due detail, settle due             | Yes       | —         | —          |
+| Settings, top and bottom, profile  | Yes       | —         | —          |
+| Notifications, invite states       | Yes       | —         | —          |
 
 The screenshots were used to verify layout, contrast, truncation and overlap; claims about behaviour that a still image cannot show (failed requests, keyboard access, redirects, data side effects) were verified in the source. Line references are approximate and point to the relevant block, not necessarily the exact line after future edits.
 
@@ -1919,4 +1919,4 @@ The screenshots were used to verify layout, contrast, truncation and overlap; cl
 
 ---
 
-*End of audit.*
+_End of audit._

@@ -20,10 +20,7 @@ interface SendVerificationEmailParams {
   url: string;
 }
 
-export async function sendVerificationEmail({
-  email,
-  url,
-}: SendVerificationEmailParams) {
+export async function sendVerificationEmail({ email, url }: SendVerificationEmailParams) {
   await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: email,

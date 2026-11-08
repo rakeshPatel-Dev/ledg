@@ -27,8 +27,8 @@ export function OfflineBanner() {
           >
             <WifiOff className="size-4 shrink-0" />
             <span>
-              You&apos;re offline. Showing the last loaded data; changes
-              won&apos;t save until you reconnect.
+              You&apos;re offline. Showing the last loaded data; changes won&apos;t save
+              until you reconnect.
             </span>
           </div>
         </motion.div>

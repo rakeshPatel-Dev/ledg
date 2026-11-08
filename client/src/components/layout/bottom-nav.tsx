@@ -121,7 +121,7 @@ export function BottomNav() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative flex w-full max-w-md items-center justify-around rounded-full border border-border/50 bg-card/40 px-1.5 py-1 shadow-2xl backdrop-blur-2xl backdrop-saturate-180"
+          className="relative flex w-full max-w-md items-center justify-around rounded-full border border-border/60 bg-card/90 px-1.5 py-1 shadow-xl backdrop-blur-xl"
         >
           {NAV_ITEMS.map((item) => {
             if (item.type === "add") {
@@ -134,7 +134,7 @@ export function BottomNav() {
                     type="button"
                     onClick={handleAddClick}
                     aria-label={isDuesPage ? "Add due" : "Add transaction"}
-                    className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-colors hover:bg-primary/90"
+                    className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-elev-primary transition-colors hover:bg-primary/90 hover:shadow-elev-primary-hover"
                   >
                     <Plus className="size-7 stroke-[2.5px]" />
                   </motion.button>
@@ -271,9 +271,7 @@ export function BottomNav() {
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">
-                      {item.label}
-                    </span>
+                    <span className="block text-sm font-semibold">{item.label}</span>
                     <span className="block text-xs font-medium text-muted-foreground">
                       {item.description}
                     </span>

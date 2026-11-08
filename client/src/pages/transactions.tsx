@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, SlidersHorizontal, Download, Upload, Plus, ReceiptText, SearchX, X } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  Download,
+  Upload,
+  Plus,
+  ReceiptText,
+  SearchX,
+  X,
+} from "lucide-react";
 import { DEFAULT_CURRENCY, type TransactionType, type Transaction } from "@ledg/shared";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -22,7 +31,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { useSpaces, useFilteredAllTransactions, fetchAllFilteredTransactions } from "@/lib/queries";
+import {
+  useSpaces,
+  useFilteredAllTransactions,
+  fetchAllFilteredTransactions,
+} from "@/lib/queries";
 import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
 import { exportTransactionsToCSV } from "@/lib/export";
 import { useTransactionForm } from "@/lib/transaction-form";
@@ -40,9 +53,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 350;
 
-function formatDayBalance(
-  items: { type: TransactionType; amount: number }[]
-) {
+function formatDayBalance(items: { type: TransactionType; amount: number }[]) {
   const net = items.reduce((sum, t) => {
     if (t.type === "income") return sum + t.amount;
     if (t.type === "expense") return sum - t.amount;
@@ -121,9 +132,7 @@ export default function TransactionsPage() {
       <FadeInItem>
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              Activity
-            </h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">Activity</h1>
             <p className="text-sm text-muted-foreground">
               {transactionsQuery.isPending
                 ? "Loading…"
@@ -264,7 +273,9 @@ export default function TransactionsPage() {
                   <ReceiptText className="size-7" />
                 )
               }
-              title={hasActiveFilters ? "No matching transactions" : "No transactions yet"}
+              title={
+                hasActiveFilters ? "No matching transactions" : "No transactions yet"
+              }
               description={
                 hasActiveFilters
                   ? "No transactions match your current search or filters."
@@ -379,10 +390,7 @@ export default function TransactionsPage() {
         }}
       />
 
-      <ImportTransactionsSheet
-        open={importSheetOpen}
-        onOpenChange={setImportSheetOpen}
-      />
+      <ImportTransactionsSheet open={importSheetOpen} onOpenChange={setImportSheetOpen} />
     </FadeInStagger>
   );
 }

@@ -13,10 +13,7 @@ import apiRoutes from "./routes.js";
 import { getAuth } from "./auth.js";
 import { logger } from "./config/logger.js";
 import { initErrorTracking } from "./config/error-tracking.js";
-import {
-  errorHandler,
-  notFoundHandler,
-} from "./common/middlewares/error-handler.js";
+import { errorHandler, notFoundHandler } from "./common/middlewares/error-handler.js";
 import { connectDatabase } from "./database/index.js";
 import { csrfProtection } from "./common/middlewares/csrf.js";
 
@@ -47,9 +44,7 @@ const isProd = process.env.NODE_ENV === "production";
 // origin, so credentialed/cookie requests work). In production it is
 // required by validateEnv().
 const rawOrigins = process.env.CORS_ORIGIN;
-const allowedOrigins = rawOrigins
-  ? rawOrigins.split(",").map((o) => o.trim())
-  : null;
+const allowedOrigins = rawOrigins ? rawOrigins.split(",").map((o) => o.trim()) : null;
 
 const app = express();
 
@@ -131,19 +126,14 @@ const apiLimiter = rateLimit({
 // BetterAuth — mounted BEFORE express.json() so it can read the raw request
 // body (it parses the stream itself). csrfProtection blocks state-changing
 // requests whose Origin/Referer is not a trusted origin (safe methods pass).
-app.all(
-  "/api/auth/*splat",
-  authLimiter,
-  csrfProtection,
-  async (req, res, next) => {
-    try {
-      const auth = await getAuth();
-      await toNodeHandler(auth)(req, res);
-    } catch (error) {
-      next(error);
-    }
+app.all("/api/auth/*splat", authLimiter, csrfProtection, async (req, res, next) => {
+  try {
+    const auth = await getAuth();
+    await toNodeHandler(auth)(req, res);
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 app.use(express.json({ limit: "1mb" }));
 

@@ -30,18 +30,18 @@ Checked against the current tree, not just the docs:
 
 Keep this list in mind so nothing below is built twice.
 
-| Area               | Shipped                                                                                                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Area               | Shipped                                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Transactions**   | Create, edit, delete, move between spaces, type/space/keyword filters, pagination, server-side search (debounced), CSV + JSON export, CSV + JSON import with duplicate skipping |
-| **Spaces**         | Personal/shared, owner/member roles, invites by email or `@username`, token invite landing, resend/cancel, transfer ownership, remove member, leave space, 10-member cap |
-| **Dues**           | Lent/borrowed, partial settlements, undo settlement, overdue tracking, ledger-linked transactions, group-by-person and flat views                                        |
-| **Dashboard**      | Balance, month income/spend, expense + income categories, payment-method breakdown, recent transactions, dues summary                                                    |
-| **Analytics**      | Period selector (today / month / 3M / year / all / custom), month-over-month deltas, insights, category drill-down, recurring detection                                  |
-| **Budget**         | Space-level monthly budget, spent-vs-budget bar on the spaces list and space detail                                                                                      |
-| **Notifications**  | In-app center, unread badge, preferences (`realtime` / `off`), invite + member events, spam suppression                                                                  |
-| **Auth & account** | Email/password, Google, email verification, password change, username system, profile, account deletion                                                                  |
-| **Performance**    | `$facet` dashboard/analytics, Redis dashboard cache with invalidation, auth cookie cache, Mongo pool tuning                                                              |
-| **Dev**            | `npm run seed` demo data across every feature                                                                                                                            |
+| **Spaces**         | Personal/shared, owner/member roles, invites by email or `@username`, token invite landing, resend/cancel, transfer ownership, remove member, leave space, 10-member cap        |
+| **Dues**           | Lent/borrowed, partial settlements, undo settlement, overdue tracking, ledger-linked transactions, group-by-person and flat views                                               |
+| **Dashboard**      | Balance, month income/spend, expense + income categories, payment-method breakdown, recent transactions, dues summary                                                           |
+| **Analytics**      | Period selector (today / month / 3M / year / all / custom), month-over-month deltas, insights, category drill-down, recurring detection                                         |
+| **Budget**         | Space-level monthly budget, spent-vs-budget bar on the spaces list and space detail                                                                                             |
+| **Notifications**  | In-app center, unread badge, preferences (`realtime` / `off`), invite + member events, spam suppression                                                                         |
+| **Auth & account** | Email/password, Google, email verification, password change, username system, profile, account deletion                                                                         |
+| **Performance**    | `$facet` dashboard/analytics, Redis dashboard cache with invalidation, auth cookie cache, Mongo pool tuning                                                                     |
+| **Dev**            | `npm run seed` demo data across every feature                                                                                                                                   |
 
 ---
 

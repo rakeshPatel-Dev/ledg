@@ -6,7 +6,10 @@ import { UserModel } from "../domains/users/model.js";
 
 config({ path: ".env.local" });
 
-export async function backfillMemberUsernames(): Promise<{ updated: number; total: number }> {
+export async function backfillMemberUsernames(): Promise<{
+  updated: number;
+  total: number;
+}> {
   // Any space whose member snapshots predate the `username` field will be
   // missing the key on at least one member. Fill each missing member username
   // from the live user document (falls back to null if the user is gone).

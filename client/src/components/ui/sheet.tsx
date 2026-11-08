@@ -33,7 +33,7 @@ export function Sheet({
           <Drawer.Popup className="pointer-events-auto fixed inset-x-0 bottom-0 outline-none">
             <div
               className={cn(
-                "flex max-h-[88dvh] flex-col rounded-t-4xl border-t border-white/30 dark:border-white/10 bg-card/85 backdrop-blur-2xl backdrop-saturate-180 shadow-2xl shadow-black/20 outline-none",
+                "flex max-h-[88dvh] flex-col rounded-t-4xl border-t border-border/60 bg-card shadow-2xl outline-none",
                 className
               )}
             >
@@ -71,7 +71,7 @@ export function Sheet({
               </div>
 
               {footer ? (
-                <div className="shrink-0 border-t border-border/60 bg-card/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
+                <div className="shrink-0 border-t border-border/60 bg-card px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
                   {footer}
                 </div>
               ) : null}

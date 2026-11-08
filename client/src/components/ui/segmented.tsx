@@ -35,10 +35,7 @@ export function Segmented<T extends string>({
   return (
     <div
       role="radiogroup"
-      className={cn(
-        "grid w-full gap-1 rounded-full bg-muted p-1",
-        className
-      )}
+      className={cn("grid w-full gap-1 rounded-full bg-muted p-1", className)}
       style={{
         gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
       }}
@@ -54,16 +51,14 @@ export function Segmented<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "relative flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-              active
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {active && (
               <motion.span
                 layoutId={layoutId}
                 transition={SPRING}
-                className="absolute inset-0 rounded-full bg-card shadow-sm"
+                className="absolute inset-0 rounded-full bg-card shadow-elev-raised"
               />
             )}
             <span className="relative z-10 flex min-w-0 items-center justify-center gap-1.5">

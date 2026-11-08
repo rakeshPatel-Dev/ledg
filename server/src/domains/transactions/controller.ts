@@ -12,72 +12,62 @@ import {
   validateUpdateTransaction,
 } from "./validator.js";
 
-export const createTransaction = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const data = validateCreateTransaction(req.body);
-    const transaction = await transactionService.createUserTransaction(
-      req.userId!,
-      String(req.params.spaceId),
-      data
-    );
+export const createTransaction = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const data = validateCreateTransaction(req.body);
+  const transaction = await transactionService.createUserTransaction(
+    req.userId!,
+    String(req.params.spaceId),
+    data
+  );
 
-    res.status(201).json({ success: true, data: { transaction } });
-  }
-);
+  res.status(201).json({ success: true, data: { transaction } });
+});
 
-export const listTransactions = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const query = validateTransactionQuery(req.query);
-    const data = await transactionService.listUserTransactions(
-      req.userId!,
-      String(req.params.spaceId),
-      query
-    );
+export const listTransactions = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const query = validateTransactionQuery(req.query);
+  const data = await transactionService.listUserTransactions(
+    req.userId!,
+    String(req.params.spaceId),
+    query
+  );
 
-    res.json({ success: true, data });
-  }
-);
+  res.json({ success: true, data });
+});
 
-export const getTransaction = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const transactionId = validateTransactionId(req.params);
-    const transaction = await transactionService.getUserTransaction(
-      req.userId!,
-      String(req.params.spaceId),
-      transactionId
-    );
+export const getTransaction = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const transactionId = validateTransactionId(req.params);
+  const transaction = await transactionService.getUserTransaction(
+    req.userId!,
+    String(req.params.spaceId),
+    transactionId
+  );
 
-    res.json({ success: true, data: { transaction } });
-  }
-);
+  res.json({ success: true, data: { transaction } });
+});
 
-export const updateTransaction = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const transactionId = validateTransactionId(req.params);
-    const data = validateUpdateTransaction(req.body);
-    const transaction = await transactionService.updateUserTransaction(
-      req.userId!,
-      String(req.params.spaceId),
-      transactionId,
-      data
-    );
+export const updateTransaction = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const transactionId = validateTransactionId(req.params);
+  const data = validateUpdateTransaction(req.body);
+  const transaction = await transactionService.updateUserTransaction(
+    req.userId!,
+    String(req.params.spaceId),
+    transactionId,
+    data
+  );
 
-    res.json({ success: true, data: { transaction } });
-  }
-);
+  res.json({ success: true, data: { transaction } });
+});
 
-export const deleteTransaction = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const transactionId = validateTransactionId(req.params);
-    const result = await transactionService.deleteUserTransaction(
-      req.userId!,
-      String(req.params.spaceId),
-      transactionId
-    );
+export const deleteTransaction = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const transactionId = validateTransactionId(req.params);
+  const result = await transactionService.deleteUserTransaction(
+    req.userId!,
+    String(req.params.spaceId),
+    transactionId
+  );
 
-    res.json({ success: true, data: result });
-  }
-);
+  res.json({ success: true, data: result });
+});
 
 const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
 
@@ -129,9 +119,7 @@ export const bulkDeleteTransactions = asyncHandler(
       );
     }
     if (
-      !ids.every(
-        (id): id is string => typeof id === "string" && OBJECT_ID_RE.test(id)
-      )
+      !ids.every((id): id is string => typeof id === "string" && OBJECT_ID_RE.test(id))
     ) {
       throw new BadRequestError("Invalid transaction id");
     }

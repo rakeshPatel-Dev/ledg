@@ -35,9 +35,7 @@ export function UserAvatar({
   return (
     <Avatar className={className} {...props}>
       <AvatarImage src={u?.image ?? ""} alt={name} />
-      <AvatarFallback className={fallbackClassName}>
-        {initials}
-      </AvatarFallback>
+      <AvatarFallback className={fallbackClassName}>{initials}</AvatarFallback>
     </Avatar>
   );
 }

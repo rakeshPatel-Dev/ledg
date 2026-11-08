@@ -16,15 +16,11 @@ interface TransactionFormContextValue {
   defaultInput: (spaces: Space[]) => TransactionInput;
 }
 
-const TransactionFormContext = createContext<
-  TransactionFormContextValue | undefined
->(undefined);
+const TransactionFormContext = createContext<TransactionFormContextValue | undefined>(
+  undefined
+);
 
-export function TransactionFormProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function TransactionFormProvider({ children }: { children: ReactNode }) {
   const [formState, setFormState] = useState<TransactionFormState>({
     open: false,
   });
@@ -34,14 +30,18 @@ export function TransactionFormProvider({
   };
 
   const openEdit = (transaction: Transaction, spaceId: string, lockSpace = false) => {
-    setFormState({ open: true, editing: transaction, preselectedSpaceId: spaceId, lockSpace });
+    setFormState({
+      open: true,
+      editing: transaction,
+      preselectedSpaceId: spaceId,
+      lockSpace,
+    });
   };
 
   const closeForm = () => setFormState((s) => ({ ...s, open: false }));
 
   const defaultInput = (spaces: Space[]): TransactionInput => {
-    const preferred =
-      spaces.find((s) => s.type === "personal") ?? spaces[0];
+    const preferred = spaces.find((s) => s.type === "personal") ?? spaces[0];
     const now = new Date();
     return {
       category: "Food",
@@ -66,9 +66,7 @@ export function TransactionFormProvider({
 export function useTransactionForm() {
   const ctx = useContext(TransactionFormContext);
   if (!ctx) {
-    throw new Error(
-      "useTransactionForm must be used within TransactionFormProvider"
-    );
+    throw new Error("useTransactionForm must be used within TransactionFormProvider");
   }
   return ctx;
 }

@@ -23,7 +23,6 @@ import type {
   TransactionUpdateInput,
 } from "@ledg/shared";
 
-
 const BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
 
 type TransactionListQuery = Omit<TransactionQuery, "page" | "pageSize"> & {
@@ -148,16 +147,13 @@ export function createApi() {
 
   return {
     spaces: {
-      list: () =>
-        request<{ spaces: Space[] }>("/spaces").then((r) => r.spaces),
+      list: () => request<{ spaces: Space[] }>("/spaces").then((r) => r.spaces),
       get: (id: string) =>
         request<{ space: Space }>(`/spaces/${id}`).then((r) => r.space),
       create: (data: SpaceInput, idempotencyKey?: string) =>
         request<SpaceCreateResult>("/spaces", {
           method: "POST",
-          headers: idempotencyKey
-            ? { "Idempotency-Key": idempotencyKey }
-            : undefined,
+          headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
           body: JSON.stringify(data),
         }),
       update: (id: string, data: SpaceUpdateInput) =>
@@ -174,9 +170,9 @@ export function createApi() {
           (r) => r.members
         ),
       getInvitations: (id: string) =>
-        request<{ invitations: SpaceInvitation[] }>(
-          `/spaces/${id}/invitations`
-        ).then((r) => r.invitations),
+        request<{ invitations: SpaceInvitation[] }>(`/spaces/${id}/invitations`).then(
+          (r) => r.invitations
+        ),
       inviteMember: (id: string, identifier: string) =>
         request<{ invitation: SpaceInvitation }>(`/spaces/${id}/members/invite`, {
           method: "POST",
@@ -205,9 +201,9 @@ export function createApi() {
           (r) => r.invitations
         ),
       getPreview: (token: string) =>
-        request<{ preview: InvitationPreview }>(
-          `/invitations/by-token/${token}`
-        ).then((r) => r.preview),
+        request<{ preview: InvitationPreview }>(`/invitations/by-token/${token}`).then(
+          (r) => r.preview
+        ),
       acceptByToken: (token: string) =>
         request<{ success: boolean; spaceId: string; spaceName: string }>(
           "/invitations/by-token/accept",
@@ -255,12 +251,9 @@ export function createApi() {
           totalPages: number;
         }>(`/notifications?page=${page}&pageSize=${pageSize}`),
       markRead: (id: string) =>
-        request<{ notification: NotificationItem }>(
-          `/notifications/${id}/read`,
-          {
-            method: "PATCH",
-          }
-        ).then((r) => r.notification),
+        request<{ notification: NotificationItem }>(`/notifications/${id}/read`, {
+          method: "PATCH",
+        }).then((r) => r.notification),
       markAllRead: () =>
         request<{ updatedCount: number }>("/notifications/read-all", {
           method: "POST",
@@ -270,17 +263,14 @@ export function createApi() {
           "/me/notification-preferences"
         ).then((r) => r.preferences),
       updatePreferences: (data: Partial<NotificationPreference>) =>
-        request<{ preferences: NotificationPreference }>(
-          "/me/notification-preferences",
-          {
-            method: "PUT",
-            body: JSON.stringify(data),
-          }
-        ).then((r) => r.preferences),
+        request<{ preferences: NotificationPreference }>("/me/notification-preferences", {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }).then((r) => r.preferences),
     },
     transactions: {
-
-      listAll: (page = 1, pageSize = 20, filters: AllTransactionsFilter = {}) => {        const params = new URLSearchParams({
+      listAll: (page = 1, pageSize = 20, filters: AllTransactionsFilter = {}) => {
+        const params = new URLSearchParams({
           page: String(page),
           pageSize: String(pageSize),
         });
@@ -313,32 +303,19 @@ export function createApi() {
           body: JSON.stringify({ ids }),
         }),
       create: (spaceId: string, data: TransactionInput) =>
-        request<{ transaction: Transaction }>(
-          `/spaces/${spaceId}/transactions`,
-          {
-            method: "POST",
-            body: JSON.stringify(data),
-          }
-        ).then((r) => r.transaction),
-      update: (
-        spaceId: string,
-        id: string,
-        data: TransactionUpdateInput
-      ) =>
-        request<{ transaction: Transaction }>(
-          `/spaces/${spaceId}/transactions/${id}`,
-          {
-            method: "PUT",
-            body: JSON.stringify(data),
-          }
-        ).then((r) => r.transaction),
+        request<{ transaction: Transaction }>(`/spaces/${spaceId}/transactions`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }).then((r) => r.transaction),
+      update: (spaceId: string, id: string, data: TransactionUpdateInput) =>
+        request<{ transaction: Transaction }>(`/spaces/${spaceId}/transactions/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }).then((r) => r.transaction),
       remove: (spaceId: string, id: string) =>
-        request<{ id: string }>(
-          `/spaces/${spaceId}/transactions/${id}`,
-          {
-            method: "DELETE",
-          }
-        ).then((r) => r.id),
+        request<{ id: string }>(`/spaces/${spaceId}/transactions/${id}`, {
+          method: "DELETE",
+        }).then((r) => r.id),
     },
     analytics: {
       summary: (
@@ -374,8 +351,7 @@ export function createApi() {
         const qs = params.toString();
         return request<PaginatedResult<Debt>>(`/dues${qs ? `?${qs}` : ""}`);
       },
-      get: (id: string) =>
-        request<{ due: Debt }>(`/dues/${id}`).then((r) => r.due),
+      get: (id: string) => request<{ due: Debt }>(`/dues/${id}`).then((r) => r.due),
       create: (data: DebtCreateInput) =>
         request<{ due: Debt }>("/dues", {
           method: "POST",
@@ -403,8 +379,7 @@ export function createApi() {
         }),
     },
     me: {
-      getProvider: () =>
-        request<{ provider: string }>("/me/provider"),
+      getProvider: () => request<{ provider: string }>("/me/provider"),
       getProfile: () =>
         request<{
           name: string;

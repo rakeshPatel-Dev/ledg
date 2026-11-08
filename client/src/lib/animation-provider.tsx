@@ -40,8 +40,7 @@ export function MotionProvider({
   }, []);
 
   useEffect(() => {
-    const reduce =
-      motion === "reduced" || (motion === "system" && systemReduced);
+    const reduce = motion === "reduced" || (motion === "system" && systemReduced);
     document.documentElement.classList.toggle("reduce-motion", reduce);
   }, [motion, systemReduced]);
 

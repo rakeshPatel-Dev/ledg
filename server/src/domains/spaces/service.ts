@@ -22,7 +22,12 @@ export interface UserContext {
 
 export async function createUserSpace(
   owner: UserContext,
-  data: { name: string; type: string; monthlyBudget?: number | null; inviteeIdentifiers?: string[] }
+  data: {
+    name: string;
+    type: string;
+    monthlyBudget?: number | null;
+    inviteeIdentifiers?: string[];
+  }
 ) {
   const count = await spaceRepository.countUserSpaces(owner.userId);
 
@@ -37,7 +42,11 @@ export async function createUserSpace(
   });
 
   const spaceId = String(space._id);
-  const invitationResults: Array<{ identifier: string; status: "invited" | "failed"; error?: string }> = [];
+  const invitationResults: Array<{
+    identifier: string;
+    status: "invited" | "failed";
+    error?: string;
+  }> = [];
 
   if (data.inviteeIdentifiers && data.inviteeIdentifiers.length > 0) {
     const invitePromises = data.inviteeIdentifiers.map(async (identifier) => {
@@ -63,9 +72,7 @@ export async function createUserSpace(
 
   await invalidateDashboardCache([
     String(owner.userId),
-    ...(freshSpace?.members ?? space.members ?? []).map((m) =>
-      String(m.userId)
-    ),
+    ...(freshSpace?.members ?? space.members ?? []).map((m) => String(m.userId)),
   ]);
 
   return {
@@ -82,7 +89,7 @@ export async function getUserSpaces(userId: Types.ObjectId) {
 
 export async function getUserSpace(userId: Types.ObjectId, spaceId: string) {
   const access = await assertSpaceAccess(spaceId, userId);
-  return { 
+  return {
     ...access.space,
     role: access.role,
   };
@@ -123,14 +130,18 @@ export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) 
     );
 
     if (otherMembers.length > 0) {
-      await notificationService.notifyMembers({
-        recipientIds: otherMembers.map((m) => m.userId),
-        type: "space_deleted",
-        data: {
-          spaceId,
-          spaceName: space.name,
-        },
-      }).catch((e) => logger.error({ error: e }, "Failed to notify members of space deletion"));
+      await notificationService
+        .notifyMembers({
+          recipientIds: otherMembers.map((m) => m.userId),
+          type: "space_deleted",
+          data: {
+            spaceId,
+            spaceName: space.name,
+          },
+        })
+        .catch((e) =>
+          logger.error({ error: e }, "Failed to notify members of space deletion")
+        );
     }
 
     // 5. Delete notifications referencing this space
@@ -144,9 +155,9 @@ export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) 
     }
   } catch (err) {
     // Restore the space so the owner can access and retry deletion
-    await spaceRepository.clearSpaceDeletingLease(spaceId, ownerId).catch((e) =>
-      logger.error({ error: e }, "Failed to clear space deleting lease")
-    );
+    await spaceRepository
+      .clearSpaceDeletingLease(spaceId, ownerId)
+      .catch((e) => logger.error({ error: e }, "Failed to clear space deleting lease"));
     throw err;
   }
 
@@ -200,22 +211,21 @@ export async function removeMember(
 
   const freshSpace = await spaceRepository.findSpaceById(String(space._id));
   const isShared = (freshSpace?.members || []).some((m) => m.role === "member");
-  await SpaceModel.updateOne(
-    { _id: space._id },
-    { $set: { isShared } }
-  );
+  await SpaceModel.updateOne({ _id: space._id }, { $set: { isShared } });
 
   // Notify the removed member
-  await notificationService.notify({
-    userId: targetMember.userId,
-    type: "member_removed",
-    data: {
-      spaceId: String(space._id),
-      spaceName: space.name,
-      actorId: String(owner.userId),
-      actorName: owner.name,
-    },
-  }).catch((e) => logger.error({ error: e }, "Failed to notify removed member"));
+  await notificationService
+    .notify({
+      userId: targetMember.userId,
+      type: "member_removed",
+      data: {
+        spaceId: String(space._id),
+        spaceName: space.name,
+        actorId: String(owner.userId),
+        actorName: owner.name,
+      },
+    })
+    .catch((e) => logger.error({ error: e }, "Failed to notify removed member"));
 
   await invalidateDashboardCache([
     String(owner.userId),
@@ -324,24 +334,23 @@ export async function leaveSpace(user: UserContext, spaceId: string) {
 
   const freshSpace = await spaceRepository.findSpaceById(String(space._id));
   const isShared = (freshSpace?.members || []).some((m) => m.role === "member");
-  await SpaceModel.updateOne(
-    { _id: space._id },
-    { $set: { isShared } }
-  );
+  await SpaceModel.updateOne({ _id: space._id }, { $set: { isShared } });
 
   // Notify owner and remaining members
   const recipientIds = (freshSpace?.members || []).map((m) => m.userId);
   if (recipientIds.length > 0) {
-    await notificationService.notifyMembers({
-      recipientIds,
-      type: "member_left",
-      data: {
-        spaceId: String(space._id),
-        spaceName: space.name,
-        actorId: String(user.userId),
-        actorName: user.name,
-      },
-    }).catch((e) => logger.error({ error: e }, "Failed to notify members of departure"));
+    await notificationService
+      .notifyMembers({
+        recipientIds,
+        type: "member_left",
+        data: {
+          spaceId: String(space._id),
+          spaceName: space.name,
+          actorId: String(user.userId),
+          actorName: user.name,
+        },
+      })
+      .catch((e) => logger.error({ error: e }, "Failed to notify members of departure"));
   }
 
   await invalidateDashboardCache([

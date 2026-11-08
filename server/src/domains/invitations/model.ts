@@ -1,9 +1,6 @@
 import mongoose, { Schema, model, type Types } from "mongoose";
 
-import {
-  INVITATION_STATUSES,
-  type InvitationStatus,
-} from "../../shared/index.js";
+import { INVITATION_STATUSES, type InvitationStatus } from "../../shared/index.js";
 
 export interface SpaceInvitationDoc {
   _id: Types.ObjectId;

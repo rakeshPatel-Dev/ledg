@@ -76,9 +76,7 @@ export function SettleDueSheet({
   const isFullPayment = numAmount >= remaining - 0.001;
   const newSettled = (due.settledAmount ?? 0) + numAmount;
   const newProgress =
-    due.principal > 0
-      ? Math.min(100, Math.round((newSettled / due.principal) * 100))
-      : 0;
+    due.principal > 0 ? Math.min(100, Math.round((newSettled / due.principal) * 100)) : 0;
 
   const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
 
@@ -136,7 +134,9 @@ export function SettleDueSheet({
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {isLent ? "Money received from" : "Money paid to"}{" "}
-              <span className="font-semibold text-foreground">{due.counterparty.name}</span>
+              <span className="font-semibold text-foreground">
+                {due.counterparty.name}
+              </span>
             </p>
           </div>
         </div>
@@ -183,7 +183,10 @@ export function SettleDueSheet({
               {numAmount > 0 && !isFullPayment && (
                 <div
                   className="absolute top-0 h-full rounded-full bg-primary/50 transition-all duration-300"
-                  style={{ left: `${progressPercent}%`, width: `${newProgress - progressPercent}%` }}
+                  style={{
+                    left: `${progressPercent}%`,
+                    width: `${newProgress - progressPercent}%`,
+                  }}
                 />
               )}
             </div>
@@ -235,7 +238,10 @@ export function SettleDueSheet({
           <div className="flex gap-1.5 flex-wrap">
             {QUICK_AMOUNTS.map((inc) => {
               if (inc >= remaining) return null;
-              const target = Math.min(remaining, Math.round((numAmount + inc) * 100) / 100);
+              const target = Math.min(
+                remaining,
+                Math.round((numAmount + inc) * 100) / 100
+              );
               return (
                 <button
                   key={inc}
@@ -276,33 +282,45 @@ export function SettleDueSheet({
             Via
           </label>
           <div className="grid grid-cols-4 gap-2">
-            {(["cash", "wallet", "bank_transfer", "card"] as PaymentMethod[]).map((method) => {
-              const Icon = PAYMENT_ICONS[method];
-              const selected = paymentMethod === method;
-              return (
-                <button
-                  key={method}
-                  type="button"
-                  onClick={() => setPaymentMethod(method)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 rounded-2xl border p-3 text-[0.65rem] font-semibold transition-all",
-                    selected
-                      ? "border-primary bg-primary/8 text-primary shadow-sm"
-                      : "border-border/50 bg-muted/25 text-muted-foreground hover:bg-muted/50"
-                  )}
-                >
-                  <Icon className={cn("size-4.5", selected ? "text-primary" : "text-muted-foreground")} />
-                  <span className="truncate w-full text-center leading-tight">{PAYMENT_LABELS[method]}</span>
-                </button>
-              );
-            })}
+            {(["cash", "wallet", "bank_transfer", "card"] as PaymentMethod[]).map(
+              (method) => {
+                const Icon = PAYMENT_ICONS[method];
+                const selected = paymentMethod === method;
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setPaymentMethod(method)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-2xl border p-3 text-[0.65rem] font-semibold transition-all",
+                      selected
+                        ? "border-primary bg-primary/8 text-primary shadow-sm"
+                        : "border-border/50 bg-muted/25 text-muted-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-4.5",
+                        selected ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <span className="truncate w-full text-center leading-tight">
+                      {PAYMENT_LABELS[method]}
+                    </span>
+                  </button>
+                );
+              }
+            )}
           </div>
         </div>
 
         {/* ── Note ── */}
         <div className="flex flex-col gap-2 mb-6">
           <label className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
-            Note <span className="text-muted-foreground/50 font-normal normal-case text-[0.65rem]">(optional)</span>
+            Note{" "}
+            <span className="text-muted-foreground/50 font-normal normal-case text-[0.65rem]">
+              (optional)
+            </span>
           </label>
           <input
             placeholder="e.g. Paid via eSewa / cash in hand..."

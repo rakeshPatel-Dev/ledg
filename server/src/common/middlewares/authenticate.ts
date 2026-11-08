@@ -27,11 +27,7 @@ export interface AuthRequest extends Request {
  * Prefer that value and only fall back to a DB lookup when it is missing
  * (first request for a user created before this field existed).
  */
-export async function authenticate(
-  req: AuthRequest,
-  _res: Response,
-  next: NextFunction
-) {
+export async function authenticate(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const auth = await getAuth();
     const session = await auth.api.getSession({
@@ -61,9 +57,11 @@ export async function optionalAuthenticate(
 ) {
   try {
     const auth = await getAuth();
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    }).catch(() => null);
+    const session = await auth.api
+      .getSession({
+        headers: fromNodeHeaders(req.headers),
+      })
+      .catch(() => null);
 
     if (session?.user) {
       req.user = session.user;

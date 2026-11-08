@@ -67,9 +67,7 @@ export function relativeDay(date: string | Date): string {
   startOfToday.setHours(0, 0, 0, 0);
   const startOfDay = new Date(d);
   startOfDay.setHours(0, 0, 0, 0);
-  const diff = Math.round(
-    (startOfToday.getTime() - startOfDay.getTime()) / 86_400_000
-  );
+  const diff = Math.round((startOfToday.getTime() - startOfDay.getTime()) / 86_400_000);
 
   if (diff === 0) return "Today";
   if (diff === 1) return "Yesterday";
@@ -101,7 +99,8 @@ export function formatRelativeCompact(date: string | Date): string {
   if (diffDays > 1 && diffDays <= 13) return `in ${diffDays}d`;
   if (diffDays >= 14 && diffDays <= 59) return `in ${Math.round(diffDays / 7)}w`;
   if (diffDays < -1 && diffDays >= -13) return `${Math.abs(diffDays)}d ago`;
-  if (diffDays < -13 && diffDays >= -59) return `${Math.round(Math.abs(diffDays) / 7)}w ago`;
+  if (diffDays < -13 && diffDays >= -59)
+    return `${Math.round(Math.abs(diffDays) / 7)}w ago`;
 
   // Months range
   const absDays = Math.abs(diffDays);

@@ -9,16 +9,17 @@ const USERNAME_SCHEMA = z
   .regex(/^[a-z0-9_]+$/, "Only lowercase letters, numbers, and underscores are allowed");
 
 const emailUpdateSchema = z.object({
-  email: z.string().email("Please enter a valid email address").max(255, "Email is too long"),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .max(255, "Email is too long"),
 });
 
 export function validateEmailUpdate(input: unknown): string {
   const result = emailUpdateSchema.safeParse(input);
 
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message ?? "Invalid email address"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message ?? "Invalid email address");
   }
 
   return result.data.email;
@@ -26,9 +27,7 @@ export function validateEmailUpdate(input: unknown): string {
 
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z
-    .string()
-    .min(8, "New password must be at least 8 characters"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
 });
 
 export function validatePasswordChange(input: unknown): {
@@ -38,9 +37,7 @@ export function validatePasswordChange(input: unknown): {
   const result = passwordChangeSchema.safeParse(input);
 
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message ?? "Invalid password data"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message ?? "Invalid password data");
   }
 
   return result.data;
@@ -53,9 +50,7 @@ const usernameUpdateSchema = z.object({
 export function validateUsernameUpdate(input: unknown): { username: string } {
   const result = usernameUpdateSchema.safeParse(input);
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message ?? "Invalid username"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message ?? "Invalid username");
   }
   return result.data;
 }
@@ -65,12 +60,13 @@ const profileUpdateSchema = z.object({
   username: USERNAME_SCHEMA.optional(),
 });
 
-export function validateProfileUpdate(input: unknown): { name?: string; username?: string } {
+export function validateProfileUpdate(input: unknown): {
+  name?: string;
+  username?: string;
+} {
   const result = profileUpdateSchema.safeParse(input);
   if (!result.success) {
-    throw new BadRequestError(
-      result.error.issues[0]?.message ?? "Invalid profile data"
-    );
+    throw new BadRequestError(result.error.issues[0]?.message ?? "Invalid profile data");
   }
   return result.data;
 }

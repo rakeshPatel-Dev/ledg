@@ -59,67 +59,65 @@ export function CategoryDrilldownSheet({
           />
         ) : (
           <>
-        {/* Category icon + total */}
-        <div className="flex items-center gap-3 rounded-3xl bg-accent/50 p-4">
-          <span
-            className="flex size-11 shrink-0 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: `${meta.color}22`, color: meta.color }}
-          >
-            <meta.icon className="size-5" />
-          </span>
-          <div>
-            <p className="text-xs text-muted-foreground">Total spent</p>
-            <p className="text-xl font-bold tabular-nums">
-              {formatCurrency(total, currency)}
-            </p>
-          </div>
-        </div>
-
-        {/* Transactions list */}
-        {categoryTxs.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No transactions in this category
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {categoryTxs.slice(0, 20).map((t) => (
-              <Card
-                key={t.id}
-                className="flex items-center justify-between rounded-3xl px-4 py-3"
+            {/* Category icon + total */}
+            <div className="flex items-center gap-3 rounded-3xl bg-accent/50 p-4">
+              <span
+                className="flex size-11 shrink-0 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: `${meta.color}22`, color: meta.color }}
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {t.note || category}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(t.date).toLocaleDateString("en-NP", {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold tabular-nums text-destructive">
-                    -{formatCurrency(t.amount, currency)}
-                  </span>
-                  <ArrowUpRight className="size-3.5 text-destructive/50" />
-                </div>
-              </Card>
-            ))}
+                <meta.icon className="size-5" />
+              </span>
+              <div>
+                <p className="text-xs text-muted-foreground">Total spent</p>
+                <p className="text-xl font-bold tabular-nums">
+                  {formatCurrency(total, currency)}
+                </p>
+              </div>
+            </div>
 
-            {/* See all link */}
-            {categoryTxs.length > 0 && (
-              <Link
-                to={`/transactions?category=${encodeURIComponent(category)}`}
-                className="flex items-center justify-center gap-1.5 pt-2 text-sm font-medium text-primary hover:underline"
-                onClick={() => onOpenChange(false)}
-              >
-                See all in Transactions
-                <ExternalLink className="size-3.5" />
-              </Link>
+            {/* Transactions list */}
+            {categoryTxs.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No transactions in this category
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {categoryTxs.slice(0, 20).map((t) => (
+                  <Card
+                    key={t.id}
+                    className="flex items-center justify-between rounded-3xl px-4 py-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{t.note || category}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(t.date).toLocaleDateString("en-NP", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold tabular-nums text-destructive">
+                        -{formatCurrency(t.amount, currency)}
+                      </span>
+                      <ArrowUpRight className="size-3.5 text-destructive/50" />
+                    </div>
+                  </Card>
+                ))}
+
+                {/* See all link */}
+                {categoryTxs.length > 0 && (
+                  <Link
+                    to={`/transactions?category=${encodeURIComponent(category)}`}
+                    className="flex items-center justify-center gap-1.5 pt-2 text-sm font-medium text-primary hover:underline"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    See all in Transactions
+                    <ExternalLink className="size-3.5" />
+                  </Link>
+                )}
+              </div>
             )}
-          </div>
-        )}
           </>
         )}
       </div>

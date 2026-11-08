@@ -9,6 +9,7 @@ This document details the complete end-to-end architecture, database schemas, au
 Ledg is evolving from a single-user money tracker into a collaborative finance tool tailored for households, couples, trips, and shared ventures.
 
 ### Key Goals
+
 1. **Ownership vs Membership**:
    - **Owner (Creator)**: Complete authority over space configuration (name, budget, type), member invitations, member removals, and cascade deletion.
    - **Member**: Collaborative partner who can create transactions and manage their own entries (the owner may edit or delete anyone's), with the autonomy to leave at any time.
@@ -19,7 +20,7 @@ Ledg is evolving from a single-user money tracker into a collaborative finance t
    - Spaces page (`/spaces`) features intuitive **Personal** and **Shared** tabs with member avatar stacks.
 4. **Real-time Notifications & Activity Attribution**:
    - In-app notification center (bell in header) with unread counters and actionable invitation cards.
-   - Transactions display member attribution (*"Added by Rikesh"*) to foster transparency.
+   - Transactions display member attribution (_"Added by Rikesh"_) to foster transparency.
 
 ---
 
@@ -107,6 +108,7 @@ spaceInvitationSchema.index(
 ```
 
 **Tokens are single-use credentials:**
+
 - Generated with a CSPRNG (`crypto.randomBytes(32)` → base64url, ~192 bits of entropy).
 - Only `tokenHash = SHA-256(rawToken)` is persisted; redemption looks up by hash comparison.
 - Because storage holds only the hash, the raw token is never persisted anywhere — so the async email worker must be able to mint it. The delivery worker therefore **generates the token at send time**: it atomically claims its outbox job, persists the new `tokenHash` (+ fresh `expiresAt`) on the invitation in that same update, renders the deep-link URL from the in-memory plaintext, and discards the plaintext once the send completes (successfully or not). The identical mint → hash → send path serves initial delivery and resend, and because resend rotates the hash it instantly invalidates every previously issued link. An invitation whose job has not yet run has no `tokenHash`, so links cannot be accepted before first delivery — preserving the single-use contract.
@@ -196,18 +198,18 @@ createdBy: {
 
 ## 3. Authorization & Permissions Matrix
 
-| Action | Space Owner | Space Member | Non-Member |
-| :--- | :---: | :---: | :---: |
-| **View Space & Transactions** | ✅ | ✅ | ❌ (403/404) |
-| **Create Transactions** | ✅ | ✅ | ❌ |
-| **Update / Delete Own Transactions** | ✅ | ✅ | ❌ |
-| **Update / Delete Others' Transactions** | ✅ | ❌ | ❌ |
-| **Edit Space Name / Budget / Type** | ✅ | ❌ | ❌ |
-| **Invite New Members** | ✅ | ❌ | ❌ |
-| **Remove Members** | ✅ | ❌ | ❌ |
-| **Transfer Ownership** | ✅ (to an eligible existing member) | ❌ | ❌ |
-| **Leave Space** | ❌ (after transferring ownership; otherwise delete space) | ✅ | ❌ |
-| **Delete Space (Cascade Deletion)** | ✅ | ❌ | ❌ |
+| Action                                   |                        Space Owner                        | Space Member |  Non-Member  |
+| :--------------------------------------- | :-------------------------------------------------------: | :----------: | :----------: |
+| **View Space & Transactions**            |                            ✅                             |      ✅      | ❌ (403/404) |
+| **Create Transactions**                  |                            ✅                             |      ✅      |      ❌      |
+| **Update / Delete Own Transactions**     |                            ✅                             |      ✅      |      ❌      |
+| **Update / Delete Others' Transactions** |                            ✅                             |      ❌      |      ❌      |
+| **Edit Space Name / Budget / Type**      |                            ✅                             |      ❌      |      ❌      |
+| **Invite New Members**                   |                            ✅                             |      ❌      |      ❌      |
+| **Remove Members**                       |                            ✅                             |      ❌      |      ❌      |
+| **Transfer Ownership**                   |            ✅ (to an eligible existing member)            |      ❌      |      ❌      |
+| **Leave Space**                          | ❌ (after transferring ownership; otherwise delete space) |      ✅      |      ❌      |
+| **Delete Space (Cascade Deletion)**      |                            ✅                             |      ❌      |      ❌      |
 
 > The owner-exit path is **ownership transfer**: an owner leaves only after atomically transferring ownership to another member (or by deleting the space). The permissions matrix, endpoint specification (4.1), and UI behavior (6.3) all follow this single supported path.
 
@@ -216,6 +218,7 @@ createdBy: {
 ## 4. API Endpoints Specification
 
 ### 4.1 Spaces & Members
+
 - `GET /api/v1/spaces` — Returns both owned spaces and spaces where user is a member (`members.userId = req.userId`).
 - `POST /api/v1/spaces` — Accepts `name`, `type`, `monthlyBudget`, optional `inviteEmails: string[]`, and a **required client-supplied `Idempotency-Key` header**. The server persists every key under a `{ userId, key }` unique index in a dedicated idempotency-key collection that snapshots the created space id and the original response body. A retried request carrying a seen key replays the originally created space and invitation results instead of executing again; only the first request performs the work. As a second layer, invitation deduplication by the `{spaceId, inviteeEmail}` pending-uniqueness index still guards the original creation request's own retries, so repeated requests never create duplicate invitations. Delivery remains decoupled and asynchronous (see 4.1.2).
 - `GET /api/v1/spaces/:id/members` — List space members. Accessible to any member of the space; **pending invitation data is never included** in this response so non-owners cannot enumerate outstanding invites.
@@ -229,15 +232,15 @@ createdBy: {
 
 `DELETE /api/v1/spaces/:id` (Owner only) removes more than the `SpaceDoc`. Deletion runs as an ordered, idempotent cleanup keyed by `spaceId`, so a crashed run can be retried safely (each step re-runs as a no-op when its targets are already gone):
 
-| Order | Target | Action |
-| :--- | :--- | :--- |
-| 0 | SpaceDoc (deletion lease) | **Before any cascade step**, atomically set a terminal-pending deletion state on the space document (`status: "deleting"` + `deletingAt` lease timestamp). Retried runs re-assert/refresh it idempotently; every subsequent step re-checks it on entry. |
-| 1 | Transactions | `deleteMany({ spaceId })` |
-| 2 | Invitations | Cancel all (`status: "canceled"`, token hashes unset) so outstanding links/tokens die immediately |
-| 3 | Notifications | Delete notifications referencing the space (`data.spaceId`) |
-| 4 | Cached pages / analytics caches | Invalidate space-scoped cache entries and query keys |
-| 5 | Email links | No server action needed — deep links resolve through the token lookup, which now returns "invitation no longer available"; the UI shows an expired/revoked state |
-| 6 | SpaceDoc | Remove the space document itself (last, as the ownership root) |
+| Order | Target                          | Action                                                                                                                                                                                                                                                  |
+| :---- | :------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0     | SpaceDoc (deletion lease)       | **Before any cascade step**, atomically set a terminal-pending deletion state on the space document (`status: "deleting"` + `deletingAt` lease timestamp). Retried runs re-assert/refresh it idempotently; every subsequent step re-checks it on entry. |
+| 1     | Transactions                    | `deleteMany({ spaceId })`                                                                                                                                                                                                                               |
+| 2     | Invitations                     | Cancel all (`status: "canceled"`, token hashes unset) so outstanding links/tokens die immediately                                                                                                                                                       |
+| 3     | Notifications                   | Delete notifications referencing the space (`data.spaceId`)                                                                                                                                                                                             |
+| 4     | Cached pages / analytics caches | Invalidate space-scoped cache entries and query keys                                                                                                                                                                                                    |
+| 5     | Email links                     | No server action needed — deep links resolve through the token lookup, which now returns "invitation no longer available"; the UI shows an expired/revoked state                                                                                        |
+| 6     | SpaceDoc                        | Remove the space document itself (last, as the ownership root)                                                                                                                                                                                          |
 
 **Deletion guard.** While the `status: "deleting"` lease is active, all space-scoped mutations reject with 409 — at minimum space-transaction creation and invitation mutations (accept/reject/cancel/resend), which check the flag in their authorization/update filters before doing work. Because the guard lives on the SpaceDoc itself and the SpaceDoc is removed only at step 6, it stays effective across the entire cascade, including non-transactional partial runs: any interleaved mutation attempt after step 0 hits the rejecting state, and once step 6 completes the space no longer exists for lookups to succeed against.
 
@@ -255,6 +258,7 @@ Invitation email delivery is decoupled from space creation and invitation persis
 - **Repair path:** failed deliveries surface in the owner's pending-invitations UI ("Resend"), which claims the existing outbox row for its `invitationId` through the same conditional atomic update used by the worker (see 4.2 resend endpoint) — concurrent resends therefore enqueue at most one delivery.
 
 ### 4.2 Invitations
+
 - `GET /api/v1/invitations/pending` — List pending invitations for logged-in user's email.
 - `GET /api/v1/invitations/by-token/:token` — Resolves a deep-link token **before** acceptance: hashes the raw token, validates existence + `status: "pending"` + `expiresAt > now`, and returns only non-sensitive context (`spaceName`, `inviterName`, `inviterEmail`, `expiresAt`). Expired/used/canceled tokens return 410 Gone. This is what makes the email deep link (`/invite/{token}`, section 5) actionable.
 - `POST /api/v1/invitations/by-token/accept` — Body: `{ token }`. Same validation as above, then performs the atomic accept transition (2.2) and membership creation. **Authorized recipient only — identical rules to `:id/accept`:** the request must satisfy `req.userId === invitation.inviteeId`, or — when `inviteeId` is null — the normalized authenticated email (`req.userEmail.toLowerCase()`) matches `invitation.inviteeEmail`; unauthorized requests are rejected with 403 **without modifying the invitation**. The atomic update pins the presented token's hash in its filter (`{ …, status: "pending", expiresAt: { $gt: now }, tokenHash: SHA-256(token) }`), so accepting can never succeed against a rotated hash and a concurrent resend cannot leave an older token valid.
@@ -266,7 +270,9 @@ Invitation email delivery is decoupled from space creation and invitation persis
 The pending list and owner-only cancellation behavior are unchanged by these additions; only authorization on mutations is tightened.
 
 ### 4.3 Notifications
+
 All operations are scoped to the authenticated recipient — every query and mutation filters or updates with `userId: req.userId`, so notifications can only be read or modified by their recipient:
+
 - `GET /api/v1/notifications` — List notifications **where `userId = req.userId`**, with pagination and unread counter.
 - `PATCH /api/v1/notifications/:id/read` — Mark as read via update filter `{ _id, userId: req.userId }`; a mismatch is a 404, never another user's notification.
 - `POST /api/v1/notifications/read-all` — Mark all as read for `userId = req.userId` only.
@@ -296,17 +302,20 @@ All operations are scoped to the authenticated recipient — every query and mut
 ## 6. UI & UX Architecture
 
 ### 6.1 Spaces Page Segmentation (`/spaces`)
+
 - **Tabs**: `Personal` | `Shared` | `All`
 - **Space Cards**:
   - Personal: Standard icon + balance + budget.
   - Shared: Member avatar stack (e.g. overlapping circular initials + `Shared` badge + Owner indicator).
 
 ### 6.2 Space Creation with Email Chips
+
 - Interactive input in Create Space sheet:
   - Typing email + hitting `Enter` or `Comma` adds a pill chip: `[sara@gmail.com ✕]`.
   - Email format validation with duplicate prevention.
 
 ### 6.3 Member Management Sheet in Space Detail (`/spaces/:id`)
+
 - **For Owner**:
   - Member list with role badges (`Owner`, `Member`).
   - Pending invitations section with `Resend` (calls `POST /api/v1/invitations/:id/resend`, 4.2) and `Revoke` buttons.
@@ -317,10 +326,11 @@ All operations are scoped to the authenticated recipient — every query and mut
   - Prominent "Leave this Space" action with confirmation sheet. Hidden for owners, who see the transfer-ownership / delete-space paths instead.
 
 ### 6.4 Interactive Header Notification Center
+
 - Bell icon in `Header` shows an unread indicator dot and badge count.
 - Clicking opens a modern Shadcn Sheet / Popover:
   - Invitation Cards with instant **[Accept]** and **[Decline]** buttons.
-  - Activity logs (*"Sara added an expense of Rs. 1,200 for Groceries"*).
+  - Activity logs (_"Sara added an expense of Rs. 1,200 for Groceries"_).
   - "Mark all as read" button.
 
 ---

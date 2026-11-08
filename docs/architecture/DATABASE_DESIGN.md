@@ -21,23 +21,23 @@ Although the MVP is single-user, every record belongs to a Space to avoid future
 
 ```ts
 {
-    _id
+  _id;
 
-    betterAuthId
+  betterAuthId;
 
-    email
+  email;
 
-    name
+  name;
 
-    fullName
+  fullName;
 
-    image
+  image;
 
-    emailVerified
+  emailVerified;
 
-    createdAt
+  createdAt;
 
-    updatedAt
+  updatedAt;
 }
 ```
 
@@ -47,17 +47,17 @@ Although the MVP is single-user, every record belongs to a Space to avoid future
 
 ```ts
 {
-    _id
+  _id;
 
-    ownerId
+  ownerId;
 
-    name
+  name;
 
-    type
+  type;
 
-    createdAt
+  createdAt;
 
-    updatedAt
+  updatedAt;
 }
 ```
 
@@ -79,21 +79,21 @@ Business
 
 ```ts
 {
-    _id
+  _id;
 
-    spaceId
+  spaceId;
 
-    name
+  name;
 
-    icon
+  icon;
 
-    color
+  color;
 
-    type
+  type;
 
-    createdAt
+  createdAt;
 
-    updatedAt
+  updatedAt;
 }
 ```
 
@@ -109,27 +109,27 @@ Income
 
 ```ts
 {
-    _id
+  _id;
 
-    spaceId
+  spaceId;
 
-    categoryId
+  categoryId;
 
-    type
+  type;
 
-    amount
+  amount;
 
-    note
+  note;
 
-    date
+  date;
 
-    tags
+  tags;
 
-    paymentMethod
+  paymentMethod;
 
-    createdAt
+  createdAt;
 
-    updatedAt
+  updatedAt;
 }
 ```
 
@@ -229,15 +229,15 @@ ai_summaries
 
 ```ts
 {
-    _id
+  _id;
 
-    userId
+  userId;
 
-    month
+  month;
 
-    summary
+  summary;
 
-    generatedAt
+  generatedAt;
 }
 ```
 
@@ -247,14 +247,14 @@ voice_logs
 
 ```ts
 {
-    _id
+  _id;
 
-    transcript
+  transcript;
 
-    parsedTransaction
+  parsedTransaction;
 
-    confidence
+  confidence;
 
-    createdAt
+  createdAt;
 }
 ```

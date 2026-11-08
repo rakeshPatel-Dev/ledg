@@ -66,9 +66,7 @@ export async function createManyTransactions(
       } else if (insertedIds) {
         ids.push(...Object.values(insertedIds).map((id) => String(id)));
       } else {
-        ids.push(
-          ...(bulk.insertedDocs ?? []).map((doc) => String(doc._id))
-        );
+        ids.push(...(bulk.insertedDocs ?? []).map((doc) => String(doc._id)));
       }
     }
   }
@@ -216,14 +214,10 @@ export async function updateTransaction(
   spaceId: Types.ObjectId,
   data: Record<string, unknown>
 ): Promise<TransactionDoc | null> {
-  const doc = await TransactionModel.findOneAndUpdate(
-    { _id: id, spaceId },
-    data,
-    {
-      returnDocument: "after",
-      runValidators: true,
-    }
-  ).lean();
+  const doc = await TransactionModel.findOneAndUpdate({ _id: id, spaceId }, data, {
+    returnDocument: "after",
+    runValidators: true,
+  }).lean();
   return doc ? toTransactionDto(doc) : null;
 }
 

@@ -6,7 +6,6 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { useAuth } from "@/lib/auth-provider";
 import { useDuesSummary } from "@/lib/queries";
 
-
 export function Header() {
   const { user } = useAuth();
   const { data: duesSummary } = useDuesSummary();
@@ -39,7 +38,7 @@ export function Header() {
         <Link
           to="/dues"
           aria-label="Dues and loans"
-          className="relative flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-md shadow-primary/30 transition-all hover:bg-primary/90 active:scale-95"
+          className="relative flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-3.5 py-2.5 text-primary-foreground shadow-elev-primary transition-[box-shadow,background-color,transform] duration-200 hover:bg-primary/90 hover:shadow-elev-primary-hover active:scale-95"
         >
           <HandCoins className="size-4" />
           <span className="text-xs font-bold">Dues</span>
@@ -52,7 +51,6 @@ export function Header() {
 
         <NotificationCenter />
       </div>
-
     </header>
   );
 }

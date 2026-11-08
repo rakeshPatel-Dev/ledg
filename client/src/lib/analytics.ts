@@ -44,9 +44,7 @@ export function useAnalytics(): AnalyticsData {
     // Dues-linked rows are loan principal/settlement movements, not income or
     // spending. Keep them out of every P&L aggregate; `transactions` and
     // `transactionCount` still include them for history and empty states.
-    const operatingTransactions = transactions.filter(
-      (t) => t.source !== "dues"
-    );
+    const operatingTransactions = transactions.filter((t) => t.source !== "dues");
 
     const totalIncome = operatingTransactions.reduce(
       (sum, t) => (t.type === "income" ? sum + t.amount : sum),
@@ -98,9 +96,7 @@ export function useAnalytics(): AnalyticsData {
         incomeCategoryMap.set(t.category, entry);
       }
     }
-    const byCategory = [...categoryMap.values()].sort(
-      (a, b) => b.amount - a.amount
-    );
+    const byCategory = [...categoryMap.values()].sort((a, b) => b.amount - a.amount);
     const byIncomeCategory = [...incomeCategoryMap.values()].sort(
       (a, b) => b.amount - a.amount
     );
@@ -108,38 +104,40 @@ export function useAnalytics(): AnalyticsData {
     // A failed transactions request means every balance is unknown, not zero.
     // Leave the per-space summaries empty so cards render placeholders instead
     // of Rs. 0.
-    const bySpace = error ? [] : spaces.map((space) => {
-      const spaceTx = transactions.filter((t) => t.spaceId === space.id);
-      const spaceOperatingTx = operatingTransactions.filter(
-        (t) => t.spaceId === space.id
-      );
-      const spaceMonthTx = monthTransactions.filter((t) => t.spaceId === space.id);
-      const income = spaceOperatingTx.reduce(
-        (sum, t) => (t.type === "income" ? sum + t.amount : sum),
-        0
-      );
-      const expense = spaceOperatingTx.reduce(
-        (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
-        0
-      );
-      const spaceMonthIncome = spaceMonthTx.reduce(
-        (sum, t) => (t.type === "income" ? sum + t.amount : sum),
-        0
-      );
-      const spaceMonthExpense = spaceMonthTx.reduce(
-        (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
-        0
-      );
-      return {
-        space,
-        income,
-        expense,
-        monthIncome: spaceMonthIncome,
-        monthExpense: spaceMonthExpense,
-        balance: income - expense,
-        transactionCount: spaceTx.length,
-      };
-    });
+    const bySpace = error
+      ? []
+      : spaces.map((space) => {
+          const spaceTx = transactions.filter((t) => t.spaceId === space.id);
+          const spaceOperatingTx = operatingTransactions.filter(
+            (t) => t.spaceId === space.id
+          );
+          const spaceMonthTx = monthTransactions.filter((t) => t.spaceId === space.id);
+          const income = spaceOperatingTx.reduce(
+            (sum, t) => (t.type === "income" ? sum + t.amount : sum),
+            0
+          );
+          const expense = spaceOperatingTx.reduce(
+            (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
+            0
+          );
+          const spaceMonthIncome = spaceMonthTx.reduce(
+            (sum, t) => (t.type === "income" ? sum + t.amount : sum),
+            0
+          );
+          const spaceMonthExpense = spaceMonthTx.reduce(
+            (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
+            0
+          );
+          return {
+            space,
+            income,
+            expense,
+            monthIncome: spaceMonthIncome,
+            monthExpense: spaceMonthExpense,
+            balance: income - expense,
+            transactionCount: spaceTx.length,
+          };
+        });
 
     return {
       spaces,

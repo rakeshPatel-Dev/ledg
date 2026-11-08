@@ -1,6 +1,10 @@
 import { Types } from "mongoose";
 
-import { ForbiddenError, NotFoundError, BadRequestError } from "../../common/errors/index.js";
+import {
+  ForbiddenError,
+  NotFoundError,
+  BadRequestError,
+} from "../../common/errors/index.js";
 import { SpaceModel, type SpaceDoc } from "./model.js";
 
 const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;

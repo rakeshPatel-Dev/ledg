@@ -27,10 +27,10 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-| --- | --- | --- |
+| File                             | Action | Responsibility                                                                                                                                                                                               |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `apps/web/src/pages/welcome.tsx` | Create | `WelcomePage` component — centered hero with `AppLogo`, wordmark, tagline, and Register / Login `<Link>`-as-button actions. Renders a spinner while Clerk is loading, redirects to `/` if already signed in. |
-| `apps/web/src/app/App.tsx` | Modify | Import `WelcomePage`; register `/welcome` route outside the `Protected` wrapper; change the `Protected` redirect target from `/sign-in` to `/welcome`. |
+| `apps/web/src/app/App.tsx`       | Modify | Import `WelcomePage`; register `/welcome` route outside the `Protected` wrapper; change the `Protected` redirect target from `/sign-in` to `/welcome`.                                                       |
 
 No other files are touched. No new dependencies. No test files (per spec).
 
@@ -39,9 +39,11 @@ No other files are touched. No new dependencies. No test files (per spec).
 ## Task 1: Create `WelcomePage` component
 
 **Files:**
+
 - Create: `apps/web/src/pages/welcome.tsx`
 
 **Interfaces:**
+
 - Consumes: `AppLogo` from `@/components/common/AppLogo`, `Button` from `@/components/ui/button`, `Link` from `react-router-dom`, `useAuth` from `@clerk/react`, `Navigate` from `react-router-dom`.
 - Produces: default-exported `WelcomePage` React component used by `App.tsx` in Task 2.
 
@@ -78,10 +80,7 @@ export default function WelcomePage() {
     >
       <div className="flex flex-col items-center gap-3 text-center">
         <AppLogo />
-        <h1
-          id="welcome-heading"
-          className="text-3xl font-extrabold tracking-tight"
-        >
+        <h1 id="welcome-heading" className="text-3xl font-extrabold tracking-tight">
           Ledg
         </h1>
         <p className="mt-1 max-w-xs text-sm text-muted-foreground">
@@ -120,9 +119,11 @@ git commit -m "feat(web): add welcome page with register and login"
 ## Task 2: Wire `/welcome` route and update redirect target
 
 **Files:**
+
 - Modify: `apps/web/src/app/App.tsx`
 
 **Interfaces:**
+
 - Consumes: `WelcomePage` default export from `@/pages/welcome` (created in Task 1).
 - Produces: a new `<Route path="/welcome" element={<WelcomePage />} />` declared outside the `Protected` wrapper, and the `Protected` wrapper's unauthenticated `<Navigate to="/sign-in" />` becomes `<Navigate to="/welcome" />`.
 
@@ -175,13 +176,13 @@ Add a new sibling route directly below the `/sign-up` route, outside the `Protec
 Find the line inside the `Protected` component:
 
 ```tsx
-    return <Navigate to="/sign-in" state={{ from: location }} replace />;
+return <Navigate to="/sign-in" state={{ from: location }} replace />;
 ```
 
 Change it to:
 
 ```tsx
-    return <Navigate to="/welcome" state={{ from: location }} replace />;
+return <Navigate to="/welcome" state={{ from: location }} replace />;
 ```
 
 Leave the rest of `Protected` and the `*` catch-all route (`<Route path="*" element={<Navigate to="/" replace />} />`) untouched.

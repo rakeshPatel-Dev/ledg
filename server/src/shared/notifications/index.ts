@@ -82,8 +82,10 @@ export function getNotificationTemplate(
 ): NotificationTemplate {
   const entry = NOTIFICATION_TEMPLATES[type];
   if (isTemplate(entry)) return entry;
-  if(!variant || !entry[variant]) {
-    throw new Error(`No notification template found for type "${type}" and variant "${variant}"`);
+  if (!variant || !entry[variant]) {
+    throw new Error(
+      `No notification template found for type "${type}" and variant "${variant}"`
+    );
   }
   return entry[variant];
 }
@@ -98,14 +100,11 @@ export function renderNotification(
   variant?: string
 ): NotificationTemplate {
   const template = getNotificationTemplate(type, variant);
-  const message = template.message.replace(
-    /\{(\w+)\}/g,
-    (match, key: string) => {
-      const value = vars[key];
-      if (value === undefined || value === null) return match;
-      const formatter = TEMPLATE_FORMATTERS[key];
-      return formatter ? formatter(value) : String(value);
-    }
-  );
+  const message = template.message.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const value = vars[key];
+    if (value === undefined || value === null) return match;
+    const formatter = TEMPLATE_FORMATTERS[key];
+    return formatter ? formatter(value) : String(value);
+  });
   return { title: template.title, message };
 }

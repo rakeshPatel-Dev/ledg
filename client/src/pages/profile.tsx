@@ -129,9 +129,7 @@ export default function ProfilePage() {
             username: usernameChanged ? trimmedUsername : undefined,
           });
         } catch (err) {
-          toast.error(
-            err instanceof Error ? err.message : "Could not update profile"
-          );
+          toast.error(err instanceof Error ? err.message : "Could not update profile");
           return;
         }
       }
@@ -140,9 +138,7 @@ export default function ProfilePage() {
         try {
           await getApi().me.updateEmail(trimmedEmail);
         } catch (err) {
-          toast.error(
-            err instanceof Error ? err.message : "Could not update email"
-          );
+          toast.error(err instanceof Error ? err.message : "Could not update email");
           return;
         }
       }
@@ -169,8 +165,7 @@ export default function ProfilePage() {
       setCurrentPassword("");
       setNewPassword("");
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Could not change password";
+      const msg = err instanceof Error ? err.message : "Could not change password";
       setPasswordError(msg);
       toast.error(msg);
     } finally {
@@ -239,9 +234,7 @@ export default function ProfilePage() {
                 {displayName}
               </p>
               {profileData?.username && (
-                <p className="text-sm font-bold text-primary">
-                  @{profileData.username}
-                </p>
+                <p className="text-sm font-bold text-primary">@{profileData.username}</p>
               )}
               <p className="text-xs text-muted-foreground">
                 {profileData?.email || user?.email}
@@ -278,7 +271,9 @@ export default function ProfilePage() {
               <UserRound className="size-5" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">Personal Information</p>
+              <p className="text-sm font-semibold text-foreground">
+                Personal Information
+              </p>
               <p className="text-xs text-muted-foreground">Name, username & email</p>
             </div>
             <ChevronRight className="size-4 text-muted-foreground shrink-0" />
@@ -297,7 +292,9 @@ export default function ProfilePage() {
                 <Lock className="size-5" />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">Security & Password</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Security & Password
+                </p>
                 <p className="text-xs text-muted-foreground">Change your password</p>
               </div>
               <ChevronRight className="size-4 text-muted-foreground shrink-0" />
@@ -313,12 +310,10 @@ export default function ProfilePage() {
             </h2>
             <Card className="rounded-4xl p-5 border-destructive/20 bg-destructive/5 space-y-3">
               <div>
-                <h3 className="text-sm font-bold text-destructive">
-                  Delete Account
-                </h3>
+                <h3 className="text-sm font-bold text-destructive">Delete Account</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Permanently delete your account, spaces, and all associated
-                  records. This action is irreversible.
+                  Permanently delete your account, spaces, and all associated records.
+                  This action is irreversible.
                 </p>
               </div>
               <Button
@@ -399,8 +394,7 @@ export default function ProfilePage() {
                 {usernameStatus === "available" && (
                   <Check className="size-4 text-emerald-500" />
                 )}
-                {(usernameStatus === "taken" ||
-                  usernameStatus === "invalid") && (
+                {(usernameStatus === "taken" || usernameStatus === "invalid") && (
                   <X className="size-4 text-destructive" />
                 )}
               </div>
@@ -416,9 +410,7 @@ export default function ProfilePage() {
               </p>
             )}
             {usernameStatus === "invalid" && usernameReason && (
-              <p className="text-[11px] font-medium text-destructive">
-                {usernameReason}
-              </p>
+              <p className="text-[11px] font-medium text-destructive">{usernameReason}</p>
             )}
           </div>
 
@@ -511,20 +503,14 @@ export default function ProfilePage() {
             </div>
 
             {passwordError && (
-              <p className="text-xs font-medium text-destructive">
-                {passwordError}
-              </p>
+              <p className="text-xs font-medium text-destructive">{passwordError}</p>
             )}
 
             <Button
               type="submit"
               variant="outline"
               size="lg"
-              disabled={
-                savingPassword ||
-                !currentPassword ||
-                newPassword.length < 8
-              }
+              disabled={savingPassword || !currentPassword || newPassword.length < 8}
               className="w-full rounded-full"
             >
               {savingPassword ? (
@@ -552,16 +538,15 @@ export default function ProfilePage() {
       >
         <div className="grid gap-3 pt-2">
           <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-3.5 text-xs font-medium text-destructive">
-            Your account, along with all your spaces and transactions, will be
-            permanently deleted.
+            Your account, along with all your spaces and transactions, will be permanently
+            deleted.
           </div>
           <div className="space-y-1.5">
             <label
               htmlFor="delete-confirm"
               className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >
-              Type{" "}
-              <span className="font-bold text-foreground">{user?.name}</span> to
+              Type <span className="font-bold text-foreground">{user?.name}</span> to
               confirm
             </label>
             <Input
@@ -582,8 +567,7 @@ export default function ProfilePage() {
             disabled={
               deletingAccount ||
               !user?.name ||
-              deleteConfirmation.trim().toLowerCase() !==
-                user.name.trim().toLowerCase()
+              deleteConfirmation.trim().toLowerCase() !== user.name.trim().toLowerCase()
             }
             onClick={handleDeleteAccount}
             className="w-full rounded-full"

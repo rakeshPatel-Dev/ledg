@@ -1,11 +1,13 @@
 import { Types } from "mongoose";
 
-
 import { RESERVED_USERNAMES } from "../../shared/index.js";
 import { UserModel } from "./model.js";
 import { SpaceModel } from "../spaces/model.js";
 import { TransactionModel } from "../transactions/model.js";
-import { NotificationModel, NotificationPreferenceModel } from "../notifications/model.js";
+import {
+  NotificationModel,
+  NotificationPreferenceModel,
+} from "../notifications/model.js";
 
 export interface AuthUser {
   id: string;
@@ -41,12 +43,12 @@ export async function generateUsername(emailOrName: string): Promise<string> {
   const base = deriveBase(emailOrName);
   const safe = RESERVED_USERNAMES.has(base) ? `${base}_user` : base;
 
-  if (!await UserModel.exists({ username: safe })) return safe;
+  if (!(await UserModel.exists({ username: safe }))) return safe;
 
   for (let i = 0; i < 10; i++) {
     const suffix = Math.floor(100 + Math.random() * 900);
     const candidate = `${safe.slice(0, 24)}_${suffix}`;
-    if (!await UserModel.exists({ username: candidate })) return candidate;
+    if (!(await UserModel.exists({ username: candidate }))) return candidate;
   }
 
   return `${safe.slice(0, 18)}_${Date.now().toString().slice(-6)}`;
@@ -61,7 +63,11 @@ const USERNAME_ALLOC_ATTEMPTS = 5;
  */
 export function isUsernameDuplicateKeyError(err: unknown): boolean {
   if (typeof err !== "object" || err === null) return false;
-  const e = err as { code?: number; keyPattern?: Record<string, unknown>; message?: string };
+  const e = err as {
+    code?: number;
+    keyPattern?: Record<string, unknown>;
+    message?: string;
+  };
   if (e.code !== 11000) return false;
   if (e.keyPattern && typeof e.keyPattern === "object") {
     return "username" in e.keyPattern;
@@ -81,10 +87,7 @@ export async function writeUniqueUsername(
   for (let attempt = 0; attempt < USERNAME_ALLOC_ATTEMPTS; attempt++) {
     const candidate = await generateUsername(source);
     try {
-      await UserModel.updateOne(
-        { _id: userId },
-        { $set: { username: candidate } }
-      );
+      await UserModel.updateOne({ _id: userId }, { $set: { username: candidate } });
       return candidate;
     } catch (err) {
       lastError = err;
@@ -94,9 +97,7 @@ export async function writeUniqueUsername(
   throw lastError ?? new Error("Failed to allocate a unique username");
 }
 
-export async function upsertUserFromAuth(
-  authUser: AuthUser
-): Promise<Types.ObjectId> {
+export async function upsertUserFromAuth(authUser: AuthUser): Promise<Types.ObjectId> {
   const update: Record<string, unknown> = {
     email: authUser.email ?? "",
     name: authUser.name ?? "",
@@ -108,8 +109,7 @@ export async function upsertUserFromAuth(
     update.image = authUser.image;
   }
 
-  const emailPrefix =
-    (authUser.email ?? "").split("@")[0] || authUser.name || "user";
+  const emailPrefix = (authUser.email ?? "").split("@")[0] || authUser.name || "user";
 
   // The username is reserved by the upsert write itself; a duplicate-key
   // error means another concurrent allocation won the race, so regenerate
@@ -153,18 +153,25 @@ export async function upsertUserFromAuth(
   throw lastError ?? new Error("Failed to find or create user");
 }
 
-export async function resolveUserIdFromAuth(
-  authUser: AuthUser
-): Promise<Types.ObjectId> {
-  const existing = await UserModel.findOne({
+export async function resolveUserIdFromAuth(authUser: AuthUser): Promise<Types.ObjectId> {
+  const existing = (await UserModel.findOne({
     betterAuthId: authUser.id,
   })
     .select("_id username email name")
-    .lean() as { _id: Types.ObjectId; username?: string; email?: string; name?: string } | null;
+    .lean()) as {
+    _id: Types.ObjectId;
+    username?: string;
+    email?: string;
+    name?: string;
+  } | null;
 
   if (existing) {
     if (!existing.username) {
-      const emailPrefix = (authUser.email ?? existing.email ?? "").split("@")[0] || authUser.name || existing.name || "user";
+      const emailPrefix =
+        (authUser.email ?? existing.email ?? "").split("@")[0] ||
+        authUser.name ||
+        existing.name ||
+        "user";
       await writeUniqueUsername(existing._id, emailPrefix);
     }
     return existing._id;
@@ -177,10 +184,7 @@ export async function updateUserEmail(
   betterAuthId: string,
   email: string
 ): Promise<void> {
-  await UserModel.updateOne(
-    { betterAuthId },
-    { $set: { email, emailVerified: false } }
-  );
+  await UserModel.updateOne({ betterAuthId }, { $set: { email, emailVerified: false } });
 }
 
 export async function deleteUserWithData(betterAuthId: string): Promise<void> {
@@ -207,7 +211,8 @@ export async function deleteUserWithData(betterAuthId: string): Promise<void> {
 
   for (const space of memberSpaces) {
     const updatedMembers = space.members.filter(
-      (m: { userId: { toString: () => string } }) => m.userId.toString() !== user._id.toString()
+      (m: { userId: { toString: () => string } }) =>
+        m.userId.toString() !== user._id.toString()
     );
     const isShared = updatedMembers.some((m: { role: string }) => m.role === "member");
     await SpaceModel.updateOne(
@@ -217,9 +222,7 @@ export async function deleteUserWithData(betterAuthId: string): Promise<void> {
   }
 
   // Delete owned spaces & their transactions
-  const spaceIds = await SpaceModel.find({ ownerId: user._id })
-    .select("_id")
-    .lean();
+  const spaceIds = await SpaceModel.find({ ownerId: user._id }).select("_id").lean();
   const ids = spaceIds.map((space) => space._id);
 
   if (ids.length > 0) {
@@ -228,11 +231,9 @@ export async function deleteUserWithData(betterAuthId: string): Promise<void> {
   }
 
   // Cleanup notifications & preferences
-  
 
   await NotificationModel.deleteMany({ userId: user._id }).catch(() => null);
   await NotificationPreferenceModel.deleteMany({ userId: user._id }).catch(() => null);
 
   await UserModel.deleteOne({ _id: user._id });
 }
-

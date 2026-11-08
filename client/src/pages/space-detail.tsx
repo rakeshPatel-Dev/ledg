@@ -91,7 +91,6 @@ const TYPE_OPTIONS = SPACE_TYPES.map((t) => ({
 const PAGE_SIZE = 20;
 
 export default function SpaceDetailPage() {
-
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -162,10 +161,7 @@ export default function SpaceDetailPage() {
     name: string;
   } | null>(null);
 
-  const space = useMemo(
-    () => spaces?.find((s) => s.id === id),
-    [spaces, id]
-  );
+  const space = useMemo(() => spaces?.find((s) => s.id === id), [spaces, id]);
 
   const isOwner = useMemo(() => {
     if (!space) return false;
@@ -183,7 +179,8 @@ export default function SpaceDetailPage() {
       .filter((t) => {
         if (typeFilter !== "all" && t.type !== typeFilter) return false;
         if (keyword) {
-          const haystack = `${t.note} ${t.category} ${t.paymentMethod ?? ""}`.toLowerCase();
+          const haystack =
+            `${t.note} ${t.category} ${t.paymentMethod ?? ""}`.toLowerCase();
           if (!haystack.includes(keyword)) return false;
         }
         return true;
@@ -241,9 +238,7 @@ export default function SpaceDetailPage() {
     if (!space) return;
     setEditName(space.name);
     setEditType(space.type);
-    setEditMonthlyBudget(
-      space.monthlyBudget != null ? String(space.monthlyBudget) : ""
-    );
+    setEditMonthlyBudget(space.monthlyBudget != null ? String(space.monthlyBudget) : "");
     setSheetOpen(true);
   };
 
@@ -341,14 +336,16 @@ export default function SpaceDetailPage() {
     }
 
     try {
-      await inviteMemberMutation.mutateAsync({ spaceId: id, identifier: identifierToSend });
+      await inviteMemberMutation.mutateAsync({
+        spaceId: id,
+        identifier: identifierToSend,
+      });
       toast.success(`Invitation sent to ${identifierToSend}`);
       setNewInviteIdentifier("");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send invitation");
     }
   };
-
 
   const handleResendInvite = async (invitationId: string, invitee: string) => {
     try {
@@ -465,7 +462,9 @@ export default function SpaceDetailPage() {
   const typeText = SPACE_TYPE_TEXT[space.type];
   const typeBadge = SPACE_TYPE_BADGE[space.type];
   const transactionsUnavailable = Boolean(transactionsError);
-  const balanceColor = getBalanceColor(transactionsUnavailable ? undefined : analytics.balance);
+  const balanceColor = getBalanceColor(
+    transactionsUnavailable ? undefined : analytics.balance
+  );
   const members = spaceMembers || space.members || [];
 
   return (
@@ -524,8 +523,11 @@ export default function SpaceDetailPage() {
                   <MoreVertical className="size-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" side="bottom" className="w-44 p-1.5 flex flex-col gap-0.5 rounded-2xl shadow-xl">
-
+              <PopoverContent
+                align="end"
+                side="bottom"
+                className="w-44 p-1.5 flex flex-col gap-0.5 rounded-2xl shadow-xl"
+              >
                 <button
                   type="button"
                   onClick={handleExportCSV}
@@ -556,7 +558,6 @@ export default function SpaceDetailPage() {
               </PopoverContent>
             </Popover>
           </div>
-
         </div>
       </FadeInItem>
 
@@ -650,92 +651,107 @@ export default function SpaceDetailPage() {
               </p>
             </div>
 
-            {space.monthlyBudget && space.monthlyBudget > 0 ? (() => {
-              const spent = transactionsUnavailable ? null : analytics.monthExpense;
-              const budget = space.monthlyBudget;
-              if (spent == null) {
-                return (
-                  <>
-                    <div className="my-0.5 h-px bg-border/40" />
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        <PieChart className="size-3 text-primary" /> Month Budget
-                      </span>
-                      <span className="font-bold tabular-nums text-muted-foreground">
-                        — / {formatCurrency(budget)}
-                      </span>
-                    </div>
-                  </>
-                );
-              }
-              const isOver = spent > budget;
-              const percent = Math.round((spent / budget) * 100);
-              const overAmount = spent - budget;
-              const budgetWidth = isOver ? (budget / spent) * 100 : Math.min(100, percent);
-              const overWidth = isOver ? (overAmount / spent) * 100 : 0;
+            {space.monthlyBudget && space.monthlyBudget > 0
+              ? (() => {
+                  const spent = transactionsUnavailable ? null : analytics.monthExpense;
+                  const budget = space.monthlyBudget;
+                  if (spent == null) {
+                    return (
+                      <>
+                        <div className="my-0.5 h-px bg-border/40" />
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            <PieChart className="size-3 text-primary" /> Month Budget
+                          </span>
+                          <span className="font-bold tabular-nums text-muted-foreground">
+                            — / {formatCurrency(budget)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  }
+                  const isOver = spent > budget;
+                  const percent = Math.round((spent / budget) * 100);
+                  const overAmount = spent - budget;
+                  const budgetWidth = isOver
+                    ? (budget / spent) * 100
+                    : Math.min(100, percent);
+                  const overWidth = isOver ? (overAmount / spent) * 100 : 0;
 
-              return (
-                <>
-                  <div className="my-0.5 h-px bg-border/40" />
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                        <PieChart className="size-3 text-primary" /> Month Budget
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn("font-bold tabular-nums", isOver ? "text-destructive" : "text-foreground")}>
-                          {formatCurrency(spent)}
-                        </span>
-                        <span className="text-muted-foreground text-[11px]">/ {formatCurrency(budget)}</span>
-                      </div>
-                    </div>
+                  return (
+                    <>
+                      <div className="my-0.5 h-px bg-border/40" />
+                      <div className="space-y-1.5 pt-0.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                            <PieChart className="size-3 text-primary" /> Month Budget
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "font-bold tabular-nums",
+                                isOver ? "text-destructive" : "text-foreground"
+                              )}
+                            >
+                              {formatCurrency(spent)}
+                            </span>
+                            <span className="text-muted-foreground text-[11px]">
+                              / {formatCurrency(budget)}
+                            </span>
+                          </div>
+                        </div>
 
-                    {isOver ? (
-                      <div className="h-2.5 w-full flex overflow-hidden rounded-full bg-muted/60 gap-0.5 p-0.5">
-                        <div
-                          className="h-full rounded-l-full bg-primary/70 transition-all duration-500"
-                          style={{ width: `${budgetWidth}%` }}
-                          title={`Budget: ${formatCurrency(budget)}`}
-                        />
-                        <div
-                          className="h-full rounded-r-full bg-destructive transition-all duration-500"
-                          style={{ width: `${overWidth}%` }}
-                          title={`Over by: ${formatCurrency(overAmount)}`}
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/80">
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            percent >= 75 ? "bg-amber-500" : "bg-primary"
+                        {isOver ? (
+                          <div className="h-2.5 w-full flex overflow-hidden rounded-full bg-muted/60 gap-0.5 p-0.5">
+                            <div
+                              className="h-full rounded-l-full bg-primary/70 transition-all duration-500"
+                              style={{ width: `${budgetWidth}%` }}
+                              title={`Budget: ${formatCurrency(budget)}`}
+                            />
+                            <div
+                              className="h-full rounded-r-full bg-destructive transition-all duration-500"
+                              style={{ width: `${overWidth}%` }}
+                              title={`Over by: ${formatCurrency(overAmount)}`}
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/80">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-500",
+                                percent >= 75 ? "bg-amber-500" : "bg-primary"
+                              )}
+                              style={{ width: `${budgetWidth}%` }}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-[11px]">
+                          {isOver ? (
+                            <>
+                              <span className="text-muted-foreground">
+                                Budget: {formatCurrency(budget)}
+                              </span>
+                              <span className="font-semibold text-destructive">
+                                +{formatCurrency(overAmount)} over budget ({percent}%)
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-muted-foreground">
+                                {percent}% spent
+                              </span>
+                              <span className="text-muted-foreground font-medium">
+                                {formatCurrency(budget - spent)} remaining
+                              </span>
+                            </>
                           )}
-                          style={{ width: `${budgetWidth}%` }}
-                        />
+                        </div>
                       </div>
-                    )}
-
-                    <div className="flex items-center justify-between text-[11px]">
-                      {isOver ? (
-                        <>
-                          <span className="text-muted-foreground">Budget: {formatCurrency(budget)}</span>
-                          <span className="font-semibold text-destructive">
-                            +{formatCurrency(overAmount)} over budget ({percent}%)
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-muted-foreground">{percent}% spent</span>
-                          <span className="text-muted-foreground font-medium">
-                            {formatCurrency(budget - spent)} remaining
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </>
-              );
-            })() : null}
+                    </>
+                  );
+                })()
+              : null}
           </div>
         </Card>
       </FadeInItem>
@@ -797,7 +813,10 @@ export default function SpaceDetailPage() {
                     Clear filters
                   </Button>
                 ) : (
-                  <Button onClick={() => openCreate(space.id, true)} className="rounded-full">
+                  <Button
+                    onClick={() => openCreate(space.id, true)}
+                    className="rounded-full"
+                  >
                     <Plus className="size-4 mr-2" />
                     Add transaction
                   </Button>
@@ -833,7 +852,9 @@ export default function SpaceDetailPage() {
                           if (canEdit) {
                             openTransactionEdit(t, space.id, true);
                           } else {
-                            toast.info("Only the creator or space owner can edit this transaction");
+                            toast.info(
+                              "Only the creator or space owner can edit this transaction"
+                            );
                           }
                         }}
                         onRequestDelete={() => {
@@ -1041,9 +1062,7 @@ export default function SpaceDetailPage() {
 
                 <Button
                   onClick={handleInviteMember}
-                  disabled={
-                    !newInviteIdentifier.trim() || inviteMemberMutation.isPending
-                  }
+                  disabled={!newInviteIdentifier.trim() || inviteMemberMutation.isPending}
                   className="rounded-full w-full shrink-0"
                 >
                   {inviteMemberMutation.isPending ? (
@@ -1060,66 +1079,76 @@ export default function SpaceDetailPage() {
           )}
 
           {/* Owner Only: Pending Invitations List */}
-          {isOwner && (invitationsError || (spaceInvitations && spaceInvitations.length > 0)) && (
-            <div className="space-y-2 border-t border-border/50 pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Pending Invitations
-                {!invitationsError && spaceInvitations
-                  ? ` (${spaceInvitations.length})`
-                  : ""}
-              </p>
-              {invitationsError ? (
-                <ErrorState
-                  contained={false}
-                  className="py-4"
-                  title="Couldn't load invitations"
-                  error={invitationsErrorDetail}
-                  onRetry={refetchInvitations}
-                  isRetrying={fetchingInvitations}
-                />
-              ) : (
-              <div className="flex flex-col gap-2">
-                {spaceInvitations?.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex items-center justify-between gap-2 rounded-2xl bg-muted/30 p-2.5 border border-border/30"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">
-                        {inv.inviteeUsername ? `@${inv.inviteeUsername}` : inv.inviteeEmail}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        Sent on {new Date(inv.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+          {isOwner &&
+            (invitationsError || (spaceInvitations && spaceInvitations.length > 0)) && (
+              <div className="space-y-2 border-t border-border/50 pt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Pending Invitations
+                  {!invitationsError && spaceInvitations
+                    ? ` (${spaceInvitations.length})`
+                    : ""}
+                </p>
+                {invitationsError ? (
+                  <ErrorState
+                    contained={false}
+                    className="py-4"
+                    title="Couldn't load invitations"
+                    error={invitationsErrorDetail}
+                    onRetry={refetchInvitations}
+                    isRetrying={fetchingInvitations}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {spaceInvitations?.map((inv) => (
+                      <div
+                        key={inv.id}
+                        className="flex items-center justify-between gap-2 rounded-2xl bg-muted/30 p-2.5 border border-border/30"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {inv.inviteeUsername
+                              ? `@${inv.inviteeUsername}`
+                              : inv.inviteeEmail}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Sent on {new Date(inv.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleResendInvite(inv.id, inv.inviteeUsername ? `@${inv.inviteeUsername}` : inv.inviteeEmail)}
-                        disabled={resendInviteMutation.isPending}
-                        className="h-7 px-2 text-[11px] rounded-full"
-                      >
-                        <RotateCw className="size-3 mr-1" />
-                        Resend
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleCancelInvite(inv.id)}
-                        disabled={cancelInviteMutation.isPending}
-                        className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="size-3.5" />
-                      </Button>
-                    </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleResendInvite(
+                                inv.id,
+                                inv.inviteeUsername
+                                  ? `@${inv.inviteeUsername}`
+                                  : inv.inviteeEmail
+                              )
+                            }
+                            disabled={resendInviteMutation.isPending}
+                            className="h-7 px-2 text-[11px] rounded-full"
+                          >
+                            <RotateCw className="size-3 mr-1" />
+                            Resend
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCancelInvite(inv.id)}
+                            disabled={cancelInviteMutation.isPending}
+                            className="size-7 rounded-full text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="size-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-              )}
-            </div>
-          )}
+            )}
 
           {/* Member Only: Leave Space Button */}
           {!isOwner && (
@@ -1269,11 +1298,7 @@ export default function SpaceDetailPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Type
             </p>
-            <Segmented
-              options={TYPE_OPTIONS}
-              value={editType}
-              onChange={setEditType}
-            />
+            <Segmented options={TYPE_OPTIONS} value={editType} onChange={setEditType} />
           </div>
 
           <div className="space-y-1.5">

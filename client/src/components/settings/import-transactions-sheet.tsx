@@ -172,9 +172,7 @@ export function ImportTransactionsSheet({
         handleOpenChange(false);
       },
       onError: (error) => {
-        toast.error(
-          error instanceof Error ? error.message : "Could not undo import"
-        );
+        toast.error(error instanceof Error ? error.message : "Could not undo import");
       },
     });
   };

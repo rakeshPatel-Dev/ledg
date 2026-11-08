@@ -8,9 +8,11 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-white/20 dark:border-white/10 hover:border-white/40 dark:hover:border-white/20 shadow-sm",
+        default:
+          "border-white/20 dark:border-white/10 hover:border-white/40 dark:hover:border-white/20 shadow-sm",
         plain: "border-transparent bg-transparent backdrop-blur-none shadow-none",
-        elevated: "border-white/30 dark:border-white/15 bg-card/85 shadow-lg shadow-black/5",
+        elevated:
+          "border-white/30 dark:border-white/15 bg-card/85 shadow-lg shadow-black/5",
       },
       padded: {
         true: "p-5",
@@ -59,10 +61,7 @@ function CardTitle({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   );
 }
 
-function CardDescription({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
+function CardDescription({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="card-description"
@@ -72,13 +71,8 @@ function CardDescription({
   );
 }
 
-function CardContent({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div data-slot="card-content" className={cn("", className)} {...props} />
-  );
+function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div data-slot="card-content" className={cn("", className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

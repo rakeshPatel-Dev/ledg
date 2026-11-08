@@ -24,7 +24,6 @@ const PrivacyPolicyPage = lazy(() => import("@/pages/privacy-policy"));
 const TermsOfServicePage = lazy(() => import("@/pages/terms-of-service"));
 const InvitePage = lazy(() => import("@/pages/invite"));
 
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

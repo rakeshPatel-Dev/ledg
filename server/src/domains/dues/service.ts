@@ -1,6 +1,10 @@
 import { Types } from "mongoose";
 
-import { BadRequestError, ConflictError, NotFoundError } from "../../common/errors/index.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from "../../common/errors/index.js";
 import { TransactionModel } from "../transactions/model.js";
 import { getUserContext } from "../transactions/user-context.js";
 import * as spaceRepository from "../spaces/repository.js";
@@ -27,7 +31,9 @@ function toDebtDto(doc: DebtDoc, settlements?: DebtSettlementDoc[]): Debt {
     counterparty: {
       name: doc.counterparty.name,
       phone: doc.counterparty.phone ?? undefined,
-      linkedUserId: doc.counterparty.linkedUserId ? String(doc.counterparty.linkedUserId) : null,
+      linkedUserId: doc.counterparty.linkedUserId
+        ? String(doc.counterparty.linkedUserId)
+        : null,
     },
     principal: doc.principal,
     date: doc.date.toISOString(),
@@ -173,10 +179,7 @@ export async function listDues(
   };
 }
 
-export async function getDue(
-  userId: Types.ObjectId,
-  debtId: string
-): Promise<Debt> {
+export async function getDue(userId: Types.ObjectId, debtId: string): Promise<Debt> {
   const debt = await duesRepository.findDebtById(debtId, userId);
   if (!debt) {
     throw new NotFoundError("Due");

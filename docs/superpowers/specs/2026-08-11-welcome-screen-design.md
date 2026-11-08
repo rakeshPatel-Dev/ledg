@@ -126,10 +126,10 @@ Browser back button after sign-in lands on `/welcome`. This is acceptable for th
 
 ## 8. File-Level Changes
 
-| File | Change |
-| --- | --- |
-| `apps/web/src/pages/welcome.tsx` | New file. `WelcomePage` component, default export. |
-| `apps/web/src/app/App.tsx` | Add `import WelcomePage from "@/pages/welcome";`. Add `<Route path="/welcome" element={<WelcomePage />} />` outside `Protected`. Change `Protected`'s redirect target from `/sign-in` to `/welcome`. |
+| File                             | Change                                                                                                                                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/pages/welcome.tsx` | New file. `WelcomePage` component, default export.                                                                                                                                                   |
+| `apps/web/src/app/App.tsx`       | Add `import WelcomePage from "@/pages/welcome";`. Add `<Route path="/welcome" element={<WelcomePage />} />` outside `Protected`. Change `Protected`'s redirect target from `/sign-in` to `/welcome`. |
 
 ## 9. Manual Verification Checklist
 

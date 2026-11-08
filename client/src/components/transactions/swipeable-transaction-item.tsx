@@ -1,10 +1,5 @@
 import { useRef, useState } from "react";
-import {
-  motion,
-  useAnimation,
-  useMotionValue,
-  useTransform,
-} from "framer-motion";
+import { motion, useAnimation, useMotionValue, useTransform } from "framer-motion";
 import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import type { Transaction } from "@ledg/shared";
 
@@ -89,9 +84,7 @@ export function SwipeableTransactionItem({
           {canOpenActions ? (
             <button
               type="button"
-              aria-label={`Actions for ${
-                transaction.note || transaction.category
-              }`}
+              aria-label={`Actions for ${transaction.note || transaction.category}`}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setActionsOpen(true)}
               className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors after:absolute after:-inset-0.5 after:content-[''] hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
