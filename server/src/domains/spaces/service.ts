@@ -8,7 +8,6 @@ import {
 import { SpaceModel, type SpaceDoc } from "./model.js";
 import * as spaceRepository from "./repository.js";
 import { assertSpaceAccess, assertSpaceOwner } from "./access.js";
-import { UserModel } from "../users/model.js";
 import { inviteMember } from "../invitations/service.js";
 import * as notificationService from "../notifications/service.js";
 import { invalidateDashboardCache } from "../analytics/cache.js";
@@ -76,16 +75,8 @@ export async function createUserSpace(
 }
 
 export async function getUserSpaces(userId: Types.ObjectId) {
-  const user = await UserModel.findById(userId).lean();
-  if (user) {
-    await spaceRepository.ensureDefaultSpace({
-      userId: user._id,
-      email: user.email,
-      name: user.name || "Ledg User",
-      username: user.username ?? null,
-    });
-  }
-
+  // The Personal space is created once when the user is created. Do not
+  // recreate it here: deleting it must stay deleted.
   return spaceRepository.findSpacesForUser(userId);
 }
 

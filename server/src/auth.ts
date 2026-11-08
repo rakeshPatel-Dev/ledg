@@ -13,6 +13,7 @@ import {
   type AuthUser,
 } from "./domains/users/repository.js";
 import { UserModel } from "./domains/users/model.js";
+import { ensureDefaultSpace } from "./domains/spaces/repository.js";
 import { sendVerificationEmail } from "./lib/email.js";
 
 function getTrustedOrigins(): string[] {
@@ -232,6 +233,14 @@ async function createAuth() {
               );
               await syncAuthUserFields(user.id, {
                 userId: String(domainUserId),
+              });
+              await ensureDefaultSpace({
+                userId: domainUserId,
+                email: user.email ?? "",
+                name: user.name ?? "Ledg User",
+                username:
+                  (user as unknown as { username?: string | null }).username ??
+                  null,
               });
             } catch (error) {
               logger.error({ error }, "Failed to sync app user on create");
