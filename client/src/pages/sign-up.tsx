@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, Loader2, Mail, RotateCcw, Check, UserPlus, X } from "lucide-react";
 
 import AppLogo from "@/components/common/app-logo";
@@ -12,13 +12,16 @@ import {
   passwordRuleError,
 } from "@/components/ui/password-strength";
 import { authClient } from "@/lib/auth-client";
+import { getAuthEmail, getAuthRedirect } from "@/lib/auth-redirect";
 import { getApi } from "@/lib/api";
 import { useUsernameCheck } from "@/hooks/use-username-check";
 
 export default function SignUpPage() {
+  const location = useLocation();
+  const redirectTo = getAuthRedirect(location.state);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => getAuthEmail(location.state));
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,7 +66,7 @@ export default function SignUpPage() {
         email,
         password,
         username,
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin + redirectTo,
       });
       if (signUpError) {
         setError(signUpError.message ?? "Failed to create account");
@@ -89,7 +92,7 @@ export default function SignUpPage() {
     try {
       await authClient.sendVerificationEmail({
         email,
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin + redirectTo,
       });
     } catch {
       setError("Failed to resend verification email. Please try again.");
@@ -103,7 +106,7 @@ export default function SignUpPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin + redirectTo,
       });
     } catch {
       setGoogleLoading(false);
@@ -343,7 +346,7 @@ export default function SignUpPage() {
 
         <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
           Already have an account?{" "}
-          <Link to="/sign-in" className="font-semibold text-primary hover:underline">
+          <Link to="/sign-in" state={location.state} className="font-semibold text-primary hover:underline">
             Sign in
           </Link>
         </p>

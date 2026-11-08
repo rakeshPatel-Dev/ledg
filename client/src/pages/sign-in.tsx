@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, LogIn, Mail, RotateCcw, X } from "lucide-react";
 
 import AppLogo from "@/components/common/app-logo";
@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
+import { getAuthEmail, getAuthRedirect } from "@/lib/auth-redirect";
 import { useAuth } from "@/lib/auth-provider";
 
 export default function SignInPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = getAuthRedirect(location.state);
   const { refetch } = useAuth();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => getAuthEmail(location.state));
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +42,7 @@ export default function SignInPage() {
         return;
       }
       await refetch();
-      navigate("/");
+      navigate(redirectTo, { replace: true });
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -52,7 +55,7 @@ export default function SignInPage() {
     try {
       await authClient.sendVerificationEmail({
         email,
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin + redirectTo,
       });
       setShowVerificationModal(false);
     } catch {
@@ -68,7 +71,7 @@ export default function SignInPage() {
     try {
       const { error: socialError } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: window.location.origin + "/",
+        callbackURL: window.location.origin + redirectTo,
       });
       if (socialError) {
         setError(socialError.message ?? "Google sign-in failed");
@@ -179,7 +182,7 @@ export default function SignInPage() {
 
         <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link to="/sign-up" className="font-semibold text-primary hover:underline">
+          <Link to="/sign-up" state={location.state} className="font-semibold text-primary hover:underline">
             Create one
           </Link>
         </p>

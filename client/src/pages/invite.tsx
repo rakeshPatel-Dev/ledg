@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/auth-provider";
+import { ApiError } from "@/lib/api";
 import { getUserFacingError } from "@/lib/errors";
 import {
   useInvitationPreview,
@@ -88,6 +89,14 @@ export default function InvitePage() {
     // Server also accepts when inviteeId matches (user changed email after invite)
     user.id !== preview.inviteeId;
 
+  const inviteErrorDescription =
+    error instanceof ApiError && (error.status === 404 || error.status === 410)
+      ? "This invitation link is invalid, has expired, or was already used. Ask the sender for a new invitation."
+      : getUserFacingError(
+          error,
+          "This invitation link is invalid, has expired, or was already used."
+        );
+
   const formatExpiry = (expiresAtStr?: string) => {
     if (!expiresAtStr) return "";
     try {
@@ -116,11 +125,8 @@ export default function InvitePage() {
         <Card className="flex w-full max-w-md flex-col rounded-4xl p-8 border border-border/60 text-center shadow-lg">
           <EmptyState
             icon={<AlertCircle className="size-8 text-rose-500" />}
-            title="Invitation Expired or Invalid"
-            description={getUserFacingError(
-              error,
-              "This invitation link is invalid, has expired, or was already claimed."
-            )}
+            title="Invitation expired or invalid"
+            description={inviteErrorDescription}
             action={
               <>
                 <Button
