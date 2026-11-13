@@ -74,24 +74,6 @@ export default function DashboardPage() {
     return WalletIcon;
   };
 
-  const getPaymentColor = (method: string) => {
-    const methodLower = method.toLowerCase();
-    if (methodLower.includes("card") || methodLower.includes("credit")) {
-      return "bg-blue-500/10 text-blue-500";
-    }
-    if (methodLower.includes("bank") || methodLower.includes("transfer")) {
-      return "bg-purple-500/10 text-purple-500";
-    }
-    if (
-      methodLower.includes("upi") ||
-      methodLower.includes("phone") ||
-      methodLower.includes("mobile")
-    ) {
-      return "bg-emerald-500/10 text-emerald-500";
-    }
-    return "bg-amber-500/10 text-amber-500";
-  };
-
   const isAllEmpty =
     !isPending &&
     !isError &&
@@ -115,13 +97,30 @@ export default function DashboardPage() {
         </FadeInItem>
       ) : (
         <FadeInItem>
-          <section className="relative -mx-5 overflow-hidden rounded-b-[2.5rem] bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] px-5 pb-7 pt-2 text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.16),0_18px_40px_-18px_color-mix(in_oklch,var(--primary)_50%,transparent)] before:pointer-events-none before:absolute before:inset-0 before:hero-glow after:pointer-events-none after:absolute after:inset-0 after:ledger-lines after:opacity-45 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:text-emerald-50 dark:shadow-black/30">
+          <section
+            className={cn(
+              "relative -mx-5 overflow-hidden rounded-b-4xl px-5 pb-6 pt-2 text-primary-foreground",
+              // Near-solid base + soft brand wash from the top-right
+              "bg-[oklch(0.52_0.13_158)]",
+              "bg-[radial-gradient(120%_140%_at_100%_0%,oklch(0.58_0.15_155)_0%,oklch(0.52_0.13_158)_45%,oklch(0.47_0.12_158)_100%)]",
+              "shadow-[inset_0_1px_0_oklch(1_0_0/0.14)]",
+              "dark:bg-[oklch(0.26_0.07_158)]",
+              "dark:bg-[radial-gradient(120%_140%_at_100%_0%,oklch(0.31_0.09_155)_0%,oklch(0.26_0.07_158)_45%,oklch(0.22_0.06_158)_100%)]",
+              "dark:text-emerald-50"
+            )}
+          >
+            {/* Soft top light-catch, no glow */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent dark:via-white/12"
+            />
+
             <div className="relative flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground dark:text-emerald-100">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-foreground/80 dark:text-emerald-100/80">
                 Net saved
               </p>
               <span
-                className="rounded-full bg-black/15 px-2.5 py-0.5 text-[0.65rem] font-bold tracking-wide uppercase text-primary-foreground backdrop-blur-md dark:bg-white/10 dark:text-emerald-50"
+                className="rounded-full bg-black/10 px-2.5 py-0.5 text-xs font-medium text-primary-foreground/80 dark:bg-white/10 dark:text-emerald-100/80"
                 title="Loan principal and settlements are tracked separately"
               >
                 Excl. loans
@@ -129,53 +128,47 @@ export default function DashboardPage() {
             </div>
 
             {isPending ? (
-              <Skeleton className="mt-2 h-12 w-48 bg-black/15 dark:bg-white/10" />
+              <Skeleton className="mt-3 h-11 w-48 bg-black/10 dark:bg-white/10" />
             ) : (
               <>
-                <p className="mt-1.5 text-4xl font-black tracking-tight tabular-nums drop-shadow-[0_1px_0_oklch(0_0_0/0.18)]">
+                <p className="mt-2 text-4xl font-semibold tracking-tight tabular-nums">
                   {data ? formatCurrency(data.totalBalance, currency) : "—"}
                 </p>
-                <p className="mt-1 text-[0.7rem] font-medium text-primary-foreground dark:text-emerald-100">
+                <p className="mt-1 text-xs text-primary-foreground/70 dark:text-emerald-100/70">
                   All-time income minus spending
                 </p>
               </>
             )}
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <motion.div
-                whileHover={{ y: -2 }}
-                className="rounded-3xl border border-white/15 bg-black/10 p-3.5 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
-                  <span className="flex size-6 items-center justify-center rounded-full bg-emerald-950/25 text-emerald-50 dark:bg-emerald-400/20 dark:text-emerald-200">
+              <div className="rounded-3xl border border-white/12 bg-black/10 p-4 dark:border-white/8 dark:bg-white/8">
+                <div className="flex items-center gap-2 text-xs font-medium text-primary-foreground/90 dark:text-emerald-50/90">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-white/12 text-primary-foreground dark:bg-white/15 dark:text-emerald-50">
                     <ArrowDownLeft className="size-3.5" />
                   </span>
                   Income
                 </div>
-                <p className="mt-2 text-lg font-extrabold tabular-nums">
+                <p className="mt-2 text-lg font-semibold tabular-nums">
                   {data ? formatCompact(data.monthIncome, currency) : "—"}
                 </p>
-                <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
+                <p className="text-xs text-primary-foreground/70 dark:text-emerald-100/70">
                   this month
                 </p>
-              </motion.div>
-              <motion.div
-                whileHover={{ y: -2 }}
-                className="rounded-3xl border border-white/15 bg-black/10 p-3.5 shadow-[inset_0_1px_0_oklch(1_0_0/0.14)] transition-all hover:bg-black/15 dark:bg-white/10 dark:hover:bg-white/15"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-foreground dark:text-emerald-50">
-                  <span className="flex size-6 items-center justify-center rounded-full bg-rose-950/25 text-rose-50 dark:bg-rose-400/20 dark:text-rose-200">
+              </div>
+              <div className="rounded-3xl border border-white/12 bg-black/10 p-4 dark:border-white/8 dark:bg-white/8">
+                <div className="flex items-center gap-2 text-xs font-medium text-primary-foreground/90 dark:text-emerald-50/90">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-white/12 text-primary-foreground dark:bg-white/15 dark:text-emerald-50">
                     <ArrowUpRight className="size-3.5" />
                   </span>
                   Spent
                 </div>
-                <p className="mt-2 text-lg font-extrabold tabular-nums">
+                <p className="mt-2 text-lg font-semibold tabular-nums">
                   {data ? formatCompact(data.monthSpend, currency) : "—"}
                 </p>
-                <p className="text-[0.65rem] font-medium text-primary-foreground dark:text-emerald-100">
+                <p className="text-xs text-primary-foreground/70 dark:text-emerald-100/70">
                   this month
                 </p>
-              </motion.div>
+              </div>
             </div>
           </section>
         </FadeInItem>
@@ -185,7 +178,6 @@ export default function DashboardPage() {
         <DuesSummaryCard />
       </FadeInItem>
 
-      {/* Loading Skeleton */}
       {isPending ? (
         <FadeInItem>
           <div className="flex flex-col gap-3">
@@ -195,17 +187,16 @@ export default function DashboardPage() {
         </FadeInItem>
       ) : null}
 
-      {/* Empty State Card */}
       {isAllEmpty ? (
         <FadeInItem>
-          <Card className="rounded-4xl p-2 border border-border/60">
+          <Card className="rounded-4xl border border-border/60 p-2">
             <EmptyState
               icon={<ReceiptText className="size-7" />}
               title="Nothing tracked yet"
               description="Add your first transaction to start understanding your spending."
               action={
                 <Button onClick={() => openCreate()} className="rounded-full">
-                  <Plus className="size-4 mr-2" />
+                  <Plus className="mr-2 size-4" />
                   Add your first transaction
                 </Button>
               }
@@ -241,7 +232,7 @@ export default function DashboardPage() {
                           />
                           {meta.name}
                         </span>
-                        <span className="tabular-nums font-semibold">
+                        <span className="font-semibold tabular-nums">
                           {formatCurrency(c.amount, currency)}
                         </span>
                       </div>
@@ -260,7 +251,7 @@ export default function DashboardPage() {
                 })}
               </Card>
             ) : (
-              <Card className="rounded-4xl p-2 border border-border/60">
+              <Card className="rounded-4xl border border-border/60 p-2">
                 <EmptyState
                   icon={<ReceiptText className="size-7" />}
                   title={tab === "income" ? "No income tracked" : "No expenses tracked"}
@@ -275,7 +266,7 @@ export default function DashboardPage() {
                       variant="outline"
                       className="rounded-full"
                     >
-                      <Plus className="size-4 mr-2" />
+                      <Plus className="mr-2 size-4" />
                       Add {tab}
                     </Button>
                   }
@@ -286,7 +277,6 @@ export default function DashboardPage() {
         </FadeInItem>
       )}
 
-      {/* Payment Methods Section */}
       {!isPending && byPaymentMethod.length > 0 && (
         <FadeInItem>
           <section>
@@ -298,7 +288,6 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               {byPaymentMethod.map((item) => {
                 const Icon = getPaymentIcon(item.method);
-                const colorClass = getPaymentColor(item.method);
                 const percentage =
                   activePaymentTotal > 0
                     ? Math.round((item.amount / activePaymentTotal) * 100)
@@ -308,53 +297,41 @@ export default function DashboardPage() {
                   item.method;
 
                 return (
-                  <motion.div
+                  <Card
                     key={item.method}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className={cn(
+                      "flex flex-col gap-2 rounded-4xl border-border/60 p-4",
+                      "transition-colors hover:border-border"
+                    )}
                   >
-                    <Card
-                      variant="raised"
-                      className={cn(
-                        "flex flex-col gap-2 rounded-4xl p-4",
-                        "border-border/50"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "flex size-9 items-center justify-center rounded-2xl ring-1 ring-black/5 ring-inset dark:ring-white/5",
-                              colorClass
-                            )}
-                          >
-                            <Icon className="size-4.5" />
-                          </span>
-                          <span className="text-sm font-medium truncate">
-                            {displayName}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-semibold text-muted-foreground">
-                          {percentage}%
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="flex size-9 items-center justify-center rounded-2xl border border-border/60 bg-muted text-muted-foreground">
+                          <Icon className="size-4" />
+                        </span>
+                        <span className="truncate text-sm font-medium">
+                          {displayName}
                         </span>
                       </div>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {percentage}%
+                      </span>
+                    </div>
 
-                      <div>
-                        <p className="text-base font-bold tabular-nums">
-                          {formatCurrency(item.amount, currency)}
-                        </p>
-                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-elev-inset">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${percentage}%` }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className="h-full rounded-full bg-primary"
-                          />
-                        </div>
+                    <div>
+                      <p className="text-base font-semibold tabular-nums">
+                        {formatCurrency(item.amount, currency)}
+                      </p>
+                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/50 shadow-elev-inset">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentage}%` }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className="h-full rounded-full bg-primary"
+                        />
                       </div>
-                    </Card>
-                  </motion.div>
+                    </div>
+                  </Card>
                 );
               })}
             </div>
@@ -402,14 +379,13 @@ export default function DashboardPage() {
 
       {!isPending && (data?.transactionCount ?? 0) > 0 && (
         <FadeInItem>
-          <section className="relative flex items-center gap-3 overflow-hidden rounded-4xl border border-primary/12 bg-accent/40 p-4 shadow-elev-card">
-            <span className="absolute inset-y-4 left-0 w-0.5 rounded-r-full bg-primary/40" />
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/12 text-primary shadow-xs">
+          <section className="flex items-center gap-3 rounded-4xl border border-border/60 bg-card p-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-muted text-muted-foreground">
               <TrendingUp className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-foreground">Smart Insight</p>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-sm font-semibold text-foreground">Smart insight</p>
+              <p className="truncate text-xs text-muted-foreground">
                 {(data?.monthSpend ?? 0) > 0
                   ? `You spent ${formatCompact(data?.monthSpend ?? 0, currency)} this month across ${byCategory.length} categories.`
                   : "No expenses recorded this month yet."}
