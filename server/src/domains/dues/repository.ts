@@ -125,6 +125,40 @@ export async function deleteSettlement(
   return result.deletedCount === 1;
 }
 
+/**
+ * Remove every settlement that belongs to the given spaces. Used when a space
+ * is deleted so dues cannot outlive their ledger.
+ */
+export async function deleteSettlementsBySpaceIds(
+  spaceIds: Types.ObjectId[]
+): Promise<number> {
+  if (spaceIds.length === 0) return 0;
+
+  const result = await DebtSettlementModel.deleteMany({
+    spaceId: { $in: spaceIds },
+  });
+  return result.deletedCount ?? 0;
+}
+
+/**
+ * Remove every due that belongs to the given spaces. Settlements must be
+ * removed first so no settlement is left pointing at a missing due.
+ */
+export async function deleteDebtsBySpaceIds(spaceIds: Types.ObjectId[]): Promise<number> {
+  if (spaceIds.length === 0) return 0;
+
+  const result = await DebtModel.deleteMany({ spaceId: { $in: spaceIds } });
+  return result.deletedCount ?? 0;
+}
+
+export async function deleteDuesBySpaceIds(
+  spaceIds: Types.ObjectId[]
+): Promise<{ debts: number; settlements: number }> {
+  const settlements = await deleteSettlementsBySpaceIds(spaceIds);
+  const debts = await deleteDebtsBySpaceIds(spaceIds);
+  return { debts, settlements };
+}
+
 export async function getDuesSummary(userId: Types.ObjectId): Promise<DuesSummary> {
   const now = new Date();
 

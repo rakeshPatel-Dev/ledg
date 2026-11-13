@@ -224,8 +224,9 @@ export function useUpdateSpace() {
 export function useDeleteSpace() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => getApi().spaces.remove(id),
-    onMutate: async (id) => {
+    mutationFn: ({ id, confirmName }: { id: string; confirmName: string }) =>
+      getApi().spaces.remove(id, confirmName),
+    onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.spaces });
       await queryClient.cancelQueries({ queryKey: transactionListKey(id) });
 
@@ -239,13 +240,16 @@ export function useDeleteSpace() {
 
       return { previousSpaces, previousTransactions };
     },
-    onSuccess: (_data, id) => {
+    onSuccess: (_data, { id }) => {
       queryClient.removeQueries({ queryKey: transactionListKey(id) });
+      queryClient.removeQueries({ queryKey: queryKeys.space(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.spaces });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() });
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
-    onError: (_error, _id, context) => {
+    onError: (_error, _variables, context) => {
       if (context?.previousSpaces !== undefined) {
         queryClient.setQueryData(queryKeys.spaces, context?.previousSpaces);
       }

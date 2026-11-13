@@ -5,6 +5,7 @@ import type { AuthRequest } from "../../common/middlewares/authenticate.js";
 import * as spaceService from "./service.js";
 import {
   validateCreateSpace,
+  validateDeleteSpace,
   validateSpaceId,
   validateUpdateSpace,
   validateMemberInvite,
@@ -119,7 +120,8 @@ export const updateSpace = asyncHandler(async (req: AuthRequest, res: Response) 
 
 export const deleteSpace = asyncHandler(async (req: AuthRequest, res: Response) => {
   const spaceId = validateSpaceId(req.params);
-  const result = await spaceService.deleteUserSpace(req.userId!, spaceId);
+  const { confirmName } = validateDeleteSpace(req.body);
+  const result = await spaceService.deleteUserSpace(req.userId!, spaceId, confirmName);
 
   res.json({ success: true, data: result });
 });

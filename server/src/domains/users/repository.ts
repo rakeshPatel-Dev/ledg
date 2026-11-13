@@ -4,6 +4,7 @@ import { RESERVED_USERNAMES } from "../../shared/index.js";
 import { UserModel } from "./model.js";
 import { SpaceModel } from "../spaces/model.js";
 import { TransactionModel } from "../transactions/model.js";
+import * as duesRepository from "../dues/repository.js";
 import {
   NotificationModel,
   NotificationPreferenceModel,
@@ -227,6 +228,7 @@ export async function deleteUserWithData(betterAuthId: string): Promise<void> {
 
   if (ids.length > 0) {
     await TransactionModel.deleteMany({ spaceId: { $in: ids } });
+    await duesRepository.deleteDuesBySpaceIds(ids);
     await SpaceModel.deleteMany({ _id: { $in: ids } });
   }
 

@@ -223,17 +223,20 @@ export async function hasTransactions(spaceId: string): Promise<boolean> {
   return count > 0;
 }
 
-export async function deleteTransactionsBySpace(spaceId: string): Promise<void> {
-  await TransactionModel.deleteMany({ spaceId });
+export async function deleteTransactionsBySpace(spaceId: string): Promise<number> {
+  const result = await TransactionModel.deleteMany({ spaceId });
+  return result.deletedCount ?? 0;
 }
 
-export async function deleteInvitationsBySpace(spaceId: string): Promise<void> {
-  await SpaceInvitationModel.updateMany(
+export async function deleteInvitationsBySpace(spaceId: string): Promise<number> {
+  const result = await SpaceInvitationModel.updateMany(
     { spaceId },
     { $set: { status: "canceled" }, $unset: { tokenHash: "" } }
   );
+  return result.modifiedCount ?? 0;
 }
 
-export async function deleteNotificationsBySpace(spaceId: string): Promise<void> {
-  await NotificationModel.deleteMany({ "data.spaceId": spaceId });
+export async function deleteNotificationsBySpace(spaceId: string): Promise<number> {
+  const result = await NotificationModel.deleteMany({ "data.spaceId": spaceId });
+  return result.deletedCount ?? 0;
 }

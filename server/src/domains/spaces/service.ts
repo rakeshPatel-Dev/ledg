@@ -7,6 +7,7 @@ import {
 } from "../../common/errors/index.js";
 import { SpaceModel, type SpaceDoc } from "./model.js";
 import * as spaceRepository from "./repository.js";
+import * as duesRepository from "../dues/repository.js";
 import { assertSpaceAccess, assertSpaceOwner } from "./access.js";
 import { inviteMember } from "../invitations/service.js";
 import * as notificationService from "../notifications/service.js";
@@ -111,20 +112,44 @@ export async function updateUserSpace(
   return space;
 }
 
-export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) {
+export async function deleteUserSpace(
+  ownerId: Types.ObjectId,
+  spaceId: string,
+  confirmName: string
+) {
   const space = await assertSpaceOwner(spaceId, ownerId);
+
+  if (space.name.trim().toLowerCase() !== confirmName.trim().toLowerCase()) {
+    throw new BadRequestError("Type the space name to confirm deletion");
+  }
 
   // 1. Lease deletion state
   await spaceRepository.setSpaceDeletingLease(spaceId, ownerId);
 
+  let deletedTransactions = 0;
+  let deletedDebts = 0;
+  let deletedSettlements = 0;
+
   try {
     // 2. Cascade delete transactions
-    await spaceRepository.deleteTransactionsBySpace(spaceId);
+    deletedTransactions = await spaceRepository.deleteTransactionsBySpace(spaceId);
 
-    // 3. Cancel outstanding invitations
+    // 3. Cascade delete dues and settlements. Transaction ids on these rows
+    // point at the transactions removed above; leaving them behind would make
+    // dues survive a deleted space.
+    const dues = await duesRepository.deleteDuesBySpaceIds([space._id]);
+    deletedDebts = dues.debts;
+    deletedSettlements = dues.settlements;
+
+    // 4. Cancel outstanding invitations
     await spaceRepository.deleteInvitationsBySpace(spaceId);
 
-    // 4. Notify remaining members
+    // 5. Remove notifications that reference this space BEFORE notifying
+    // members. Doing this after the notification would delete the
+    // `space_deleted` message we just created.
+    await spaceRepository.deleteNotificationsBySpace(spaceId);
+
+    // 6. Notify remaining members
     const otherMembers = (space.members || []).filter(
       (m) => m.userId.toString() !== ownerId.toString()
     );
@@ -144,10 +169,7 @@ export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) 
         );
     }
 
-    // 5. Delete notifications referencing this space
-    await spaceRepository.deleteNotificationsBySpace(spaceId);
-
-    // 6. Delete Space document
+    // 7. Delete Space document
     const deleted = await spaceRepository.deleteSpace(spaceId, ownerId);
 
     if (!deleted) {
@@ -166,7 +188,15 @@ export async function deleteUserSpace(ownerId: Types.ObjectId, spaceId: string) 
     ...(space.members ?? []).map((m) => String(m.userId)),
   ]);
 
-  return { id: spaceId };
+  return {
+    id: spaceId,
+    deletedTransactions,
+    deletedDebts,
+    deletedSettlements,
+    notifiedMembers: (space.members || []).filter(
+      (m) => m.userId.toString() !== ownerId.toString()
+    ).length,
+  };
 }
 
 export async function getSpaceMembers(userId: Types.ObjectId, spaceId: string) {

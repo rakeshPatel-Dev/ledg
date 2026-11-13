@@ -4,7 +4,6 @@ import {
   Plus,
   Wallet,
   Pencil,
-  Trash2,
   Search,
   X,
   Loader2,
@@ -26,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
-import { useSpaces, useCreateSpace, useUpdateSpace, useDeleteSpace } from "@/lib/queries";
+import { useSpaces, useCreateSpace, useUpdateSpace } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 import { useAnalytics } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-provider";
@@ -54,12 +53,10 @@ export default function SpacesPage() {
   const analytics = useAnalytics();
   const createSpace = useCreateSpace();
   const updateSpace = useUpdateSpace();
-  const deleteSpace = useDeleteSpace();
 
   const [tab, setTab] = useState<TabFilter>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Space | null>(null);
-  const [deletingSpace, setDeletingSpace] = useState<Space | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState<SpaceType>("personal");
   const [monthlyBudget, setMonthlyBudget] = useState("");
@@ -249,19 +246,7 @@ export default function SpacesPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deletingSpace) return;
-    try {
-      await deleteSpace.mutateAsync(deletingSpace.id);
-      toast.success(`Deleted "${deletingSpace.name}"`);
-      setDeletingSpace(null);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
-    }
-  };
-
   const summaryFor = (id: string) => analytics.bySpace.find((s) => s.space.id === id);
-  const deletingSummary = deletingSpace ? summaryFor(deletingSpace.id) : undefined;
 
   return (
     <FadeInStagger className="flex flex-col gap-5">
@@ -546,17 +531,6 @@ export default function SpacesPage() {
                                   >
                                     <Pencil className="size-4" />
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeletingSpace(space);
-                                    }}
-                                    aria-label={`Delete ${space.name}`}
-                                    className="relative flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all after:absolute after:-inset-0.5 after:content-[''] hover:bg-destructive/20 active:scale-95 cursor-pointer"
-                                  >
-                                    <Trash2 className="size-4" />
-                                  </button>
                                 </div>
                               )}
                             </div>
@@ -805,53 +779,6 @@ export default function SpacesPage() {
                 Create space
               </>
             )}
-          </Button>
-        </div>
-      </Sheet>
-
-      {/* Delete Confirmation Sheet */}
-      <Sheet
-        open={!!deletingSpace}
-        onOpenChange={(open) => !open && setDeletingSpace(null)}
-        title="Delete Space"
-        description={
-          deletingSpace
-            ? deletingSpace.isShared
-              ? `This will permanently delete the shared space "${deletingSpace.name}" for all members and remove all transactions.`
-              : deletingSummary
-                ? `This will permanently delete "${deletingSpace.name}" and all ${deletingSummary.transactionCount} transactions in it.`
-                : `This will permanently delete "${deletingSpace.name}" and all of its transactions.`
-            : undefined
-        }
-      >
-        <div className="flex flex-col gap-3 pt-3">
-          <Button
-            variant="destructive-solid"
-            size="lg"
-            className="w-full rounded-full text-base font-semibold"
-            onClick={handleDelete}
-            disabled={deleteSpace.isPending}
-          >
-            {deleteSpace.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin mr-2" />
-                Deleting…
-              </>
-            ) : (
-              <>
-                <Trash2 className="size-4 mr-2" />
-                Delete Space
-              </>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full rounded-full text-base font-semibold"
-            onClick={() => setDeletingSpace(null)}
-          >
-            <X className="size-4 mr-2" />
-            Cancel
           </Button>
         </div>
       </Sheet>

@@ -14,6 +14,7 @@
 1. **Shared Spaces & Members** — `plans/SHARED_SPACES_BUILD_PLAN.md` (execution) + `plans/SHARED_SPACES_AND_MEMBERS_PLAN.md` (architecture spec)
 2. **Username system** — `plans/USERNAME_SYSTEM_PLAN.md`
 3. **Dues (lend/borrow)** — `plans/DUES_FEATURE_PLAN.md`
+4. **Dues gaps & shared-space deletion** — `plans/DUES_AND_SPACE_DELETE_GAPS_PLAN.md` (proposed)
 
 ## Future plans
 

@@ -12,7 +12,7 @@ router.post("/", spaceController.createSpace);
 router.get("/", spaceController.listSpaces);
 router.get("/:id", spaceController.getSpace);
 router.put("/:id", spaceController.updateSpace);
-router.delete("/:id", spaceController.deleteSpace);
+router.delete("/:id", sensitiveActionLimiter, spaceController.deleteSpace);
 
 // Member management routes
 router.get("/:id/members", spaceController.getMembers);

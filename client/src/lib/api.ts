@@ -161,9 +161,10 @@ export function createApi() {
           method: "PUT",
           body: JSON.stringify(data),
         }).then((r) => r.space),
-      remove: (id: string) =>
+      remove: (id: string, confirmName: string) =>
         request<{ id: string }>(`/spaces/${id}`, {
           method: "DELETE",
+          body: JSON.stringify({ confirmName }),
         }).then((r) => r.id),
       getMembers: (id: string) =>
         request<{ members: SpaceMember[] }>(`/spaces/${id}/members`).then(

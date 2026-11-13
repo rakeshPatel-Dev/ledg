@@ -1,6 +1,7 @@
 import {
   spaceSchema,
   spaceUpdateSchema,
+  spaceDeleteSchema,
   idParamsSchema,
   spaceMemberInviteSchema,
   spaceTransferOwnershipSchema,
@@ -36,6 +37,18 @@ export function validateSpaceId(param: unknown) {
   }
 
   return result.data.id;
+}
+
+export function validateDeleteSpace(input: unknown) {
+  const result = spaceDeleteSchema.safeParse(input);
+
+  if (!result.success) {
+    throw new BadRequestError(
+      result.error.issues[0]?.message || "Type the space name to confirm deletion"
+    );
+  }
+
+  return result.data;
 }
 
 export function validateMemberInvite(input: unknown) {

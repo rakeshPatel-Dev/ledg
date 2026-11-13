@@ -144,6 +144,7 @@ export default function SpaceDetailPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [membersSheetOpen, setMembersSheetOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [leaving, setLeaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [editName, setEditName] = useState("");
@@ -162,6 +163,9 @@ export default function SpaceDetailPage() {
   } | null>(null);
 
   const space = useMemo(() => spaces?.find((s) => s.id === id), [spaces, id]);
+  const deleteNameMatches = Boolean(
+    space && deleteConfirmName.trim().toLowerCase() === space.name.trim().toLowerCase()
+  );
 
   const isOwner = useMemo(() => {
     if (!space) return false;
@@ -293,14 +297,22 @@ export default function SpaceDetailPage() {
   };
 
   const handleDeleteSpace = async () => {
-    if (!space) return;
+    if (!space || !deleteNameMatches) return;
     try {
-      await deleteSpace.mutateAsync(space.id);
+      await deleteSpace.mutateAsync({
+        id: space.id,
+        confirmName: deleteConfirmName.trim(),
+      });
       toast.success(`Deleted "${space.name}"`);
       navigate("/spaces", { replace: true });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete space");
     }
+  };
+
+  const handleDeleteSheetOpenChange = (open: boolean) => {
+    setDeleting(open);
+    if (!open) setDeleteConfirmName("");
   };
 
   // Member Management Handlers
@@ -539,7 +551,10 @@ export default function SpaceDetailPage() {
                 {isOwner ? (
                   <button
                     type="button"
-                    onClick={() => setDeleting(true)}
+                    onClick={() => {
+                      setDeleteConfirmName("");
+                      setDeleting(true);
+                    }}
                     className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                   >
                     <Trash2 className="size-3.5" />
@@ -1344,45 +1359,100 @@ export default function SpaceDetailPage() {
 
       {/* Delete Space Sheet */}
       <Sheet
-        open={deleting}
-        onOpenChange={setDeleting}
+        open={deleting && Boolean(space)}
+        onOpenChange={handleDeleteSheetOpenChange}
         title="Delete Space"
-        description={`This will permanently delete "${space.name}" and ${
-          transactionsUnavailable
-            ? "all of its transactions"
-            : `all ${analytics.count} transaction${analytics.count === 1 ? "" : "s"} in it`
-        }.`}
+        description={
+          space
+            ? space.isShared
+              ? `This permanently deletes "${space.name}" for all ${
+                  space.members?.length ?? 1
+                } members and removes everything in it.`
+              : `This permanently deletes "${space.name}" and everything in it.`
+            : undefined
+        }
       >
-        <div className="flex flex-col gap-3 pt-3">
-          <Button
-            variant="destructive-solid"
-            size="lg"
-            className="w-full rounded-full text-base font-semibold"
-            onClick={handleDeleteSpace}
-            disabled={deleteSpace.isPending}
-          >
-            {deleteSpace.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin mr-2" />
-                Deleting…
-              </>
-            ) : (
-              <>
-                <Trash2 className="size-4 mr-2" />
-                Delete Space
-              </>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full rounded-full text-base font-semibold"
-            onClick={() => setDeleting(false)}
-          >
-            <X className="size-4 mr-2" />
-            Cancel
-          </Button>
-        </div>
+        {space ? (
+          <div className="flex flex-col gap-4 pt-3">
+            <div className="rounded-2xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs leading-relaxed text-destructive">
+              <p className="font-semibold">This cannot be undone.</p>
+              <p className="mt-1">
+                {transactionsUnavailable
+                  ? "All transactions, dues and settlements in this space will be removed."
+                  : `${analytics.count} transaction${
+                      analytics.count === 1 ? "" : "s"
+                    }, plus any dues and settlements, will be removed.`}
+              </p>
+              {space.isShared ? (
+                <p className="mt-1">Every member loses access immediately.</p>
+              ) : null}
+            </div>
+
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full rounded-full text-sm font-semibold"
+              onClick={handleExportCSV}
+              disabled={transactionsUnavailable || spaceTransactions.length === 0}
+            >
+              <Download className="size-4 mr-2" />
+              Export CSV first
+            </Button>
+            {transactionsUnavailable ? (
+              <p className="text-xs text-muted-foreground">
+                Transactions couldn't be loaded, so export is unavailable.
+              </p>
+            ) : null}
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="delete-space-confirm"
+                className="text-xs font-semibold text-foreground"
+              >
+                Type <span className="font-bold">{space.name}</span> to confirm
+              </label>
+              <Input
+                id="delete-space-confirm"
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder={space.name}
+                className="h-11 rounded-2xl"
+              />
+            </div>
+
+            <Button
+              variant="destructive-solid"
+              size="lg"
+              className="w-full rounded-full text-base font-semibold"
+              onClick={handleDeleteSpace}
+              disabled={deleteSpace.isPending || !deleteNameMatches}
+            >
+              {deleteSpace.isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-4 mr-2" />
+                  Delete Space
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full rounded-full text-base font-semibold"
+              onClick={() => handleDeleteSheetOpenChange(false)}
+            >
+              <X className="size-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        ) : null}
       </Sheet>
 
       {/* Delete Transaction Sheet */}

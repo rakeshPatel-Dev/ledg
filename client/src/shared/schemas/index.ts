@@ -36,6 +36,12 @@ export const spaceUpdateSchema = z.object({
 
 export type SpaceUpdateInput = z.infer<typeof spaceUpdateSchema>;
 
+export const spaceDeleteSchema = z.object({
+  confirmName: z.string().trim().min(1, "Type the space name to confirm"),
+});
+
+export type SpaceDeleteInput = z.infer<typeof spaceDeleteSchema>;
+
 export const spaceMemberInviteSchema = z.object({
   identifier: inviteIdentifierSchema,
 });
