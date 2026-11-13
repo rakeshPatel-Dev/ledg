@@ -2,6 +2,7 @@ import { Link, Navigate } from "react-router-dom";
 import { Zap, ShieldCheck, PieChart, ArrowRight, LogIn } from "lucide-react";
 
 import AppLogo from "@/components/common/app-logo";
+import { LoadingScreen } from "@/components/common/loading-screen";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-provider";
 
@@ -9,11 +10,7 @@ export default function WelcomePage() {
   const { isLoaded, isSignedIn } = useAuth();
 
   if (!isLoaded) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (isSignedIn) {

@@ -8,6 +8,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { TransactionFormBridge } from "@/components/transactions/transaction-form-bridge";
 import { PageTransition } from "@/components/common/page-transition";
 import { ErrorBoundary } from "@/components/common/error-boundary";
+import { LoadingScreen } from "@/components/common/loading-screen";
 
 const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const TransactionsPage = lazy(() => import("@/pages/transactions"));
@@ -39,11 +40,7 @@ function Protected({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   if (!isLoaded) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!isSignedIn) {
@@ -73,11 +70,7 @@ function AppLayout() {
 }
 
 function RouteFallback() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center">
-      <div className="size-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-    </div>
-  );
+  return <LoadingScreen />;
 }
 
 export default function App() {
