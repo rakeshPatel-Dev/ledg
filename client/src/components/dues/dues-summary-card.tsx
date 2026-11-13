@@ -59,11 +59,8 @@ export function DuesSummaryCard({ className }: DuesSummaryCardProps) {
       />
       <Link
         to="/dues"
-        className="group relative flex flex-col gap-0 overflow-hidden rounded-4xl border border-border/70 bg-card surface-raised transition-[box-shadow,border-color] duration-200 hover:border-primary/35 hover:shadow-elev-card-hover"
+        className="group relative overflow-hidden rounded-4xl border border-border/70 bg-card surface-raised transition-[box-shadow,border-color] duration-200 hover:border-primary/35 hover:shadow-elev-card-hover"
       >
-        {/* Colour ribbon: receivable green → payable amber. */}
-        <div className="h-1 w-full bg-linear-to-r from-emerald-500/80 via-primary/45 to-amber-500/80" />
-
         <div className="p-4">
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
