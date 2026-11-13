@@ -285,29 +285,6 @@
   );
 }
 
-/* Claude-style shimmer for the loading-tips line. */
-@keyframes text-shimmer {
-  from {
-    background-position: 0% center;
-  }
-  to {
-    background-position: 200% center;
-  }
-}
-@utility text-shimmer {
-  background-image: linear-gradient(
-    90deg,
-    color-mix(in oklch, var(--foreground), transparent 30%) 0%,
-    var(--foreground) 50%,
-    color-mix(in oklch, var(--foreground), transparent 30%) 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: text-shimmer 3.4s ease-in-out infinite;
-}
-
 /* Fine paper grain — keeps large flat fills from reading as plain hex values. */
 body::after {
   content: "";

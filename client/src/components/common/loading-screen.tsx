@@ -19,6 +19,16 @@ const TIPS = [
 
 const TIP_INTERVAL_MS = 3600;
 
+const SETTLE = {
+  duration: 0.7,
+  ease: [0.16, 1, 0.3, 1] as const,
+};
+
+const RISE = {
+  duration: 0.5,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
 export function LoadingScreen() {
   const [index, setIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
 
@@ -33,39 +43,91 @@ export function LoadingScreen() {
   return (
     <div
       role="status"
-      className="flex min-h-dvh flex-col items-center justify-center gap-6 px-8 text-center"
+      className="relative flex min-h-dvh flex-col items-center justify-center gap-8 overflow-hidden px-8 text-center"
     >
       <span className="sr-only">Loading Ledg…</span>
 
-      <motion.div
-        aria-hidden="true"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="flex flex-col items-center gap-5"
-      >
-        <AppLogo className="size-14 rounded-3xl shadow-elev-card" imgClassName="size-9" />
+      <div className="relative flex flex-col items-center gap-7">
+        {/* Logo — green gradient tile with depth */}
+        <motion.div
+          aria-hidden="true"
+          initial={{ opacity: 0, y: 14, scale: 0.94, filter: "blur(6px)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+          transition={{
+            ...SETTLE,
+            opacity: { duration: 0.35, ease: "easeOut" },
+            filter: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+            scale: { duration: 0.7, ease: [0.34, 1.4, 0.64, 1] },
+          }}
+          className="relative"
+        >
+          {/* Contact shadow — dark, sits under the tile */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-4 -bottom-2 h-4 rounded-full bg-[radial-gradient(closest-side,oklch(0_0_0/0.28),transparent)] blur-md dark:bg-[radial-gradient(closest-side,oklch(0_0_0/0.55),transparent)]"
+          />
 
-        <div className="flex flex-col items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 text-[0.6rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="relative overflow-hidden rounded-4xl border border-white/15 bg-linear-to-br from-primary via-primary to-[oklch(0.44_0.14_158)] shadow-[inset_0_1px_0_oklch(1_0_0/0.25),inset_0_-1px_0_oklch(0_0_0/0.08)] dark:border-white/10 dark:from-[oklch(0.30_0.075_158)] dark:via-[oklch(0.26_0.065_158)] dark:to-[oklch(0.22_0.055_158)] dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.12),inset_0_-1px_0_oklch(0_0_0/0.3)]">
+            {/* Top light-catch */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-white/20"
+            />
+            {/* Corner bloom — subtle highlight from top-right */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_100%_0%,oklch(1_0_0/0.18)_0%,transparent_55%)] dark:bg-[radial-gradient(120%_120%_at_100%_0%,oklch(1_0_0/0.08)_0%,transparent_55%)]"
+            />
+            <AppLogo className="relative size-16 bg-transparent" imgClassName="size-9" />
+          </div>
+        </motion.div>
+
+        {/* Tip block */}
+        <motion.div
+          aria-hidden="true"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+          className="flex max-w-[21rem] flex-col items-center gap-3"
+        >
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/50 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.5)] dark:border-border/40 dark:bg-muted/30 dark:shadow-[inset_0_1px_0_oklch(1_0_0/0.06)]">
             <Lightbulb className="size-3" />
             Tip
           </span>
 
-          <div className="flex h-12 max-w-[19rem] items-center justify-center">
+          <div className="relative flex h-14 w-full items-center justify-center overflow-hidden">
             <AnimatePresence mode="wait" initial={false}>
               <motion.p
                 key={index}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="text-shimmer text-sm font-medium leading-relaxed tracking-tight"
+                initial={{ y: "100%" }}
+                animate={{ y: "0%" }}
+                exit={{ y: "-100%" }}
+                transition={RISE}
+                className="text-pretty text-sm font-medium leading-relaxed tracking-tight text-foreground"
               >
                 {TIPS[index]}
               </motion.p>
             </AnimatePresence>
           </div>
+        </motion.div>
+      </div>
+
+      {/* Progress — quiet, tip-synced */}
+      <motion.div
+        aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.35 }}
+        className="relative flex items-center justify-center"
+      >
+        <div className="relative h-0.5 w-40 overflow-hidden rounded-full bg-muted/60 shadow-[inset_0_1px_1px_oklch(0_0_0/0.06)] dark:bg-muted/30 dark:shadow-[inset_0_1px_1px_oklch(0_0_0/0.4)]">
+          <motion.span
+            key={index}
+            initial={{ scaleX: 0, originX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: TIP_INTERVAL_MS / 1000, ease: "linear" }}
+            className="absolute inset-0 rounded-full bg-primary/70"
+          />
         </div>
       </motion.div>
     </div>
