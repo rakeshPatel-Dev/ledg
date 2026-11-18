@@ -57,10 +57,6 @@ export function DuesSummaryCard({ className }: DuesSummaryCardProps) {
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-5 -bottom-2 h-8 rounded-b-4xl border border-border/40 bg-card/60"
       />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-9 -bottom-3.5 h-8 rounded-b-4xl border border-border/30 bg-card/40"
-      />
 
       <Link
         to="/dues"
