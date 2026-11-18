@@ -409,8 +409,8 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
 
           {editing?.source === "dues" && (
             <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-3 text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-              This entry came from a due. Changing it here will not update the due. Manage
-              the loan from <span className="font-semibold">Dues</span>.
+              This entry is managed by a due. Editing it here is disabled — update the due
+              from <span className="font-semibold">Dues</span> instead.
             </div>
           )}
 

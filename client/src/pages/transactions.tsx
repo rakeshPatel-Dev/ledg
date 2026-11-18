@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search,
   SlidersHorizontal,
@@ -40,7 +41,9 @@ import {
 } from "@/lib/queries";
 import { formatCurrency, relativeDay, localDateKey } from "@/lib/format";
 import { exportTransactionsToCSV } from "@/lib/export";
+import { getApi } from "@/lib/api";
 import { useTransactionForm } from "@/lib/transaction-form";
+import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
 
 type TypeFilter = "all" | TransactionType;
@@ -68,14 +71,20 @@ export default function TransactionsPage() {
   const spacesQuery = useSpaces();
   const spaces = spacesQuery.data ?? [];
   const { openCreate, openEdit } = useTransactionForm();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [spaceFilter, setSpaceFilter] = useState("all");
+  const [spaceFilter, setSpaceFilter] = useState(
+    () => searchParams.get("space") ?? "all"
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [importSheetOpen, setImportSheetOpen] = useState(false);
+  const [highlightTxnId, setHighlightTxnId] = useState<string | null>(null);
+  const handledTxnRef = useRef<string | null>(null);
+  const fetchingTxnRef = useRef<string | null>(null);
 
   // Server-side search: debounce raw input before it hits the query key
   useEffect(() => {
@@ -117,6 +126,84 @@ export default function TransactionsPage() {
     }
     return [...map.entries()];
   }, [items]);
+
+  // Deep link from a due: /transactions?space=<id>&txn=<id>. Apply the space
+  // filter first, then open the exact row once it is available.
+  useEffect(() => {
+    const spaceId = searchParams.get("space");
+    if (!spaceId) return;
+    setSpaceFilter(spaceId);
+    setCurrentPage(1);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const txnId = searchParams.get("txn");
+    if (!txnId || handledTxnRef.current === txnId) return;
+    if (transactionsQuery.isPending) return;
+    if (fetchingTxnRef.current === txnId) return;
+
+    const clearTxn = () => {
+      handledTxnRef.current = txnId;
+      const next = new URLSearchParams(searchParams);
+      next.delete("txn");
+      setSearchParams(next, { replace: true });
+    };
+
+    // A dues entry opens edit -> which redirects back to the due. A deep link
+    // from that same due should instead reveal the ledger row in place.
+    const revealOrEdit = (transaction: Transaction) => {
+      if (transaction.source === "dues") {
+        setHighlightTxnId(transaction.id);
+        return;
+      }
+      openEdit(transaction, transaction.spaceId);
+    };
+
+    const match = items.find((t) => t.id === txnId);
+    if (match) {
+      clearTxn();
+      revealOrEdit(match);
+      return;
+    }
+
+    const spaceId = searchParams.get("space");
+    if (!spaceId || spaceId === "all") {
+      clearTxn();
+      return;
+    }
+
+    fetchingTxnRef.current = txnId;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const transaction = await getApi().transactions.get(spaceId, txnId);
+        if (cancelled) return;
+        clearTxn();
+        revealOrEdit(transaction);
+      } catch {
+        // The list is already filtered to the space; leave the user there.
+        if (!cancelled) clearTxn();
+      } finally {
+        if (fetchingTxnRef.current === txnId) fetchingTxnRef.current = null;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (fetchingTxnRef.current === txnId) fetchingTxnRef.current = null;
+    };
+  }, [items, searchParams, transactionsQuery.isPending, openEdit, setSearchParams]);
+
+  useEffect(() => {
+    if (!highlightTxnId) return;
+
+    document
+      .getElementById(`txn-${highlightTxnId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const timer = window.setTimeout(() => setHighlightTxnId(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [highlightTxnId, items]);
 
   const handleExportCSV = async () => {
     try {
@@ -312,13 +399,22 @@ export default function TransactionsPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   {dayItems.map((t) => (
-                    <SwipeableTransactionItem
+                    <div
                       key={t.id}
-                      transaction={t}
-                      currency={DEFAULT_CURRENCY}
-                      onClick={() => openEdit(t, t.spaceId)}
-                      onRequestDelete={() => setDeleteTarget(t)}
-                    />
+                      id={`txn-${t.id}`}
+                      className={cn(
+                        "rounded-3xl transition-shadow duration-300",
+                        highlightTxnId === t.id &&
+                          "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                      )}
+                    >
+                      <SwipeableTransactionItem
+                        transaction={t}
+                        currency={DEFAULT_CURRENCY}
+                        onClick={() => openEdit(t, t.spaceId)}
+                        onRequestDelete={() => setDeleteTarget(t)}
+                      />
+                    </div>
                   ))}
                 </div>
               </section>

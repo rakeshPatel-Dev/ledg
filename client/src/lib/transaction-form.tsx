@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Space, Transaction, TransactionInput } from "@ledg/shared";
 
 interface TransactionFormState {
@@ -21,6 +22,7 @@ const TransactionFormContext = createContext<TransactionFormContextValue | undef
 );
 
 export function TransactionFormProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [formState, setFormState] = useState<TransactionFormState>({
     open: false,
   });
@@ -30,6 +32,15 @@ export function TransactionFormProvider({ children }: { children: ReactNode }) {
   };
 
   const openEdit = (transaction: Transaction, spaceId: string, lockSpace = false) => {
+    // Dues-linked entries are owned by the due. Send the user to the source of
+    // truth instead of opening an edit form the server would reject.
+    if (transaction.source === "dues") {
+      navigate(
+        transaction.dueId ? `/dues?due=${encodeURIComponent(transaction.dueId)}` : "/dues"
+      );
+      return;
+    }
+
     setFormState({
       open: true,
       editing: transaction,

@@ -309,6 +309,10 @@ export function createApi() {
           method: "POST",
           body: JSON.stringify(data),
         }).then((r) => r.transaction),
+      get: (spaceId: string, id: string) =>
+        request<{ transaction: Transaction }>(
+          `/spaces/${spaceId}/transactions/${id}`
+        ).then((r) => r.transaction),
       update: (spaceId: string, id: string, data: TransactionUpdateInput) =>
         request<{ transaction: Transaction }>(`/spaces/${spaceId}/transactions/${id}`, {
           method: "PUT",

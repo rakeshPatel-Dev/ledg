@@ -1,6 +1,7 @@
 import type { Transaction } from "@ledg/shared";
 import { motion } from "framer-motion";
 import { ArrowDownLeft, ArrowUpRight, User, UserShield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { getCategoryMeta } from "@/lib/categories";
 import { formatCurrency } from "@/lib/format";
@@ -28,6 +29,7 @@ export function TransactionItem({
   onRequestDelete,
 }: TransactionItemProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const spaces = useSpaceLookup();
   const meta = getCategoryMeta(transaction.category, transaction.type);
   const Icon = meta.icon;
@@ -82,11 +84,23 @@ export function TransactionItem({
         </span>
         <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground mt-0.5">
           <span>{displayCategory}</span>
-          {isLoan && (
-            <span className="inline-flex items-center rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-              Loan
-            </span>
-          )}
+          {isLoan &&
+            (transaction.dueId ? (
+              <span
+                title="Open linked due"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/dues?due=${encodeURIComponent(transaction.dueId!)}`);
+                }}
+                className="inline-flex cursor-pointer items-center rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 underline-offset-2 transition-colors hover:bg-amber-500/20 hover:underline dark:text-amber-400"
+              >
+                Due
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                Loan
+              </span>
+            ))}
           {transaction.paymentMethod && (
             <>
               <span className="text-muted-foreground/60">·</span>
