@@ -12,6 +12,7 @@ import type {
   DuesSummary,
   PersonDuesSummary,
 } from "../../shared/index.js";
+import { getCounterpartyKey } from "../../shared/index.js";
 
 export async function createDebt(data: Partial<DebtDoc>): Promise<DebtDoc> {
   const debt = await DebtModel.create(data);
@@ -77,7 +78,7 @@ export async function updateDebt(
   return DebtModel.findOneAndUpdate(
     { _id: debtId, userId },
     { $set: update },
-    { new: true }
+    { returnDocument: "after" }
   ).lean();
 }
 
@@ -125,6 +126,13 @@ export async function deleteSettlement(
   return result.deletedCount === 1;
 }
 
+export async function deleteSettlementsByDebt(
+  debtId: string | Types.ObjectId
+): Promise<number> {
+  const result = await DebtSettlementModel.deleteMany({ debtId });
+  return result.deletedCount ?? 0;
+}
+
 /**
  * Remove every settlement that belongs to the given spaces. Used when a space
  * is deleted so dues cannot outlive their ledger.
@@ -162,7 +170,10 @@ export async function deleteDuesBySpaceIds(
 export async function getDuesSummary(userId: Types.ObjectId): Promise<DuesSummary> {
   const now = new Date();
 
-  const debts = await DebtModel.find({ userId }).lean<DebtDoc[]>();
+  // Newest first so the most recent spelling of a person's name/phone wins.
+  const debts = await DebtModel.find({ userId })
+    .sort({ date: -1, _id: -1 })
+    .lean<DebtDoc[]>();
 
   let owedToMe = 0;
   let iOwe = 0;
@@ -171,20 +182,38 @@ export async function getDuesSummary(userId: Types.ObjectId): Promise<DuesSummar
 
   const personMap = new Map<
     string,
-    { name: string; phone?: string; owedToMe: number; iOwe: number; activeCount: number }
+    {
+      key: string;
+      name: string;
+      phone?: string;
+      linkedUserId?: string | null;
+      owedToMe: number;
+      iOwe: number;
+      activeCount: number;
+    }
   >();
 
   for (const debt of debts) {
     const isUnsettled = debt.status !== "settled";
     const remaining = Math.max(0, debt.principal - (debt.settledAmount ?? 0));
-    const personName = debt.counterparty.name.trim();
-    const personKey = personName.toLowerCase();
+    const personName = debt.counterparty.name.trim().replace(/\s+/g, " ");
+    const personKey = getCounterpartyKey({
+      name: personName,
+      phone: debt.counterparty.phone,
+      linkedUserId: debt.counterparty.linkedUserId
+        ? String(debt.counterparty.linkedUserId)
+        : null,
+    });
 
     let personEntry = personMap.get(personKey);
     if (!personEntry) {
       personEntry = {
+        key: personKey,
         name: personName,
         phone: debt.counterparty.phone ?? undefined,
+        linkedUserId: debt.counterparty.linkedUserId
+          ? String(debt.counterparty.linkedUserId)
+          : null,
         owedToMe: 0,
         iOwe: 0,
         activeCount: 0,
@@ -193,6 +222,9 @@ export async function getDuesSummary(userId: Types.ObjectId): Promise<DuesSummar
     }
     if (debt.counterparty.phone && !personEntry.phone) {
       personEntry.phone = debt.counterparty.phone;
+    }
+    if (debt.counterparty.linkedUserId && !personEntry.linkedUserId) {
+      personEntry.linkedUserId = String(debt.counterparty.linkedUserId);
     }
 
     if (isUnsettled) {
@@ -215,8 +247,10 @@ export async function getDuesSummary(userId: Types.ObjectId): Promise<DuesSummar
 
   const byPerson: PersonDuesSummary[] = Array.from(personMap.values())
     .map((p) => ({
+      key: p.key,
       name: p.name,
       phone: p.phone,
+      linkedUserId: p.linkedUserId,
       owedToMe: Math.round(p.owedToMe * 100) / 100,
       iOwe: Math.round(p.iOwe * 100) / 100,
       net: Math.round((p.owedToMe - p.iOwe) * 100) / 100,

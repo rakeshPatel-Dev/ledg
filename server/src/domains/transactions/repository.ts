@@ -209,6 +209,18 @@ export async function findTransactionInSpaces(
   return doc ? toTransactionDto(doc) : null;
 }
 
+/**
+ * Fetch a known set of transactions in one query. Callers that need a specific
+ * order (e.g. the opening due entry before its settlements) reorder the result.
+ */
+export async function findTransactionsByIds(
+  ids: Array<string | Types.ObjectId>
+): Promise<TransactionDoc[]> {
+  if (ids.length === 0) return [];
+  const docs = await TransactionModel.find({ _id: { $in: ids } }).lean();
+  return docs.map(toTransactionDto);
+}
+
 export async function updateTransaction(
   id: string,
   spaceId: Types.ObjectId,

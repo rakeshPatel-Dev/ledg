@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -7,8 +8,10 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  ExternalLink,
   FileText,
   Loader2,
+  Pencil,
   Phone,
   Trash2,
   Undo2,
@@ -19,7 +22,7 @@ import { PAYMENT_LABELS } from "@ledg/shared";
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useDeleteDue, useDue, useUndoSettlement } from "@/lib/queries";
+import { useDeleteDue, useDue, useSpaces, useUndoSettlement } from "@/lib/queries";
 import { ErrorState } from "@/components/ui/error-state";
 import { formatCurrency, formatDate, formatRelativeCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,6 +32,7 @@ interface DueDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   dueId: string | null;
   onOpenSettle: (due: Debt) => void;
+  onEdit: (due: Debt) => void;
 }
 
 export function DueDetailSheet({
@@ -36,7 +40,9 @@ export function DueDetailSheet({
   onOpenChange,
   dueId,
   onOpenSettle,
+  onEdit,
 }: DueDetailSheetProps) {
+  const navigate = useNavigate();
   const {
     data: due,
     isLoading,
@@ -45,10 +51,16 @@ export function DueDetailSheet({
     refetch,
     isFetching,
   } = useDue(dueId || "");
+  const { data: spaces = [] } = useSpaces();
   const undoMutation = useUndoSettlement();
   const deleteMutation = useDeleteDue();
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (!open) setConfirmDelete(false);
+  }, [open]);
 
   if (!dueId) return null;
 
@@ -73,6 +85,12 @@ export function DueDetailSheet({
     : 0;
 
   const isSettled = due?.status === "settled";
+  const linkedTransactions = due?.linkedTransactions ?? [];
+  const settlementCount = due?.settlements?.length ?? 0;
+  const linkedCount =
+    linkedTransactions.length || settlementCount + (due?.transactionId ? 1 : 0);
+  const space = spaces.find((candidate) => candidate.id === due?.spaceId);
+  const isSharedSpace = Boolean(space?.isShared);
 
   const handleUndo = async (settlement: DebtSettlement) => {
     if (!due) return;
@@ -97,28 +115,19 @@ export function DueDetailSheet({
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!due) return;
-    toast("Delete this due?", {
-      description: "This cannot be undone. The linked transaction will also be removed.",
-      action: {
-        label: "Delete",
-        onClick: async () => {
-          try {
-            setIsDeleting(true);
-            await deleteMutation.mutateAsync(due.id);
-            toast.success("Due deleted");
-            onOpenChange(false);
-          } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Failed to delete";
-            toast.error(msg);
-          } finally {
-            setIsDeleting(false);
-          }
-        },
-      },
-      cancel: { label: "Keep", onClick: () => {} },
-    });
+    try {
+      setIsDeleting(true);
+      await deleteMutation.mutateAsync(due.id);
+      toast.success("Due deleted");
+      onOpenChange(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete";
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -355,6 +364,88 @@ export function DueDetailSheet({
             )}
           </div>
 
+          {/* ── Linked ledger entries ── */}
+          {linkedTransactions.length > 0 ? (
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Linked ledger entries
+                </h3>
+                <span className="text-[0.6rem] font-semibold text-muted-foreground bg-muted/60 rounded-full px-2 py-0.5">
+                  {linkedTransactions.length}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {linkedTransactions.map((txn) => {
+                  const settlementIndex =
+                    due.settlements?.findIndex(
+                      (settlement) => settlement.transactionId === txn.id
+                    ) ?? -1;
+                  const label =
+                    txn.id === due.transactionId
+                      ? "Opening entry"
+                      : settlementIndex >= 0
+                        ? `Settlement #${settlementIndex + 1}`
+                        : "Linked entry";
+
+                  return (
+                    <div
+                      key={txn.id}
+                      className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-xs"
+                    >
+                      <div
+                        className={cn(
+                          "flex size-8 shrink-0 items-center justify-center rounded-xl",
+                          txn.type === "income"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        )}
+                      >
+                        {txn.type === "income" ? (
+                          <ArrowDownLeft className="size-4" />
+                        ) : (
+                          <ArrowUpRight className="size-4" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-black tabular-nums text-foreground">
+                            {formatCurrency(txn.amount)}
+                          </span>
+                          <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {label}
+                          </span>
+                          {txn.paymentMethod ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[0.55rem] px-1.5 py-0 h-4 rounded-full"
+                            >
+                              {PAYMENT_LABELS[txn.paymentMethod]}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-[0.65rem] text-muted-foreground mt-0.5 truncate">
+                          {formatRelativeCompact(txn.date)}
+                          {txn.note ? ` · ${txn.note}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(`/transactions?space=${due.spaceId}&txn=${txn.id}`)
+                        }
+                        className="flex items-center gap-1 rounded-xl border border-border/60 bg-muted/40 px-2.5 py-1.5 text-[0.65rem] font-semibold text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-95 shrink-0"
+                      >
+                        <ExternalLink className="size-3" />
+                        View
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           {/* ── Actions ── */}
           <div className="flex flex-col gap-2.5 pt-1">
             {!isSettled && (
@@ -375,22 +466,73 @@ export function DueDetailSheet({
               </Button>
             )}
 
-            {due.status === "open" &&
-              (!due.settlements || due.settlements.length === 0) && (
-                <Button
-                  variant="outline"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="w-full h-10 rounded-2xl text-destructive border-destructive/30 hover:bg-destructive/8 hover:text-destructive font-semibold"
-                >
-                  {isDeleting ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="mr-2 size-4" />
-                  )}
-                  Delete Due
-                </Button>
-              )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                onEdit(due);
+              }}
+              className="w-full h-10 rounded-2xl font-semibold"
+            >
+              <Pencil className="mr-2 size-4" />
+              Edit due
+            </Button>
+
+            {!confirmDelete ? (
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDelete(true)}
+                className="w-full h-10 rounded-2xl text-destructive border-destructive/30 hover:bg-destructive/8 hover:text-destructive font-semibold"
+              >
+                <Trash2 className="mr-2 size-4" />
+                Delete Due
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+                <div>
+                  <p className="text-sm font-bold text-destructive">Delete this due?</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    This removes {settlementCount} settlement
+                    {settlementCount === 1 ? "" : "s"} and {linkedCount} linked ledger
+                    entr{linkedCount === 1 ? "y" : "ies"}.
+                  </p>
+                  {isSharedSpace ? (
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      These entries are in a shared ledger; other members will lose them
+                      too.
+                    </p>
+                  ) : null}
+                  <p className="mt-1 text-xs font-semibold text-destructive">
+                    This cannot be undone.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-full"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={isDeleting}
+                  >
+                    Keep
+                  </Button>
+                  <Button
+                    variant="destructive-solid"
+                    className="flex-1 rounded-full"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Deleting…
+                      </>
+                    ) : (
+                      "Delete due"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

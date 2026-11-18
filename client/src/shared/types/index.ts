@@ -63,6 +63,8 @@ export interface Transaction {
   date: string;
   paymentMethod: PaymentMethod | null;
   source: TransactionSource;
+  /** Set when the row was created by a due (opening entry or settlement). */
+  dueId?: string | null;
   createdBy?: TransactionCreatedBy;
   createdAt: string;
   updatedAt: string;
@@ -175,13 +177,18 @@ export interface Debt {
   status: DebtStatus;
   settledAmount: number;
   settlements?: DebtSettlement[];
+  /** Attached by GET /dues/:id only, so list responses stay cheap. */
+  linkedTransactions?: Transaction[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface PersonDuesSummary {
+  /** Stable grouping key: linked user, then phone, then normalized name. */
+  key: string;
   name: string;
   phone?: string;
+  linkedUserId?: string | null;
   owedToMe: number;
   iOwe: number;
   net: number; // positive = they owe me, negative = I owe them

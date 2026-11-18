@@ -182,6 +182,33 @@ export const debtCreateSchema = z.object({
 
 export type DebtCreateInput = z.infer<typeof debtCreateSchema>;
 
+/**
+ * Direction and space are deliberately immutable. Everything else on a due can
+ * be corrected, including the principal after a partial settlement (the server
+ * rejects values below the settled amount).
+ */
+export const debtUpdateSchema = z.object({
+  counterparty: z
+    .object({
+      name: z.string().trim().min(1, "Name is required").max(100),
+      phone: z.string().trim().max(30).nullable().optional(),
+      linkedUserId: z
+        .string()
+        .trim()
+        .regex(/^[0-9a-fA-F]{24}$/, "Invalid user id")
+        .nullable()
+        .optional(),
+    })
+    .optional(),
+  principal: z.number().positive("Principal must be greater than 0").optional(),
+  date: dateStringSchema.or(z.date()).optional(),
+  dueDate: dateStringSchema.or(z.date()).nullable().optional(),
+  note: z.string().trim().max(500).optional(),
+  paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+});
+
+export type DebtUpdateInput = z.infer<typeof debtUpdateSchema>;
+
 export const debtSettlementSchema = z.object({
   amount: z.number().positive("Amount must be greater than 0"),
   date: dateStringSchema.or(z.date()),

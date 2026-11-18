@@ -152,6 +152,12 @@ export async function updateUserTransaction(
     throw new NotFoundError("Transaction");
   }
 
+  // Dues own their ledger entries. Editing one here would silently desync the
+  // due, so redirect the user to the due detail instead.
+  if (existingTxn.source === "dues") {
+    throw new ConflictError("This entry is linked to a due. Edit the due instead.");
+  }
+
   // Permission check: source-space owner can edit anything in the space;
   // a member can only edit/edit-move their own transactions.
   const isCreator =

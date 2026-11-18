@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   Banknote,
   CalendarDays,
+  CheckCircle2,
   CreditCard,
   Landmark,
   Loader2,
@@ -13,7 +14,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import type { DebtDirection, PaymentMethod, Space } from "@ledg/shared";
+import type { Debt, DebtDirection, PaymentMethod, Space } from "@ledg/shared";
 import { PAYMENT_LABELS } from "@ledg/shared";
 
 import { Sheet } from "@/components/ui/sheet";
@@ -27,16 +28,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateDue, useDuesSummary, useSpaces } from "@/lib/queries";
+import { useCreateDue, useDuesSummary, useSpaces, useUpdateDue } from "@/lib/queries";
+import { formatCurrency } from "@/lib/format";
 import { getUserFacingError } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
-interface CreateDueSheetProps {
+interface DueFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Present = edit that due; absent = create a new one. */
+  due?: Debt | null;
   defaultDirection?: DebtDirection;
   defaultPerson?: string;
   defaultPhone?: string;
+  onSaved?: (due: Debt) => void;
 }
 
 const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
@@ -67,24 +72,34 @@ function getQuickDates(): { label: string; date: string }[] {
   ];
 }
 
-export function CreateDueSheet({
+function toDateInput(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function todayInput(): string {
+  return toDateInput(new Date().toISOString());
+}
+
+export function DueFormSheet({
   open,
   onOpenChange,
+  due,
   defaultDirection = "lent",
   defaultPerson = "",
   defaultPhone = "",
-}: CreateDueSheetProps) {
+  onSaved,
+}: DueFormSheetProps) {
+  const isEditing = Boolean(due);
   const [direction, setDirection] = useState<DebtDirection>(defaultDirection);
   const [name, setName] = useState(defaultPerson);
   const [phone, setPhone] = useState(defaultPhone);
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(() => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  });
+  const [date, setDate] = useState(todayInput);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [note, setNote] = useState("");
@@ -96,31 +111,41 @@ export function CreateDueSheet({
   const { data: spaces = [] } = useSpaces();
   const { data: duesSummary } = useDuesSummary();
   const createMutation = useCreateDue();
+  const updateMutation = useUpdateDue();
+  const isPending = createMutation.isPending || updateMutation.isPending;
+  const settledAmount = due?.settledAmount ?? 0;
 
   const quickDates = getQuickDates();
 
   useEffect(() => {
-    if (open) {
-      setDirection(defaultDirection);
-      setName(defaultPerson);
-      setPhone(defaultPhone);
-      setAmount("");
-      setDate(() => {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        return `${y}-${m}-${day}`;
-      });
-      setDueDate(null);
-      setPaymentMethod("cash");
-      setNote("");
-      setErrors({});
+    if (!open) return;
 
-      const personalSpace = spaces.find((s: Space) => s.type === "personal") ?? spaces[0];
-      if (personalSpace) setSpaceId(personalSpace.id);
+    if (due) {
+      setDirection(due.direction);
+      setName(due.counterparty.name);
+      setPhone(due.counterparty.phone ?? "");
+      setAmount(String(due.principal));
+      setDate(toDateInput(due.date));
+      setDueDate(due.dueDate ? toDateInput(due.dueDate) : null);
+      setPaymentMethod(due.linkedTransactions?.[0]?.paymentMethod ?? "cash");
+      setNote(due.note ?? "");
+      setErrors({});
+      return;
     }
-  }, [open, defaultDirection, defaultPerson, defaultPhone, spaces]);
+
+    setDirection(defaultDirection);
+    setName(defaultPerson);
+    setPhone(defaultPhone);
+    setAmount("");
+    setDate(todayInput());
+    setDueDate(null);
+    setPaymentMethod("cash");
+    setNote("");
+    setErrors({});
+
+    const personalSpace = spaces.find((s: Space) => s.type === "personal") ?? spaces[0];
+    if (personalSpace) setSpaceId(personalSpace.id);
+  }, [open, due, defaultDirection, defaultPerson, defaultPhone, spaces]);
 
   const recentNames = (duesSummary?.byPerson ?? [])
     .map((p) => p.name)
@@ -138,6 +163,10 @@ export function CreateDueSheet({
     }
     if (!amount || isNaN(numAmount) || numAmount <= 0) {
       nextErrors.amount = "Enter an amount greater than zero.";
+    } else if (isEditing && numAmount + 0.001 < settledAmount) {
+      nextErrors.amount = `Amount cannot be less than ${formatCurrency(
+        settledAmount
+      )} already settled.`;
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -153,6 +182,29 @@ export function CreateDueSheet({
     setErrors({});
 
     try {
+      if (due) {
+        const updated = await updateMutation.mutateAsync({
+          id: due.id,
+          data: {
+            counterparty: {
+              name: trimmedName,
+              phone: phone.trim() || null,
+              linkedUserId: due.counterparty.linkedUserId ?? null,
+            },
+            principal: numAmount,
+            date,
+            dueDate: dueDate || null,
+            paymentMethod,
+            note: note.trim(),
+          },
+        });
+
+        toast.success("Due updated");
+        onOpenChange(false);
+        onSaved?.(updated);
+        return;
+      }
+
       await createMutation.mutateAsync({
         direction,
         counterparty: { name: trimmedName, phone: phone.trim() || undefined },
@@ -171,52 +223,77 @@ export function CreateDueSheet({
       );
       onOpenChange(false);
     } catch (err: unknown) {
-      toast.error(getUserFacingError(err, "Failed to record the due."));
+      toast.error(getUserFacingError(err, "Failed to save the due."));
     }
   };
 
   const isLent = direction === "lent";
+  const amountValue = Number.parseFloat(amount);
+  const principalBelowSettled =
+    isEditing &&
+    Number.isFinite(amountValue) &&
+    amountValue > 0 &&
+    amountValue + 0.001 < settledAmount;
+  const remainingAfter = Number.isFinite(amountValue)
+    ? Math.max(0, Math.round((amountValue - settledAmount) * 100) / 100)
+    : 0;
+  const showRemainingWarning =
+    isEditing && settledAmount > 0 && Number.isFinite(amountValue) && amountValue > 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-0">
-        {/* ── Direction toggle (hero pill) ── */}
-        <div
-          role="group"
-          aria-label="Loan direction"
-          className="flex gap-2 mb-6 p-1 rounded-3xl bg-muted/50 border border-border/40"
-        >
-          {[
-            {
-              value: "lent" as const,
-              label: "I Lent",
-              Icon: ArrowUpRight,
-              color: "bg-emerald-600 text-white shadow-emerald-600/30",
-            },
-            {
-              value: "borrowed" as const,
-              label: "I Borrowed",
-              Icon: ArrowDownLeft,
-              color: "bg-amber-500 text-white shadow-amber-500/30",
-            },
-          ].map(({ value, label, Icon, color }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={direction === value}
-              onClick={() => setDirection(value)}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-all duration-200",
-                direction === value
-                  ? `${color} shadow-md`
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Icon className="size-4" />
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* ── Direction toggle (create only) ── */}
+        {!isEditing ? (
+          <div
+            role="group"
+            aria-label="Loan direction"
+            className="flex gap-2 mb-6 p-1 rounded-3xl bg-muted/50 border border-border/40"
+          >
+            {[
+              {
+                value: "lent" as const,
+                label: "I Lent",
+                Icon: ArrowUpRight,
+                color: "bg-emerald-600 text-white shadow-emerald-600/30",
+              },
+              {
+                value: "borrowed" as const,
+                label: "I Borrowed",
+                Icon: ArrowDownLeft,
+                color: "bg-amber-500 text-white shadow-amber-500/30",
+              },
+            ].map(({ value, label, Icon, color }) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={direction === value}
+                onClick={() => setDirection(value)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-all duration-200",
+                  direction === value
+                    ? `${color} shadow-md`
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="size-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-6 flex items-center gap-2 rounded-3xl border border-border/40 bg-muted/35 px-4 py-3">
+            {isLent ? (
+              <ArrowUpRight className="size-4 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <ArrowDownLeft className="size-4 text-amber-600 dark:text-amber-400" />
+            )}
+            <p className="text-xs font-semibold text-muted-foreground">
+              {isLent ? "I lent this money" : "I borrowed this money"} · direction can't
+              be changed
+            </p>
+          </div>
+        )}
 
         {/* ── Context label ── */}
         <div
@@ -299,6 +376,28 @@ export function CreateDueSheet({
               {errors.amount}
             </p>
           ) : null}
+          {showRemainingWarning ? (
+            <div
+              className={cn(
+                "rounded-2xl border px-3.5 py-2.5 text-xs leading-relaxed",
+                principalBelowSettled
+                  ? "border-destructive/25 bg-destructive/5 text-destructive"
+                  : "border-amber-500/25 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+              )}
+            >
+              {principalBelowSettled ? (
+                <>
+                  {formatCurrency(settledAmount)} is already settled, so the principal
+                  cannot go below that. Undo a settlement first.
+                </>
+              ) : (
+                <>
+                  {formatCurrency(settledAmount)} is already settled. The remaining amount
+                  will become {formatCurrency(remainingAfter)}.
+                </>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {/* ── Person ── */}
@@ -343,7 +442,7 @@ export function CreateDueSheet({
             </p>
           ) : null}
           {/* Recent names */}
-          {recentNames.length > 0 && !name && (
+          {recentNames.length > 0 && !name && !isEditing && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {recentNames.slice(0, 5).map((rName) => (
                 <button
@@ -447,8 +546,11 @@ export function CreateDueSheet({
             id="due-due-date"
             value={dueDate ?? ""}
             onChange={(d) => setDueDate(d || null)}
-            placeholder="Set a repayment reminder"
+            placeholder="When should it be repaid?"
           />
+          <p className="text-[0.68rem] leading-relaxed text-muted-foreground/80">
+            Overdue dues are flagged on Home and Dues. Ledg does not send reminders yet.
+          </p>
         </div>
 
         {/* ── Payment Method ── */}
@@ -497,8 +599,8 @@ export function CreateDueSheet({
           </div>
         </div>
 
-        {/* ── Space (if multiple) ── */}
-        {spaces.length > 1 && (
+        {/* ── Space (create only; a due cannot move spaces) ── */}
+        {!isEditing && spaces.length > 1 && (
           <div className="flex flex-col gap-2 mb-5">
             <label
               htmlFor="due-space"
@@ -551,12 +653,17 @@ export function CreateDueSheet({
               ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25"
               : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25"
           )}
-          disabled={createMutation.isPending}
+          disabled={isPending || principalBelowSettled}
         >
-          {createMutation.isPending ? (
+          {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
               Saving...
+            </>
+          ) : isEditing ? (
+            <>
+              <CheckCircle2 className="size-5" />
+              Save changes
             </>
           ) : (
             <>

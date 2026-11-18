@@ -55,6 +55,11 @@ const transactionSchema = new Schema(
       default: "manual",
       index: true,
     },
+    dueId: {
+      type: Schema.Types.ObjectId,
+      ref: "Debt",
+      default: null,
+    },
     createdBy: {
       userId: {
         type: Schema.Types.ObjectId,
@@ -109,6 +114,7 @@ export interface TransactionDoc {
   date: Date;
   paymentMethod: PaymentMethod | null;
   source: TransactionSource;
+  dueId?: Types.ObjectId | null;
   createdBy?: TransactionCreatedByDoc;
   createdAt: Date;
   updatedAt: Date;

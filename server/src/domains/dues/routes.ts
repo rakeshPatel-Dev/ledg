@@ -11,6 +11,7 @@ router.get("/summary", duesController.getDuesSummary);
 router.post("/", duesController.createDue);
 router.get("/", duesController.listDues);
 router.get("/:id", duesController.getDue);
+router.patch("/:id", duesController.updateDue);
 router.post("/:id/settle", duesController.settleDue);
 router.delete("/:id/settlements/:sid", duesController.undoSettlement);
 router.delete("/:id", duesController.deleteDue);

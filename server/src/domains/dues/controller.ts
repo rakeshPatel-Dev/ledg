@@ -9,6 +9,7 @@ import {
   validateDuesQuery,
   validateSettlementId,
   validateSettleDue,
+  validateUpdateDue,
 } from "./validator.js";
 
 export const createDue = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -28,6 +29,14 @@ export const listDues = asyncHandler(async (req: AuthRequest, res: Response) => 
 export const getDue = asyncHandler(async (req: AuthRequest, res: Response) => {
   const debtId = validateDueId(req.params);
   const due = await duesService.getDue(req.userId!, debtId);
+
+  res.json({ success: true, data: { due } });
+});
+
+export const updateDue = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const debtId = validateDueId(req.params);
+  const data = validateUpdateDue(req.body);
+  const due = await duesService.updateDue(req.userId!, debtId, data);
 
   res.json({ success: true, data: { due } });
 });

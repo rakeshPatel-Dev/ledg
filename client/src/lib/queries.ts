@@ -11,6 +11,7 @@ import type {
   DebtCreateInput,
   DebtSettlement,
   DebtSettlementInput,
+  DebtUpdateInput,
   DuesQuery,
   DuesSummary,
   ImportInput,
@@ -726,6 +727,22 @@ export function useSettleDue() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: DebtSettlementInput }) =>
       getApi().dues.settle(id, data),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.due(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useUpdateDue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DebtUpdateInput }) =>
+      getApi().dues.update(id, data),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dues"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.due(variables.id) });

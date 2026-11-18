@@ -4,6 +4,7 @@ import type {
   DebtCreateInput,
   DebtSettlement,
   DebtSettlementInput,
+  DebtUpdateInput,
   DuesQuery,
   DuesSummary,
   ImportInput,
@@ -356,6 +357,11 @@ export function createApi() {
       create: (data: DebtCreateInput) =>
         request<{ due: Debt }>("/dues", {
           method: "POST",
+          body: JSON.stringify(data),
+        }).then((r) => r.due),
+      update: (id: string, data: DebtUpdateInput) =>
+        request<{ due: Debt }>(`/dues/${id}`, {
+          method: "PATCH",
           body: JSON.stringify(data),
         }).then((r) => r.due),
       settle: (id: string, data: DebtSettlementInput) =>

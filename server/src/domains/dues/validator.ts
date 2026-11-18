@@ -1,6 +1,7 @@
 import {
   debtCreateSchema,
   debtSettlementSchema,
+  debtUpdateSchema,
   duesQuerySchema,
   idParamsSchema,
 } from "../../shared/index.js";
@@ -18,6 +19,14 @@ export function validateSettleDue(input: unknown) {
   const result = debtSettlementSchema.safeParse(input);
   if (!result.success) {
     throw new BadRequestError("Invalid settlement payload");
+  }
+  return result.data;
+}
+
+export function validateUpdateDue(input: unknown) {
+  const result = debtUpdateSchema.safeParse(input);
+  if (!result.success) {
+    throw new BadRequestError(result.error.issues[0]?.message || "Invalid due payload");
   }
   return result.data;
 }

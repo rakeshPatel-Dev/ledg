@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "react-router-dom";
 import type { Debt, DebtDirection, DebtStatus } from "@ledg/shared";
+import { getCounterpartyDisambiguator, getCounterpartyKey } from "@ledg/shared";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ import { getUserFacingError } from "@/lib/errors";
 import { formatCurrency, formatRelativeCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { FadeInStagger, FadeInItem } from "@/components/common/page-transition";
-import { CreateDueSheet } from "@/components/dues/create-due-sheet";
+import { DueFormSheet } from "@/components/dues/create-due-sheet";
 import { SettleDueSheet } from "@/components/dues/settle-due-sheet";
 import { DueDetailSheet } from "@/components/dues/due-detail-sheet";
 
@@ -71,6 +72,9 @@ export default function DuesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createDirection, setCreateDirection] = useState<DebtDirection>("lent");
   const [selectedPerson, setSelectedPerson] = useState<string>("");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingDue, setEditingDue] = useState<Debt | null>(null);
 
   const [settleOpen, setSettleOpen] = useState(false);
   const [selectedDueForSettle, setSelectedDueForSettle] = useState<Debt | null>(null);
@@ -136,6 +140,7 @@ export default function DuesPage() {
     const map = new Map<
       string,
       {
+        key: string;
         name: string;
         phone?: string;
         dues: Debt[];
@@ -145,11 +150,12 @@ export default function DuesPage() {
       }
     >();
     for (const due of filteredDues) {
-      const key = due.counterparty.name.toLowerCase().trim();
+      const key = getCounterpartyKey(due.counterparty);
       let group = map.get(key);
       if (!group) {
         group = {
-          name: due.counterparty.name,
+          key,
+          name: due.counterparty.name.trim().replace(/\s+/g, " "),
           phone: due.counterparty.phone ?? undefined,
           dues: [],
           totalLent: 0,
@@ -157,6 +163,8 @@ export default function DuesPage() {
           net: 0,
         };
         map.set(key, group);
+      } else if (!group.phone && due.counterparty.phone) {
+        group.phone = due.counterparty.phone;
       }
       group.dues.push(due);
       const remaining = Math.max(0, due.principal - (due.settledAmount ?? 0));
@@ -164,13 +172,28 @@ export default function DuesPage() {
       else group.totalBorrowed += remaining;
       group.net = group.totalLent - group.totalBorrowed;
     }
-    return Array.from(map.values()).sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+
+    const groups = Array.from(map.values());
+    const nameCounts = new Map<string, number>();
+    for (const group of groups) {
+      const nameKey = group.name.toLowerCase();
+      nameCounts.set(nameKey, (nameCounts.get(nameKey) ?? 0) + 1);
+    }
+
+    return groups
+      .map((group) => ({
+        ...group,
+        showPhoneHint:
+          (nameCounts.get(group.name.toLowerCase()) ?? 0) > 1 &&
+          Boolean(getCounterpartyDisambiguator(group.phone)),
+      }))
+      .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
   }, [filteredDues]);
 
-  const togglePersonExpand = (name: string) => {
+  const togglePersonExpand = (key: string) => {
     setExpandedPeople((prev) => ({
       ...prev,
-      [name.toLowerCase()]: !prev[name.toLowerCase()],
+      [key]: !(prev[key] ?? true),
     }));
   };
 
@@ -203,6 +226,35 @@ export default function DuesPage() {
     setSelectedDueId(due.id);
     setDetailOpen(true);
   };
+
+  const handleOpenEdit = (due: Debt) => {
+    setDetailOpen(false);
+    setEditingDue(due);
+    setEditOpen(true);
+  };
+
+  const handleEditOpenChange = (open: boolean) => {
+    setEditOpen(open);
+    if (!open) setEditingDue(null);
+  };
+
+  const handleDueSaved = (due: Debt) => {
+    setSelectedDueId(due.id);
+    setDetailOpen(true);
+  };
+
+  // Deep link from a dues-linked ledger entry: /dues?due=<id>.
+  useEffect(() => {
+    const dueId = searchParams.get("due");
+    if (!dueId) return;
+
+    setSelectedDueId(dueId);
+    setDetailOpen(true);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("due");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (summaryError) {
@@ -480,7 +532,7 @@ export default function DuesPage() {
         ) : viewMode === "person" ? (
           <FadeInStagger className="flex flex-col gap-3">
             {groupedByPerson.map((group) => {
-              const isExpanded = expandedPeople[group.name.toLowerCase()] ?? true;
+              const isExpanded = expandedPeople[group.key] ?? true;
               const avatarColor = getAvatarColor(group.name);
               const overdueInGroup = group.dues.filter(
                 (d) =>
@@ -490,12 +542,12 @@ export default function DuesPage() {
               ).length;
 
               return (
-                <FadeInItem key={group.name}>
+                <FadeInItem key={group.key}>
                   <div className="overflow-hidden rounded-4xl border border-border/70 bg-card surface-raised">
                     {/* Person header */}
                     <button
                       type="button"
-                      onClick={() => togglePersonExpand(group.name)}
+                      onClick={() => togglePersonExpand(group.key)}
                       className="flex w-full items-center gap-3 p-4 text-left transition-colors active:bg-muted/30"
                     >
                       {/* Avatar */}
@@ -519,6 +571,11 @@ export default function DuesPage() {
                           <h3 className="font-bold text-foreground text-sm leading-tight truncate">
                             {group.name}
                           </h3>
+                          {group.showPhoneHint && (
+                            <span className="shrink-0 text-[0.65rem] font-medium tabular-nums text-muted-foreground">
+                              {getCounterpartyDisambiguator(group.phone)}
+                            </span>
+                          )}
                           {group.phone && (
                             <a
                               href={`tel:${group.phone}`}
@@ -618,11 +675,17 @@ export default function DuesPage() {
       </div>
 
       {/* ── Sheets ── */}
-      <CreateDueSheet
+      <DueFormSheet
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultDirection={createDirection}
         defaultPerson={selectedPerson}
+      />
+      <DueFormSheet
+        open={editOpen}
+        onOpenChange={handleEditOpenChange}
+        due={editingDue}
+        onSaved={handleDueSaved}
       />
       <SettleDueSheet
         open={settleOpen}
@@ -634,6 +697,7 @@ export default function DuesPage() {
         onOpenChange={setDetailOpen}
         dueId={selectedDueId}
         onOpenSettle={handleOpenSettle}
+        onEdit={handleOpenEdit}
       />
     </FadeInStagger>
   );
