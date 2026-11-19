@@ -12,6 +12,7 @@ import notificationRoutes, {
   notificationPreferencesRouter,
 } from "./domains/notifications/routes.js";
 import importRoutes from "./domains/import/routes.js";
+import voiceRoutes from "./domains/voice/routes.js";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/notifications", notificationRoutes);
 router.use("/me/notification-preferences", notificationPreferencesRouter);
 router.use("/me", userRoutes);
 router.use("/import", importRoutes);
+router.use("/voice", voiceRoutes);
 
 export default router;

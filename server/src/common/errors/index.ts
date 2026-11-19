@@ -51,3 +51,10 @@ export class ForbiddenError extends AppError {
     this.name = "ForbiddenError";
   }
 }
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = "Service temporarily unavailable") {
+    super(message, 503);
+    this.name = "ServiceUnavailableError";
+  }
+}

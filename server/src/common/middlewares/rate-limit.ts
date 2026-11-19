@@ -36,3 +36,19 @@ export const publicReadLimiter = rateLimit({
     errors: [],
   },
 });
+
+// Voice turns can hit a paid/free-tier LLM quota if abused. Key by the
+// authenticated user (auth runs before this middleware) and keep the budget
+// generous enough for a natural conversation (~3 turns per transaction).
+export const voiceTurnLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: { userId?: string }) => req.userId ?? "anonymous",
+  message: {
+    success: false,
+    message: "Too many voice requests, please try again in a few minutes.",
+    errors: [],
+  },
+});
