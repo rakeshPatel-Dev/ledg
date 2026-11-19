@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link, NavLink, matchPath, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   HandCoins,
   House,
   Layers,
+  Mic,
   Plus,
   Settings2,
   Wallet,
@@ -16,6 +17,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Sheet } from "@/components/ui/sheet";
+import { useVoice } from "@/components/voice/voice-provider";
 import { cn } from "@/lib/utils";
 import { useTransactionForm } from "@/lib/transaction-form";
 import { useDuesSummary } from "@/lib/queries";
@@ -74,10 +76,17 @@ const isMoreSection = (pathname: string) =>
 
 export function BottomNav() {
   const { openCreate } = useTransactionForm();
+  const { openVoice } = useVoice();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { data: duesSummary } = useDuesSummary();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  // Long-press on the + button opens voice entry. A quick tap still opens the
+  // normal transaction form; a long press suppresses the click that follows.
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+  const pressOrigin = useRef<{ x: number; y: number } | null>(null);
 
   const overdueCount = duesSummary?.overdueCount ?? 0;
   const isDuesPage = pathname === "/dues";
@@ -92,7 +101,51 @@ export function BottomNav() {
     }
   };
 
+  const clearLongPress = () => {
+    if (longPressTimer.current != null) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleAddPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    // Dues owns this button on its own page (it opens the due sheet), and
+    // non-primary buttons don't start a press.
+    if (isDuesPage || event.button !== 0) return;
+
+    clearLongPress();
+    longPressFired.current = false;
+    pressOrigin.current = { x: event.clientX, y: event.clientY };
+
+    longPressTimer.current = window.setTimeout(() => {
+      longPressTimer.current = null;
+      longPressFired.current = true;
+      pressOrigin.current = null;
+      vibrate(18);
+      openVoice();
+    }, 450);
+  };
+
+  const handleAddPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const origin = pressOrigin.current;
+    if (!origin || longPressTimer.current == null) return;
+
+    // Scrolling or dragging cancels the press so the sheet doesn't ambush the
+    // user mid-gesture.
+    if (Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 10) {
+      clearLongPress();
+    }
+  };
+
   const handleAddClick = () => {
+    clearLongPress();
+    pressOrigin.current = null;
+
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+
     vibrate(10);
 
     if (isDuesPage) {
@@ -133,10 +186,27 @@ export function BottomNav() {
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     type="button"
                     onClick={handleAddClick}
-                    aria-label={isDuesPage ? "Add due" : "Add transaction"}
+                    onPointerDown={handleAddPointerDown}
+                    onPointerMove={handleAddPointerMove}
+                    onPointerUp={clearLongPress}
+                    onPointerCancel={clearLongPress}
+                    onPointerLeave={clearLongPress}
+                    onContextMenu={(event) => event.preventDefault()}
+                    aria-label={
+                      isDuesPage ? "Add due" : "Add transaction. Long press for Ledg AI."
+                    }
+                    title={isDuesPage ? "Add due" : "Add transaction — hold for Ledg AI"}
                     className="relative flex size-14 items-center justify-center rounded-full border border-[color-mix(in_oklch,var(--primary),black_12%)] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] text-primary-foreground shadow-elev-primary transition-[box-shadow,background] hover:shadow-elev-primary-hover"
                   >
                     <Plus className="size-7 stroke-[2.5px]" />
+                    {!isDuesPage && (
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary-foreground text-primary shadow-sm ring-2 ring-card"
+                      >
+                        <Mic className="size-3 stroke-[2.5px]" />
+                      </span>
+                    )}
                   </motion.button>
                 </div>
               );

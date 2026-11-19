@@ -19,6 +19,7 @@ import {
   Banknote,
   CreditCard,
   Landmark,
+  Mic,
   Wallet,
   Loader2,
   Check,
@@ -50,6 +51,7 @@ import {
   useUpdateTransaction,
 } from "@/lib/queries";
 import { useTransactionForm } from "@/lib/transaction-form";
+import { useVoice } from "@/components/voice/voice-provider";
 
 interface TransactionFormProps {
   spaces: Space[];
@@ -78,6 +80,7 @@ const PAYMENT_ICONS: Record<PaymentMethod, typeof Banknote> = {
 
 export function TransactionForm({ spaces }: TransactionFormProps) {
   const { formState, closeForm, defaultInput } = useTransactionForm();
+  const { openVoice } = useVoice();
   const editing = formState.editing;
   const isOpen = formState.open;
 
@@ -186,6 +189,32 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
       );
       setPaymentMethod(editing.paymentMethod ?? "cash");
       setSpace(editing.spaceId || formState.preselectedSpaceId || "");
+    } else if (formState.draft) {
+      // Prefill from the voice assistant. The draft is a suggestion: every
+      // field stays editable and nothing is saved until the user submits.
+      const draft = formState.draft;
+      const initialSpace =
+        (draft.spaceId && safeSpaces.some((s) => s.id === draft.spaceId)
+          ? draft.spaceId
+          : undefined) ||
+        formState.preselectedSpaceId ||
+        safeSpaces.find((s) => s.type === "personal")?.id ||
+        safeSpaces[0]?.id ||
+        "";
+      setSpace(initialSpace);
+
+      const defaults = defaultInput(spaces);
+      const available = getCategoriesByType(draft.type);
+      setType(draft.type);
+      setCategory(
+        draft.category && available.some((c) => c.name === draft.category)
+          ? draft.category
+          : (available[0]?.name ?? "Other")
+      );
+      setAmount(draft.amount != null ? String(draft.amount) : "");
+      setNote(draft.note ?? "");
+      setDate(draft.date ?? localDateKey(new Date()));
+      setPaymentMethod(draft.paymentMethod ?? defaults.paymentMethod ?? "cash");
     } else {
       const initialSpace =
         formState.preselectedSpaceId ||
@@ -204,7 +233,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     setFieldErrors({});
     setNewSpaceOpen(false);
     setNewSpaceError(null);
-  }, [isOpen, editing?.id]);
+  }, [isOpen, editing?.id, formState.draft]);
 
   const clearFieldError = (field: keyof FieldErrors) => {
     setFieldErrors((prev) => {
@@ -280,7 +309,7 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
       note: note.trim(),
       date: new Date(date + "T00:00:00").toISOString(),
       paymentMethod,
-      source: editing?.source ?? "manual",
+      source: editing?.source ?? (formState.draft ? "voice" : "manual"),
     };
 
     const parsed = transactionSchema.safeParse(payload);
@@ -350,6 +379,12 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
     }
   };
 
+  const talkInstead = () => {
+    closeForm();
+    // Let the form finish closing before the voice drawer takes over focus.
+    window.setTimeout(openVoice, 180);
+  };
+
   return (
     <>
       <Sheet
@@ -357,6 +392,20 @@ export function TransactionForm({ spaces }: TransactionFormProps) {
         onOpenChange={(o) => !o && closeForm()}
         title={editing ? "Edit transaction" : "Add transaction"}
         description="Less than five seconds, promise."
+        headerAction={
+          !editing && !formState.draft ? (
+            <Button
+              type="button"
+              variant="soft"
+              size="sm"
+              onClick={talkInstead}
+              aria-label="Talk instead of typing"
+            >
+              <Mic className="size-4" />
+              Talk instead
+            </Button>
+          ) : undefined
+        }
         footer={
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3 text-xs">

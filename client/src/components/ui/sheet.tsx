@@ -8,6 +8,8 @@ interface SheetProps {
   onOpenChange: (open: boolean) => void;
   title?: string;
   description?: string;
+  /** Optional control shown opposite the title, e.g. a "Talk instead" shortcut. */
+  headerAction?: ReactNode;
   children: ReactNode;
   /** Pinned below the scroll area, so the primary action is always visible. */
   footer?: ReactNode;
@@ -20,6 +22,7 @@ export function Sheet({
   onOpenChange,
   title,
   description,
+  headerAction,
   children,
   footer,
   className,
@@ -43,18 +46,23 @@ export function Sheet({
               </div>
 
               {/* Title/description (shown or sr-only) */}
-              {title || description ? (
-                <div className="flex flex-col gap-0.5 px-5 pt-2 pb-3 shrink-0">
-                  {title && (
-                    <Drawer.Title className="text-lg font-bold tracking-tight">
-                      {title}
-                    </Drawer.Title>
-                  )}
-                  {description && (
-                    <Drawer.Description className="text-sm text-muted-foreground">
-                      {description}
-                    </Drawer.Description>
-                  )}
+              {title || description || headerAction ? (
+                <div className="flex items-start justify-between gap-3 px-5 pt-2 pb-3 shrink-0">
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    {title && (
+                      <Drawer.Title className="text-lg font-bold tracking-tight">
+                        {title}
+                      </Drawer.Title>
+                    )}
+                    {description && (
+                      <Drawer.Description className="text-sm text-muted-foreground">
+                        {description}
+                      </Drawer.Description>
+                    )}
+                  </div>
+                  {headerAction ? (
+                    <div className="shrink-0 pt-0.5">{headerAction}</div>
+                  ) : null}
                 </div>
               ) : (
                 <Drawer.Title className="sr-only">Sheet</Drawer.Title>
