@@ -128,11 +128,12 @@ function restoreTransactionLists(
 
 // ─── Spaces ───────────────────────────────────────────────────────────────────
 
-export function useSpaces() {
+export function useSpaces(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.spaces,
     queryFn: () => getApi().spaces.list(),
     staleTime: 60_000,
+    enabled: options?.enabled ?? true,
   });
 }
 

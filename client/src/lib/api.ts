@@ -22,6 +22,10 @@ import type {
   TransactionInput,
   TransactionQuery,
   TransactionUpdateInput,
+  VoiceTurnInput,
+  VoiceTurnResult,
+  VoiceAudioTurnInput,
+  VoiceAudioTurnResult,
 } from "@ledg/shared";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
@@ -426,6 +430,18 @@ export function createApi() {
         request<{ success: true }>("/me/password", {
           method: "POST",
           body: JSON.stringify({ currentPassword, newPassword }),
+        }),
+    },
+    voice: {
+      turn: (input: VoiceTurnInput) =>
+        request<VoiceTurnResult>("/voice/turn", {
+          method: "POST",
+          body: JSON.stringify(input),
+        }),
+      audioTurn: (input: VoiceAudioTurnInput) =>
+        request<VoiceAudioTurnResult>("/voice/audio", {
+          method: "POST",
+          body: JSON.stringify(input),
         }),
     },
   };

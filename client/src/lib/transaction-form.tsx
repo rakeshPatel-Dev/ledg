@@ -1,17 +1,20 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Space, Transaction, TransactionInput } from "@ledg/shared";
+import type { Space, Transaction, TransactionInput, VoiceDraft } from "@ledg/shared";
 
 interface TransactionFormState {
   open: boolean;
   editing?: Transaction | null;
   preselectedSpaceId?: string;
   lockSpace?: boolean;
+  /** Prefill produced by the voice assistant. Cleared by normal openCreate. */
+  draft?: VoiceDraft | null;
 }
 
 interface TransactionFormContextValue {
   formState: TransactionFormState;
   openCreate: (preselectedSpaceId?: string, lockSpace?: boolean) => void;
+  openWithDraft: (draft: VoiceDraft) => void;
   openEdit: (transaction: Transaction, spaceId: string, lockSpace?: boolean) => void;
   closeForm: () => void;
   defaultInput: (spaces: Space[]) => TransactionInput;
@@ -28,7 +31,23 @@ export function TransactionFormProvider({ children }: { children: ReactNode }) {
   });
 
   const openCreate = (preselectedSpaceId?: string, lockSpace = false) => {
-    setFormState({ open: true, editing: null, preselectedSpaceId, lockSpace });
+    setFormState({
+      open: true,
+      editing: null,
+      preselectedSpaceId,
+      lockSpace,
+      draft: null,
+    });
+  };
+
+  const openWithDraft = (draft: VoiceDraft) => {
+    setFormState({
+      open: true,
+      editing: null,
+      preselectedSpaceId: draft.spaceId ?? undefined,
+      lockSpace: false,
+      draft,
+    });
   };
 
   const openEdit = (transaction: Transaction, spaceId: string, lockSpace = false) => {
@@ -46,6 +65,7 @@ export function TransactionFormProvider({ children }: { children: ReactNode }) {
       editing: transaction,
       preselectedSpaceId: spaceId,
       lockSpace,
+      draft: null,
     });
   };
 
@@ -67,7 +87,14 @@ export function TransactionFormProvider({ children }: { children: ReactNode }) {
 
   return (
     <TransactionFormContext.Provider
-      value={{ formState, openCreate, openEdit, closeForm, defaultInput }}
+      value={{
+        formState,
+        openCreate,
+        openWithDraft,
+        openEdit,
+        closeForm,
+        defaultInput,
+      }}
     >
       {children}
     </TransactionFormContext.Provider>

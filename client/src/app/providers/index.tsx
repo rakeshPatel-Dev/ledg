@@ -4,6 +4,7 @@ import { MotionConfig } from "framer-motion";
 
 import { TransactionFormProvider } from "@/lib/transaction-form";
 import { MotionProvider, useMotion } from "@/lib/animation-provider";
+import { VoiceProvider } from "@/components/voice/voice-provider";
 
 import { ThemeProvider } from "@/lib/theme-provider";
 
@@ -20,7 +21,9 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider defaultTheme="system">
       <MotionProvider defaultMotion="system">
         <MotionBridge>
-          <TransactionFormProvider>{children}</TransactionFormProvider>
+          <TransactionFormProvider>
+            <VoiceProvider>{children}</VoiceProvider>
+          </TransactionFormProvider>
           <Toaster
             position="bottom-center"
             offset={{ bottom: 96 }}
