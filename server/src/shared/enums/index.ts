@@ -14,7 +14,7 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   wallet: "Wallet",
 };
 
-export const TRANSACTION_SOURCES = ["manual", "dues"] as const;
+export const TRANSACTION_SOURCES = ["manual", "dues", "voice"] as const;
 export type TransactionSource = (typeof TRANSACTION_SOURCES)[number];
 
 export const DEBT_DIRECTIONS = ["lent", "borrowed"] as const;
