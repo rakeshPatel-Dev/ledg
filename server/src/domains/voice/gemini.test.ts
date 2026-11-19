@@ -85,6 +85,42 @@ describe("Gemini voice turns", () => {
     });
   });
 
+  it("keeps a pure agreement on the existing draft", async () => {
+    const draft = {
+      type: "expense" as const,
+      amount: 20,
+      category: "Food",
+      note: "samosa",
+      date: TODAY,
+      paymentMethod: "cash" as const,
+      spaceId: null,
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        geminiBody(
+          modelResponse({
+            transcript: "of course",
+            intent: "draft",
+            reply: "Education for 20 rupees. Add it?",
+            draft: { ...draft, category: "Education" },
+          })
+        )
+      )
+    );
+
+    const result = await parseWithGemini({
+      transcript: "of course",
+      draft,
+      history: [],
+      spaces: [],
+    });
+
+    expect(result?.intent).toBe("confirm");
+    expect(result?.draft).toEqual(draft);
+  });
+
   it("keeps the draft and asks again when the clip has no words", async () => {
     vi.stubGlobal(
       "fetch",

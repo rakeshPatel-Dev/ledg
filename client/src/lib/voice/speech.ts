@@ -88,15 +88,15 @@ export function hasSpeechVoice(): boolean {
 }
 
 export interface RecognitionHandlers {
-  onInterim?: (text: string) => void;
-  onFinal: (text: string) => void;
+  /** Full transcript heard so far, including completed and in-progress words. */
+  onTranscript?: (text: string, info: { final: boolean }) => void;
   onError?: (code: string) => void;
-  onEnd?: (info: { deliveredFinal: boolean }) => void;
+  /** The recognizer stopped for good. `text` is everything heard this turn. */
+  onEnd?: (info: { text: string; aborted: boolean }) => void;
 }
 
 export interface RecognitionController {
   start: () => void;
-  stop: () => void;
   abort: () => void;
 }
 
@@ -104,7 +104,11 @@ export interface RecognitionOptions {
   lang?: string;
 }
 
-const LOCAL_CHECK_TIMEOUT_MS = 700;
+const LOCAL_CHECK_TIMEOUT_MS = 300;
+const RESTART_DELAY_MS = 200;
+// The session's 20s listening ceiling is the real limit; this only stops a
+// browser that ends immediately from spinning forever.
+const MAX_RESTARTS = 50;
 const localAvailabilityCache = new Map<string, Promise<boolean>>();
 
 /**
@@ -147,29 +151,44 @@ export function createRecognizer(
 
   const recognition = new Constructor();
   recognition.lang = options.lang ?? "en-IN";
-  recognition.continuous = false;
+  // Keep the microphone open across natural pauses. Browsers that ignore this
+  // still end the session; the onend handler restarts it while the turn is open.
+  recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
-  let finalText = "";
+  let finalSegments: string[] = [];
   let interimText = "";
-  let deliveredFinal = false;
+  let processedFinalIndex = -1;
   let aborted = false;
-  let stopped = false;
-  let started = false;
+  let ended = false;
   let mode: "local" | "remote" = "remote";
   let triedLocalToRemote = false;
   let retry: (() => void) | null = null;
+  let restartTimer: number | null = null;
+  let restarts = 0;
+
+  const fullText = () =>
+    `${finalSegments.join(" ")} ${interimText}`.replace(/\s+/g, " ").trim();
+
+  const emitEnd = () => {
+    if (ended) return;
+    ended = true;
+    if (restartTimer != null) {
+      window.clearTimeout(restartTimer);
+      restartTimer = null;
+    }
+    handlers.onEnd?.({ text: fullText(), aborted });
+  };
 
   const resetAttempt = () => {
-    finalText = "";
+    finalSegments = [];
     interimText = "";
-    deliveredFinal = false;
-    started = false;
+    processedFinalIndex = -1;
   };
 
   const begin = (next: "local" | "remote") => {
-    if (aborted || stopped) return;
+    if (aborted || ended) return;
 
     mode = next;
     try {
@@ -181,37 +200,55 @@ export function createRecognizer(
 
     try {
       recognition.start();
-      started = true;
     } catch (error) {
       if (error instanceof DOMException && error.name === "InvalidStateError") {
-        // A start is already in flight. Safe to ignore for a push-to-talk
-        // control that can be tapped twice quickly.
-        started = true;
+        // A start is already in flight. Safe to ignore.
         return;
       }
       handlers.onError?.(error instanceof DOMException ? error.name : "unknown");
     }
   };
 
+  const scheduleRestart = () => {
+    if (aborted || ended || restartTimer != null) return;
+
+    restartTimer = window.setTimeout(() => {
+      restartTimer = null;
+      if (aborted || ended) return;
+      // Nothing was heard in the previous attempt, so dropping the interim
+      // buffer is safe; completed segments are kept across restarts.
+      interimText = "";
+      processedFinalIndex = -1;
+      begin(mode);
+    }, RESTART_DELAY_MS);
+  };
+
   recognition.onresult = (event) => {
-    interimText = "";
+    let sawFinal = false;
+    let nextInterim = "";
 
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const result = event.results[index];
       if (!result) continue;
-      const transcript = result[0]?.transcript ?? "";
+      const transcript = (result[0]?.transcript ?? "").trim();
+      if (!transcript) continue;
+
       if (result.isFinal) {
-        finalText = `${finalText} ${transcript}`.trim();
+        if (index > processedFinalIndex) {
+          finalSegments.push(transcript);
+          processedFinalIndex = index;
+        }
+        sawFinal = true;
       } else {
-        interimText = `${interimText} ${transcript}`.trim();
+        nextInterim = `${nextInterim} ${transcript}`.trim();
       }
     }
 
-    if (interimText) handlers.onInterim?.(interimText);
-
-    if (finalText && !deliveredFinal) {
-      deliveredFinal = true;
-      handlers.onFinal(finalText.trim());
+    interimText = nextInterim;
+    const text = fullText();
+    if (text) {
+      restarts = 0;
+      handlers.onTranscript?.(text, { final: sawFinal && !interimText });
     }
   };
 
@@ -224,8 +261,7 @@ export function createRecognizer(
     if (
       mode === "local" &&
       !triedLocalToRemote &&
-      !deliveredFinal &&
-      !finalText &&
+      !fullText() &&
       (event.error === "service-not-allowed" ||
         event.error === "language-not-supported" ||
         event.error === "network")
@@ -238,24 +274,40 @@ export function createRecognizer(
       return;
     }
 
+    // Silence is not an error while the user is still thinking. The onend
+    // handler restarts the microphone.
+    if (event.error === "no-speech") return;
+
     handlers.onError?.(event.error);
   };
 
   recognition.onend = () => {
+    if (aborted) return;
+
     const next = retry;
     retry = null;
-
     if (next) {
       next();
       return;
     }
 
-    handlers.onEnd?.({ deliveredFinal });
+    if (ended) return;
+
+    // Keep the microphone alive across a pause. The session decides when the
+    // turn is finished from its own silence timer, so a browser that closes
+    // after one final result does not cut the sentence in half.
+    if (restarts < MAX_RESTARTS) {
+      restarts += 1;
+      scheduleRestart();
+      return;
+    }
+
+    emitEnd();
   };
 
   return {
     start: () => {
-      if (aborted || stopped) return;
+      if (aborted || ended) return;
 
       if (typeof Constructor.available !== "function") {
         begin("remote");
@@ -263,29 +315,18 @@ export function createRecognizer(
       }
 
       void localPackAvailable(Constructor, recognition.lang).then((available) => {
-        if (aborted || stopped) return;
+        if (aborted || ended) return;
         resetAttempt();
         begin(available ? "local" : "remote");
       });
     },
-    stop: () => {
-      stopped = true;
-
-      if (!started) {
-        // The availability check was still running. Settle the turn so the UI
-        // does not stay stuck in a listening state.
-        handlers.onEnd?.({ deliveredFinal: false });
-        return;
-      }
-
-      try {
-        recognition.stop();
-      } catch {
-        // Already stopped.
-      }
-    },
     abort: () => {
       aborted = true;
+      ended = true;
+      if (restartTimer != null) {
+        window.clearTimeout(restartTimer);
+        restartTimer = null;
+      }
       try {
         recognition.abort();
       } catch {

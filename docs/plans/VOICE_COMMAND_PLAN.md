@@ -2,39 +2,38 @@
 
 ## Overview
 
-Ledg gets **Ledg AI**, a voice entry flow: the user long-presses the **+** button, talks naturally, and the assistant builds a transaction draft — asking a follow-up only when something important is missing. The user confirms by voice or tap, and the transaction is created through the existing transaction service.
+Ledg gets **Ledg AI**, a voice entry flow: the user long-presses the **+** button, talks naturally, and the assistant builds a transaction draft — asking a follow-up only when something important is missing. The user confirms on the draft card, and the transaction is created through the existing transaction service.
 
-The experience is a **turn-based call**, not a push-to-talk walkie-talkie and not a real-time audio stream. The mic opens automatically, the user speaks, the assistant answers aloud, and the loop continues until the transaction is confirmed or cancelled.
+The experience is **one-shot first**: the mic opens immediately, the transcript appears live, and the sheet parses the whole thought when the user pauses or taps done. A draft card is the confirmation UI; speech is reserved for a missing slot and the short success line. There is no spoken greeting and no spoken recap before the card.
 
 **Example**
 
 ```
-Long-press +        → haptic, voice sheet opens, listening ring
+Long-press +        → haptic, voice sheet opens, mic already live
 "Samosa for 50"     → live transcript
-Assistant           → "Was that cash, card, or wallet?"
-"Cash"              → draft updates
-Assistant           → "Food for 50 rupees, cash, today. Add it?"
-"Yes"               → created
-Assistant           → "Done."
+(1.1s pause)        → one voice turn
+Draft card           → Food · ₹50 · cash needed
+"Cash" / tap Cash    → draft card updates
+Tap Save             → created, short "Added."
 ```
 
-A fully specified utterance skips straight to confirmation.
+A fully specified utterance goes straight to a ready draft card in one call.
 
 ---
 
 ## Locked Decisions
 
-| Decision           | Choice                                                   |
-| ------------------ | -------------------------------------------------------- |
-| Language (v1)      | English only (`en-IN`, fallback `en-US`)                 |
-| Scope (v1)         | Create transactions only                                 |
-| Interaction        | Turn-based call                                          |
-| Confirm policy     | Always confirm before creating                           |
-| Assistant voice    | Speaks aloud by default, with a mute toggle              |
-| Cloud AI           | Google Gemini API free tier, server-side only            |
-| Without a key      | Deterministic rule parser keeps the feature working      |
-| Transaction source | New `"voice"` value on `TRANSACTION_SOURCES`             |
-| Conversation state | Stateless server; the client owns draft + recent history |
+| Decision           | Choice                                                      |
+| ------------------ | ----------------------------------------------------------- |
+| Language (v1)      | English only (`en-IN`, fallback `en-US`)                    |
+| Scope (v1)         | Create transactions only                                    |
+| Interaction        | One-shot capture + draft review                             |
+| Confirm policy     | Always confirm before creating                              |
+| Assistant voice    | Speaks only slot questions and "Added.", with a mute toggle |
+| Cloud AI           | Google Gemini API free tier, server-side only               |
+| Without a key      | Deterministic rule parser keeps the feature working         |
+| Transaction source | New `"voice"` value on `TRANSACTION_SOURCES`                |
+| Conversation state | Stateless server; the client owns draft + recent history    |
 
 ---
 
@@ -44,16 +43,21 @@ Updated 19 Nov 2026.
 
 **Built and verified**
 
-- Long-press +, voice sheet, orb, spoken greeting, mute toggle, and text fallback.
+- Long-press +, voice sheet, orb, mute toggle, and text fallback.
+- Direction A flow: mic opens on sheet open with no spoken greeting, transcript is live, a pause or tap finishes the thought, and the draft card is the confirmation UI. Speech is used only for a missing slot and the short "Added."
+- Continuous Web Speech recognition: completed segments accumulate across browser restarts, short pauses no longer submit early, and the turn ends after a 1.1s quiet window or a tap.
+- Confirmation guard: a pure agreement ("of course", "yes", "add it") can never change the draft. Rules and Gemini both pin the previous draft, so "of course" cannot become Education. A correction such as "make it 60" keeps the note and updates only the amount.
 - Web Speech recognition with on-device pack preference, plus the recorded-clip fallback for browsers that block the remote recogniser.
-- Rules parser covering 24 utterances: amounts, categories, dates, income, chat, confirmations, and corrections.
+- Rules parser covering 28 utterances: amounts, categories, dates, income, chat, confirmation variants, negative variants, and corrections.
 - Gemini text and audio turns, live-tested against the configured key (a synthesized clip transcribed and parsed correctly).
 - Stateless `POST /voice/turn` and `POST /voice/audio`, per-user rate limiting, and creation through the existing transaction service with `source: "voice"`.
+- Fast path: a fully specified rules utterance returns without a Gemini call.
 - Discoverability: mic badge on the + button and a **Talk instead** shortcut in the add form.
 
 **Remaining**
 
-- Real-device QA: iOS Safari auto-restart, Android, desktop, Bluetooth/noisy microphones.
+- Real-device QA: Android Chrome chime/restart behaviour, iOS Safari auto-restart, desktop, Bluetooth/noisy microphones.
+- Google Cloud TTS (needs a billing/key); until then, fixed phrases are spoken with the device voice.
 - Daily quota cap; optional transcript cache.
 - Settings preference for voice on/off and default mute (mute is currently per-device `localStorage`).
 - Voice analytics: create count, draft-edit rate, confirmation rate, abandonment.
@@ -160,20 +164,21 @@ export type VoiceAudioTurnResult = {
 Server rules:
 
 - `ready` and `missing` are **recomputed server-side**, never trusted from the model.
-- `intent: "confirm"` is only valid when the previous draft was complete and the utterance is a clear agreement ("yes", "add it", "yes please add it").
+- `intent: "confirm"` is only valid when the previous draft was complete and the utterance is a pure agreement ("yes", "of course", "add it"). For a pure agreement the previous draft is returned unchanged, even if the model proposed edits.
+- Every other turn is a new draft or a question; a correction ("make it 60") keeps unrelated fields such as the note.
 - `intent: "cancel"` on a negative utterance.
 - `intent: "chat"` for greetings and meta questions ("are you listening?", "what can you do?"). Chat never changes the draft.
 - A model response that fails Zod validation falls back to the rule result.
 
 ### Intent semantics at the client
 
-| Intent    | Client behaviour                                   |
-| --------- | -------------------------------------------------- |
-| `ask`     | Speak reply, then auto-listen for the answer       |
-| `draft`   | Show draft card, speak "Add it?", then auto-listen |
-| `confirm` | Create immediately, announce success               |
-| `cancel`  | Stop the session                                   |
-| `chat`    | Speak reply, keep the existing draft, auto-listen  |
+| Intent    | Client behaviour                                                    |
+| --------- | ------------------------------------------------------------------- |
+| `ask`     | Show the missing-slot control, speak the one question, listen again |
+| `draft`   | Show/update the draft card; stop the mic and wait for Save          |
+| `confirm` | Create from the previous draft immediately, announce success        |
+| `cancel`  | Stop the session                                                    |
+| `chat`    | Answer, keep the existing draft, listen again                       |
 
 The final create is gated by a deterministic yes/no check on the client as well. The model proposes; code decides.
 
@@ -267,7 +272,7 @@ Payment aliases live in the server parser:
 | ------------------------------------------------ | --------------------------------------------------- |
 | `client/src/lib/voice/speech.ts`                 | Recognition + synthesis wrappers, feature detection |
 | `client/src/lib/voice/recorder.ts`               | MediaRecorder fallback, VAD, WAV encoding           |
-| `client/src/lib/voice/use-voice-session.ts`      | Turn loop state machine                             |
+| `client/src/lib/voice/use-voice-session.ts`      | One-shot capture + draft review state machine       |
 | `client/src/components/voice/voice-provider.tsx` | Global open/close context                           |
 | `client/src/components/voice/voice-sheet.tsx`    | Call UI, transcript, draft card, controls           |
 | `client/src/components/voice/voice-orb.tsx`      | Animated mic orb + status rings                     |
@@ -278,19 +283,24 @@ Payment aliases live in the server parser:
 ### State machine
 
 ```
-idle → listening → thinking → speaking → listening
-                                   └──► confirm → saving → done
-                                   └──► error (retry / type instead)
+idle → listening → thinking → review ──► saving → done
+                       │          ├──► listening (missing slot / correction)
+                       │          └──► error (retry / type instead)
+                       └──► speaking (one question only) → listening
 ```
 
 Rules:
 
+- Opening the sheet clears the session and starts recognition after ~80ms. There is no greeting and no TTS before the mic.
+- Recognition is continuous: final segments accumulate, `onend` restarts the session while the turn is open, and `no-speech` is not an error.
+- A 1.1s window without new words ends the turn; tapping the orb ends it immediately. The 20s ceiling submits whatever was heard.
+- A ready draft moves to `review` and the mic closes. Save is the only way to create unless the user speaks another turn (for example "of course").
+- Speech is used only for a missing-slot question and the short "Added." A ready draft is never recited.
 - Stop recognition before speaking, or the assistant transcribes itself.
-- After TTS ends, restart listening automatically.
 - Tapping the orb while speaking interrupts and listens immediately.
 - If the sheet closes, abort recognition and cancel speech.
-- If the recogniser reports `network` / `service-not-allowed` / `language-not-supported` and `MediaRecorder` exists, the session switches to the recorded-clip path and keeps the same loop.
-- Text input in the sheet uses the same `voice.turn` endpoint.
+- If the recogniser reports `network` / `service-not-allowed` / `language-not-supported` and `MediaRecorder` exists, the session switches to the recorded-clip path and keeps the same flow. Text heard before the failure is submitted instead of discarded.
+- Text input in the sheet uses the same `voice.turn` endpoint. Missing amount and payment method also have an inline input and payment chips.
 - Mute persists in `localStorage` (`ledg.voice.muted`).
 
 ### Long press

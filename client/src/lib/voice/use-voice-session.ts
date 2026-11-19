@@ -26,7 +26,7 @@ import {
 } from "./recorder";
 
 export type VoicePhase =
-  "idle" | "listening" | "thinking" | "speaking" | "saving" | "done" | "error";
+  "idle" | "listening" | "thinking" | "speaking" | "review" | "saving" | "done" | "error";
 
 /** "off" means typing; a manual mic tap still tries the best voice path. */
 export type VoiceListenMode = "speech" | "record" | "off";
@@ -58,6 +58,12 @@ const RECORDABLE_SPEECH_ERRORS = new Set([
   "service-not-allowed",
   "language-not-supported",
 ]);
+
+// A natural pause is part of speaking, not the end of the turn. The recognizer
+// keeps running and this timer decides when the thought is complete.
+const SILENCE_MS = 1_100;
+const MAX_LISTEN_MS = 20_000;
+const OPEN_DELAY_MS = 80;
 
 function readMuted(): boolean {
   try {
@@ -152,12 +158,15 @@ export function useVoiceSession({
   const phaseRef = useRef<VoicePhase>("idle");
   const messagesRef = useRef<VoiceMessage[]>([]);
   const draftRef = useRef<VoiceDraft | null>(null);
+  const interimRef = useRef("");
   const mutedRef = useRef(muted);
   const recognizerRef = useRef<RecognitionController | null>(null);
   const recorderRef = useRef<RecorderController | null>(null);
   const turnRef = useRef(0);
   const speakTokenRef = useRef(0);
   const listenTimerRef = useRef<number | null>(null);
+  const silenceTimerRef = useRef<number | null>(null);
+  const maxListenTimerRef = useRef<number | null>(null);
   const handleUtteranceRef = useRef<(text: string) => void>(() => undefined);
   const handleRecordingRef = useRef<(clip: RecordedClip) => void>(() => undefined);
 
@@ -174,6 +183,11 @@ export function useVoiceSession({
     setErrorState(text);
   }, []);
 
+  const setInterim = useCallback((text: string) => {
+    interimRef.current = text;
+    setInterimState(text);
+  }, []);
+
   const pushMessage = useCallback((message: Omit<VoiceMessage, "id">) => {
     const next = [...messagesRef.current, { ...message, id: messageId() }];
     messagesRef.current = next;
@@ -187,7 +201,24 @@ export function useVoiceSession({
     }
   }, []);
 
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current != null) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }, []);
+
+  const clearMaxListenTimer = useCallback(() => {
+    if (maxListenTimerRef.current != null) {
+      window.clearTimeout(maxListenTimerRef.current);
+      maxListenTimerRef.current = null;
+    }
+  }, []);
+
   const stopListening = useCallback(() => {
+    clearSilenceTimer();
+    clearMaxListenTimer();
+
     const controller = recognizerRef.current;
     recognizerRef.current = null;
     controller?.abort();
@@ -195,7 +226,7 @@ export function useVoiceSession({
     const recorder = recorderRef.current;
     recorderRef.current = null;
     recorder?.cancel();
-  }, []);
+  }, [clearMaxListenTimer, clearSilenceTimer]);
 
   const resetSession = useCallback(() => {
     turnRef.current += 1;
@@ -205,6 +236,7 @@ export function useVoiceSession({
     cancelSpeech();
     messagesRef.current = [];
     draftRef.current = null;
+    interimRef.current = "";
     setMessages([]);
     setDraftState(null);
     setInterimState("");
@@ -319,6 +351,10 @@ export function useVoiceSession({
 
       setError(null);
       setPhase("saving");
+      // A question may still be in flight. Invalidate its callback so it
+      // cannot reopen the microphone after the transaction is saved.
+      speakTokenRef.current += 1;
+      cancelSpeech();
 
       try {
         await createMutationRef.current.mutateAsync({ spaceId, data: payload });
@@ -331,7 +367,7 @@ export function useVoiceSession({
         // Stay in the done state while the confirmation plays; there is no next
         // action to take, so this must not move the state machine to speaking.
         if (!mutedRef.current && isSpeechSupported()) {
-          speak("Done. Added it.");
+          speak("Added.");
         }
       } catch (caught) {
         const message = getUserFacingError(
@@ -349,12 +385,22 @@ export function useVoiceSession({
 
   const applyTurn = useCallback(
     async (result: VoiceTurnResult) => {
-      pushMessage({ role: "assistant", text: result.reply });
-
       // Chat is not a transaction. Keep whatever draft the user already had so
       // a greeting cannot overwrite the note or trigger a create.
       if (result.intent === "chat") {
+        pushMessage({ role: "assistant", text: result.reply });
         speakThen(result.reply, () => scheduleListen(160));
+        return;
+      }
+
+      if (result.intent === "cancel") {
+        pushMessage({ role: "assistant", text: result.reply });
+        setPhase("done");
+        speakThen(result.reply, () => {
+          window.setTimeout(() => {
+            if (openRef.current) onCloseRef.current();
+          }, 350);
+        });
         return;
       }
 
@@ -366,19 +412,25 @@ export function useVoiceSession({
         return;
       }
 
-      if (result.intent === "cancel") {
-        setPhase("done");
-        speakThen(result.reply, () => {
-          window.setTimeout(() => {
-            if (openRef.current) onCloseRef.current();
-          }, 350);
-        });
+      // The common path is one shot: the draft card is the confirmation UI, so
+      // there is no spoken recap and no waiting for TTS before the user can save.
+      if (result.ready) {
+        // Invalidate any pending question callback; the mic must stay closed
+        // while the user reviews the card.
+        speakTokenRef.current += 1;
+        cancelSpeech();
+        clearListenTimer();
+        setPhase("review");
         return;
       }
 
-      speakThen(result.reply, () => scheduleListen(160));
+      pushMessage({ role: "assistant", text: result.reply });
+      setPhase("review");
+      speakThen(result.reply, () => {
+        if (openRef.current) scheduleListen(220);
+      });
     },
-    [createFromDraft, pushMessage, scheduleListen, setPhase, speakThen]
+    [clearListenTimer, createFromDraft, pushMessage, scheduleListen, setPhase, speakThen]
   );
 
   const handleRecording = useCallback(
@@ -389,7 +441,7 @@ export function useVoiceSession({
       stopListening();
       speakTokenRef.current += 1;
       cancelSpeech();
-      setInterimState("");
+      setInterim("");
       setError(null);
       setErrorCodeState(null);
       setPhase("thinking");
@@ -438,7 +490,7 @@ export function useVoiceSession({
         setPhase("error");
       }
     },
-    [applyTurn, pushMessage, setError, setPhase, stopListening]
+    [applyTurn, pushMessage, setError, setInterim, setPhase, stopListening]
   );
 
   handleRecordingRef.current = handleRecording;
@@ -451,7 +503,7 @@ export function useVoiceSession({
     cancelSpeech();
     stopListening();
     primeSpeech();
-    setInterimState("");
+    setInterim("");
     setError(null);
     setErrorCodeState(null);
 
@@ -489,7 +541,7 @@ export function useVoiceSession({
 
       void handleRecordingRef.current(outcome.clip);
     });
-  }, [clearListenTimer, setError, setPhase, stopListening]);
+  }, [clearListenTimer, setError, setInterim, setPhase, stopListening]);
 
   const beginRecordingRef = useRef(beginRecording);
   beginRecordingRef.current = beginRecording;
@@ -523,28 +575,48 @@ export function useVoiceSession({
     cancelSpeech();
     stopListening();
     primeSpeech();
-    setInterimState("");
-    setErrorState(null);
+    setInterim("");
+    setError(null);
     setErrorCodeState(null);
     setPhase("listening");
 
+    const submitAfterPause = (delay: number) => {
+      clearSilenceTimer();
+      silenceTimerRef.current = window.setTimeout(() => {
+        silenceTimerRef.current = null;
+        if (!openRef.current || phaseRef.current !== "listening") return;
+        const text = interimRef.current.trim();
+        if (text) void handleUtteranceRef.current(text);
+      }, delay);
+    };
+
     const controller = createRecognizer({
-      onInterim: (text) => setInterimState(text),
-      onFinal: (text) => {
-        setInterimState("");
-        handleUtteranceRef.current(text);
+      onTranscript: (text) => {
+        setInterim(text);
+        // Every new word restarts the end-of-turn window. A short pause or a
+        // thinking "um" must not cut the sentence in half.
+        submitAfterPause(SILENCE_MS);
       },
       onError: (code) => {
         if (!openRef.current) return;
         if (code === "aborted") return;
-        recognizerRef.current = null;
+
+        // Keep whatever was heard before the service failed. Switching to a
+        // recorded clip here would throw away half a spoken transaction.
+        const heard = interimRef.current.trim();
+        stopListening();
+
+        if (heard) {
+          void handleUtteranceRef.current(heard);
+          return;
+        }
 
         // Brave and some Linux builds refuse the remote recogniser. Keep the
         // turn alive by recording locally instead of dropping straight to text.
         if (RECORDABLE_SPEECH_ERRORS.has(code) && isRecordingSupported()) {
           activeModeRef.current = "record";
           setPhase("idle");
-          setErrorState(null);
+          setError(null);
           setErrorCodeState(null);
           clearListenTimer();
           listenTimerRef.current = window.setTimeout(() => {
@@ -554,18 +626,25 @@ export function useVoiceSession({
           return;
         }
 
-        setErrorState(speechErrorMessage(code));
+        setError(speechErrorMessage(code));
         setErrorCodeState(code);
         setPhase("error");
       },
-      onEnd: ({ deliveredFinal }) => {
+      onEnd: ({ text }) => {
         if (recognizerRef.current) recognizerRef.current = null;
-        if (deliveredFinal || !openRef.current) return;
-        if (phaseRef.current === "listening") {
-          setErrorState("I didn't catch that. Tap the mic and try again.");
-          setErrorCodeState("no-speech");
-          setPhase("error");
+        if (!openRef.current || phaseRef.current !== "listening") return;
+
+        if (text.trim()) {
+          // The browser closed its own session after a result. Give any
+          // trailing final event a moment, then submit the full transcript.
+          submitAfterPause(180);
+          return;
         }
+
+        stopListening();
+        setError("I didn't hear anything. Tap the mic and try again.");
+        setErrorCodeState("no-speech");
+        setPhase("error");
       },
     });
 
@@ -577,7 +656,31 @@ export function useVoiceSession({
 
     recognizerRef.current = controller;
     controller.start();
-  }, [clearListenTimer, setError, setPhase, stopListening]);
+
+    // A hard ceiling keeps a hot microphone from staying open forever.
+    maxListenTimerRef.current = window.setTimeout(() => {
+      maxListenTimerRef.current = null;
+      if (!openRef.current || phaseRef.current !== "listening") return;
+
+      const text = interimRef.current.trim();
+      if (text) {
+        void handleUtteranceRef.current(text);
+        return;
+      }
+
+      stopListening();
+      setError("I didn't hear anything. Tap the mic and try again.");
+      setErrorCodeState("no-speech");
+      setPhase("error");
+    }, MAX_LISTEN_MS);
+  }, [
+    clearListenTimer,
+    clearSilenceTimer,
+    setError,
+    setInterim,
+    setPhase,
+    stopListening,
+  ]);
 
   const beginListeningRef = useRef(beginListening);
   beginListeningRef.current = beginListening;
@@ -591,7 +694,7 @@ export function useVoiceSession({
       stopListening();
       speakTokenRef.current += 1;
       cancelSpeech();
-      setInterimState("");
+      setInterim("");
 
       const history = messagesRef.current.slice(-8);
       pushMessage({ role: "user", text });
@@ -622,18 +725,55 @@ export function useVoiceSession({
         setPhase("error");
       }
     },
-    [applyTurn, pushMessage, setError, setPhase, stopListening]
+    [applyTurn, pushMessage, setError, setInterim, setPhase, stopListening]
   );
 
   handleUtteranceRef.current = handleUtterance;
+
+  const finishListening = useCallback(() => {
+    if (!openRef.current || phaseRef.current !== "listening") return;
+
+    clearSilenceTimer();
+
+    // Give the recogniser a final beat to settle the last word. A tap usually
+    // lands while the tail of the sentence is still marked interim.
+    const attempt = turnRef.current;
+    silenceTimerRef.current = window.setTimeout(() => {
+      silenceTimerRef.current = null;
+      if (
+        !openRef.current ||
+        phaseRef.current !== "listening" ||
+        attempt !== turnRef.current
+      ) {
+        return;
+      }
+
+      const text = interimRef.current.trim();
+      if (!text) {
+        stopListening();
+        setError("I didn't hear anything. Tap the mic and try again.");
+        setErrorCodeState("no-speech");
+        setPhase("error");
+        return;
+      }
+
+      void handleUtteranceRef.current(text);
+    }, 160);
+  }, [clearSilenceTimer, setError, setPhase, stopListening]);
 
   const startListening = useCallback(() => {
     if (!openRef.current) return;
     if (phaseRef.current === "thinking" || phaseRef.current === "saving") return;
 
     if (phaseRef.current === "listening") {
-      if (recorderRef.current) recorderRef.current.stop();
-      else recognizerRef.current?.stop();
+      finishListening();
+      return;
+    }
+
+    if (phaseRef.current === "speaking") {
+      speakTokenRef.current += 1;
+      cancelSpeech();
+      beginListeningRef.current();
       return;
     }
 
@@ -642,7 +782,7 @@ export function useVoiceSession({
     }
 
     beginListeningRef.current();
-  }, [resetSession]);
+  }, [finishListening, resetSession]);
 
   const confirm = useCallback(() => {
     if (!openRef.current) return;
@@ -693,13 +833,13 @@ export function useVoiceSession({
       speakTokenRef.current += 1;
       cancelSpeech();
       stopListening();
-      handleUtteranceRef.current(text);
+      void handleUtteranceRef.current(text);
     },
     [clearListenTimer, stopListening]
   );
 
-  // Start a fresh call whenever the sheet opens, and tear everything down when
-  // it closes. The timeout lets the sheet animation settle first.
+  // Start a fresh one-shot capture whenever the sheet opens. There is no spoken
+  // greeting: the microphone must be live before the user starts talking.
   useEffect(() => {
     openRef.current = open;
 
@@ -721,23 +861,13 @@ export function useVoiceSession({
       }
 
       primeSpeech();
-
-      // A short spoken hello confirms the assistant is live. Skip it when the
-      // device has no voice so the mic can open immediately.
-      if (mutedRef.current || !isSpeechSupported() || !hasSpeechVoice()) {
-        beginListeningRef.current();
-        return;
-      }
-
-      speakThen("I'm listening. What did you spend on?", () => {
-        if (openRef.current) beginListeningRef.current();
-      });
-    }, 260);
+      beginListeningRef.current();
+    }, OPEN_DELAY_MS);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [open, resetSession, clearListenTimer, setPhase, speakThen]);
+  }, [open, resetSession, clearListenTimer, setPhase]);
 
   // Switching back from typing gives the requested mode a fresh chance. The
   // internal record fallback survives because the prop itself has not changed.

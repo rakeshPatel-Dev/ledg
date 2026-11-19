@@ -14,8 +14,16 @@ import { isBareSlotAnswer, parseWithRules } from "./rules.js";
  * because of a quota or a malformed completion.
  */
 export async function handleVoiceTurn(input: VoiceTurnInput): Promise<VoiceTurnResult> {
+  const rules = parseWithRules(input);
+
+  // Fast path: a fully specified utterance is deterministic and does not need
+  // the model. This keeps the common one-shot entry instant and saves quota.
+  if (rules.ready && rules.confidence >= 0.9) {
+    return rules;
+  }
+
   if (isBareSlotAnswer(input.transcript)) {
-    return parseWithRules(input);
+    return rules;
   }
 
   if (isGeminiConfigured()) {
@@ -23,7 +31,7 @@ export async function handleVoiceTurn(input: VoiceTurnInput): Promise<VoiceTurnR
     if (gemini) return gemini;
   }
 
-  return parseWithRules(input);
+  return rules;
 }
 
 /**

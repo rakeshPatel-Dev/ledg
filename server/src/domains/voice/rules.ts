@@ -149,6 +149,16 @@ const AFFIRMATIVE = new Set([
   "thats right",
   "that's right",
   "create it",
+  "of course",
+  "absolutely",
+  "definitely",
+  "for sure",
+  "please do",
+  "go for it",
+  "perfect",
+  "great",
+  "that works",
+  "works for me",
 ]);
 
 const NEGATIVE = new Set([
@@ -166,11 +176,18 @@ const NEGATIVE = new Set([
   "wrong",
   "hold on",
   "wait",
+  "of course not",
+  "definitely not",
+  "absolutely not",
+  "not really",
+  "no thanks",
+  "no thank you",
+  "no way",
 ]);
 
-/** Longer agreements ("yes please add it", "ok save this") still mean yes. */
+/** Longer agreements ("yes please add it", "of course, add it") still mean yes. */
 const CONFIRM_PHRASE =
-  /^(yes|yeah|yep|yup|ok|okay|sure|correct|right)\b.*\b(add|save|confirm|do it|go ahead)\b/;
+  /^(yes|yeah|yep|yup|ok|okay|sure|correct|right|of course|absolutely|definitely|for sure|perfect|great|sounds good)\b.*\b(add|save|confirm|do it|go ahead|log it|record it)\b/;
 
 const GREETING_RE = /^(hi|hello|hey|namaste|yo)\b/;
 const LISTENING_CHECK_RE =
@@ -219,6 +236,15 @@ const NOISE_WORDS = [
   "note",
   "put",
   "make",
+  "change",
+  "changed",
+  "set",
+  "update",
+  "actually",
+  "instead",
+  "rather",
+  "sorry",
+  "correct",
   "entry",
   "transaction",
   "bought",
@@ -799,7 +825,8 @@ export function detectTypeCue(transcript: string): TransactionType | null {
 }
 
 export function isBareAffirmative(transcript: string): boolean {
-  return AFFIRMATIVE.has(normalize(transcript));
+  const text = normalize(transcript);
+  return AFFIRMATIVE.has(text) || CONFIRM_PHRASE.test(text);
 }
 
 export function isBareNegative(transcript: string): boolean {
@@ -812,7 +839,7 @@ export function isBareNegative(transcript: string): boolean {
  */
 export function isBareSlotAnswer(transcript: string): boolean {
   const text = normalize(transcript);
-  if (AFFIRMATIVE.has(text) || NEGATIVE.has(text)) return true;
+  if (isBareAffirmative(text) || NEGATIVE.has(text)) return true;
   if (/^\d+(?:\.\d{1,2})?$/.test(text)) return true;
   if (extractPayment(text)) return true;
   if (extractDate(text, todayKey())) return true;
@@ -869,16 +896,53 @@ export function parseWithRules(input: VoiceTurnInput): VoiceTurnResult {
   const hasExplicitInfo = Boolean(
     typeCue || amountCue || paymentCue || dateCue || categoryCue || spaceCue
   );
-  const bareAffirmative = AFFIRMATIVE.has(text) || CONFIRM_PHRASE.test(text);
+  // A category word alone is not a correction: "of course" contains "course",
+  // and must still confirm the existing draft instead of switching to Education.
+  const hasStrongInfo = Boolean(
+    typeCue || amountCue || paymentCue || dateCue || spaceCue
+  );
+  const bareAffirmative = isBareAffirmative(text);
   const bareNegative = NEGATIVE.has(text) || /^(no|nope|nah)\b/.test(text);
 
-  if (previous && previousReady && bareAffirmative && !hasExplicitInfo) {
+  if (previous && previousReady && bareAffirmative && !hasStrongInfo) {
     return {
       reply: "Adding it now.",
       intent: "confirm",
       draft: previous,
       missing: [],
       ready: true,
+      confidence: 0.99,
+      provider: "rules",
+    };
+  }
+
+  // An agreement when the draft is still incomplete must not be treated as a
+  // category change ("of course" contains "course"). Ask for the missing slot
+  // and keep the draft exactly as it was.
+  if (previous && bareAffirmative && !hasStrongInfo) {
+    const missing = previousMissing ?? missingVoiceSlots(previous);
+    return {
+      reply: missing.includes("amount")
+        ? "How much was it?"
+        : "Was that cash, card, or wallet?",
+      intent: "ask",
+      draft: previous,
+      missing,
+      ready: false,
+      confidence: 0.99,
+      provider: "rules",
+    };
+  }
+
+  if (!previous && bareAffirmative) {
+    const draft = defaultDraft(today);
+    const missing = missingVoiceSlots(draft);
+    return {
+      reply: "There's nothing to add yet. Tell me what you spent.",
+      intent: "chat",
+      draft,
+      missing,
+      ready: false,
       confidence: 0.99,
       provider: "rules",
     };

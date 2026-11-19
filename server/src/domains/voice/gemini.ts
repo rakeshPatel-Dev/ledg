@@ -12,7 +12,7 @@ import {
 } from "../../shared/index.js";
 import { logger } from "../../config/logger.js";
 import { buildVoiceAudioPrompt, buildVoicePrompt } from "./prompt.js";
-import { detectTypeCue, normalizeDraft, todayKey } from "./rules.js";
+import { detectTypeCue, isBareAffirmative, normalizeDraft, todayKey } from "./rules.js";
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_MODEL = "gemini-2.5-flash";
@@ -226,6 +226,50 @@ function finalizeTurn(
 
   const previousMissing = input.draft ? missingVoiceSlots(input.draft) : null;
   const previousReady = previousMissing != null && previousMissing.length === 0;
+
+  // A pure agreement belongs to the rules, not the model's imagination. This
+  // keeps "of course" from becoming an Education category change while still
+  // letting "yes, make it 60" through as a correction.
+  if (previousReady && input.draft && isBareAffirmative(transcript)) {
+    return {
+      reply: "Adding it now.",
+      intent: "confirm",
+      draft: input.draft,
+      missing: [],
+      ready: true,
+      confidence: 0.99,
+      provider: "gemini",
+    };
+  }
+
+  if (isBareAffirmative(transcript)) {
+    if (!input.draft) {
+      const draft = emptyDraft(today);
+      const missing = missingVoiceSlots(draft);
+      return {
+        reply: "There's nothing to add yet. Tell me what you spent.",
+        intent: "chat",
+        draft,
+        missing,
+        ready: false,
+        confidence: 0.99,
+        provider: "gemini",
+      };
+    }
+
+    const missing = previousMissing ?? missingVoiceSlots(input.draft);
+    return {
+      reply: missing.includes("amount")
+        ? "How much was it?"
+        : "Was that cash, card, or wallet?",
+      intent: "ask",
+      draft: input.draft,
+      missing,
+      ready: false,
+      confidence: 0.99,
+      provider: "gemini",
+    };
+  }
 
   // Never confirm a draft that was incomplete, or one the model silently
   // changed while claiming the user agreed. Corrections get another turn.

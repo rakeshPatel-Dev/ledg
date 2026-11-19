@@ -81,6 +81,63 @@ describe("voice rule parser", () => {
     expect(result.ready).toBe(false);
   });
 
+  it("keeps an incomplete draft intact when the user agrees", () => {
+    const first = turn("samosa");
+    const result = turn("of course", first.draft);
+
+    expect(result.intent).toBe("ask");
+    expect(result.draft).toEqual(first.draft);
+  });
+
+  it("does not create a draft from a bare agreement", () => {
+    const result = turn("of course");
+
+    expect(result.intent).toBe("chat");
+    expect(result.draft.category).toBeNull();
+  });
+
+  it("confirms 'of course' without changing the category", () => {
+    const first = turn("samosa for 20 cash");
+    const confirmed = turn("of course", first.draft);
+
+    expect(confirmed.intent).toBe("confirm");
+    expect(confirmed.draft).toEqual(first.draft);
+    expect(confirmed.draft.category).toBe("Food");
+  });
+
+  it("confirms a longer 'of course, add it'", () => {
+    const first = turn("samosa for 20 cash");
+    const confirmed = turn("of course, add it", first.draft);
+
+    expect(confirmed.intent).toBe("confirm");
+    expect(confirmed.draft).toEqual(first.draft);
+  });
+
+  it("treats 'yes, make it 60' as a correction, not a confirmation", () => {
+    const first = turn("samosa for 20 cash");
+    const corrected = turn("yes, make it 60", first.draft);
+
+    expect(corrected.intent).not.toBe("confirm");
+    expect(corrected.draft.amount).toBe(60);
+    expect(corrected.draft.category).toBe("Food");
+    expect(corrected.draft.note).toBe("samosa");
+  });
+
+  it("keeps the note when the correction words change", () => {
+    const first = turn("samosa for 20 cash");
+    const corrected = turn("change it to 60", first.draft);
+
+    expect(corrected.draft.amount).toBe(60);
+    expect(corrected.draft.note).toBe("samosa");
+  });
+
+  it("still reads a course fee as Education", () => {
+    const result = turn("course fee 500 cash");
+
+    expect(result.draft.category).toBe("Education");
+    expect(result.draft.amount).toBe(500);
+  });
+
   it("cancels on a negative answer", () => {
     const first = turn("samosa for 50 cash");
     const cancelled = turn("no", first.draft);

@@ -7,6 +7,7 @@ import type { VoicePhase } from "@/lib/voice/use-voice-session";
 interface VoiceOrbProps {
   phase: VoicePhase;
   onTap: () => void;
+  compact?: boolean;
 }
 
 const LABELS: Record<VoicePhase, string> = {
@@ -14,24 +15,34 @@ const LABELS: Record<VoicePhase, string> = {
   listening: "Finish listening",
   thinking: "Thinking",
   speaking: "Speaking. Tap to interrupt.",
+  review: "Say a correction",
   saving: "Saving the transaction",
   done: "Add another transaction",
   error: "Try listening again",
 };
 
-export function VoiceOrb({ phase, onTap }: VoiceOrbProps) {
+export function VoiceOrb({ phase, onTap, compact = false }: VoiceOrbProps) {
   const listening = phase === "listening";
   const speaking = phase === "speaking";
   const busy = phase === "thinking" || phase === "saving";
+  const iconClass = compact ? "size-6" : "size-9";
 
   return (
-    <div className="relative flex size-44 shrink-0 items-center justify-center">
+    <div
+      className={cn(
+        "relative flex shrink-0 items-center justify-center",
+        compact ? "size-28" : "size-44"
+      )}
+    >
       {listening && (
         <>
           {[0, 1, 2].map((index) => (
             <motion.span
               key={index}
-              className="pointer-events-none absolute size-28 rounded-full border border-primary/35 bg-primary/5"
+              className={cn(
+                "pointer-events-none absolute rounded-full border border-primary/35 bg-primary/5",
+                compact ? "size-20" : "size-28"
+              )}
               initial={{ scale: 0.9, opacity: 0.45 }}
               animate={{ scale: 2.05, opacity: 0 }}
               transition={{
@@ -47,7 +58,10 @@ export function VoiceOrb({ phase, onTap }: VoiceOrbProps) {
 
       {speaking && (
         <motion.span
-          className="pointer-events-none absolute size-32 rounded-full bg-primary/10"
+          className={cn(
+            "pointer-events-none absolute rounded-full bg-primary/10",
+            compact ? "size-24" : "size-32"
+          )}
           animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.2, 0.55] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -60,7 +74,8 @@ export function VoiceOrb({ phase, onTap }: VoiceOrbProps) {
         whileTap={{ scale: 0.94 }}
         aria-label={LABELS[phase]}
         className={cn(
-          "relative z-10 flex size-28 items-center justify-center rounded-full border text-primary-foreground outline-none transition-shadow",
+          "relative z-10 flex items-center justify-center rounded-full border text-primary-foreground outline-none transition-shadow",
+          compact ? "size-20" : "size-28",
           "border-[color-mix(in_oklch,var(--primary),black_14%)] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] shadow-elev-primary",
           "focus-visible:ring-3 focus-visible:ring-ring/50",
           phase === "error" &&
@@ -70,17 +85,17 @@ export function VoiceOrb({ phase, onTap }: VoiceOrbProps) {
         )}
       >
         {busy ? (
-          <Loader2 className="size-9 animate-spin" />
+          <Loader2 className={cn(iconClass, "animate-spin")} />
         ) : phase === "speaking" ? (
-          <Volume2 className="size-9" />
+          <Volume2 className={iconClass} />
         ) : phase === "done" ? (
-          <Check className="size-9" />
+          <Check className={iconClass} />
         ) : phase === "error" ? (
-          <RotateCcw className="size-9" />
+          <RotateCcw className={iconClass} />
         ) : listening ? (
-          <AudioLines className="size-9" />
+          <AudioLines className={iconClass} />
         ) : (
-          <Mic className="size-9" />
+          <Mic className={iconClass} />
         )}
       </motion.button>
     </div>

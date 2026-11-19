@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { Space, VoiceDraft } from "@ledg/shared";
-import { PAYMENT_LABELS, VOICE_EXAMPLES, missingVoiceSlots } from "@ledg/shared";
+import {
+  PAYMENT_LABELS,
+  PAYMENT_METHODS,
+  VOICE_EXAMPLES,
+  missingVoiceSlots,
+} from "@ledg/shared";
 import {
   Check,
   Keyboard,
@@ -172,6 +177,7 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
   const { data: spaces } = useSpaces({ enabled: open });
   const [textMode, setTextMode] = useState(false);
   const [textValue, setTextValue] = useState("");
+  const [amountValue, setAmountValue] = useState("");
   const [voiceCount, setVoiceCount] = useState(0);
   const [voiceChecked, setVoiceChecked] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -191,6 +197,7 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
     if (!open) {
       setTextMode(false);
       setTextValue("");
+      setAmountValue("");
       return;
     }
     if (!supported && !canRecord) setTextMode(true);
@@ -252,6 +259,14 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
     session.sendText(value);
   };
 
+  const submitAmount = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = amountValue.trim();
+    if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return;
+    setAmountValue("");
+    session.sendText(value);
+  };
+
   const spaceList: Space[] = spaces ?? [];
   const defaultSpace =
     spaceList.find((space) => space.type === "personal") ?? spaceList[0];
@@ -259,11 +274,21 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
     ? (spaceList.find((space) => space.id === session.draft?.spaceId)?.name ?? null)
     : (defaultSpace?.name ?? null);
 
-  const showAdd =
-    session.ready &&
-    session.phase !== "done" &&
+  const missing = session.missing;
+  const canAnswerSlot =
+    session.phase !== "thinking" &&
     session.phase !== "saving" &&
-    session.phase !== "thinking";
+    session.phase !== "done" &&
+    session.phase !== "error";
+  const showAmount = Boolean(
+    session.draft && canAnswerSlot && missing.includes("amount")
+  );
+  const showPayment = Boolean(
+    session.draft && canAnswerSlot && !showAmount && missing.includes("paymentMethod")
+  );
+  const showSlotAnswer = showAmount || showPayment;
+  const showAdd =
+    session.ready && (session.phase === "review" || session.phase === "error");
 
   const statusText =
     session.phase === "listening"
@@ -271,35 +296,89 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
         ? "Hearing you…"
         : "Listening…"
       : session.phase === "thinking"
-        ? "Thinking…"
+        ? "Reading that…"
         : session.phase === "speaking"
-          ? "Speaking…"
-          : session.phase === "saving"
-            ? "Adding…"
-            : session.phase === "done"
-              ? "Added"
-              : session.phase === "error"
-                ? "Something went wrong"
-                : "Tap to talk";
+          ? "One more detail"
+          : session.phase === "review"
+            ? session.ready
+              ? "Ready to save"
+              : "One more detail"
+            : session.phase === "saving"
+              ? "Adding…"
+              : session.phase === "done"
+                ? "Added"
+                : session.phase === "error"
+                  ? "Something went wrong"
+                  : "Tap to talk";
 
   const subtext =
     session.phase === "error"
       ? (session.error ?? "Tap the orb to try again, or type instead.")
       : session.phase === "listening"
-        ? session.ready
-          ? "Say yes, or tap Add transaction."
-          : "Speak naturally. Tap the orb when you're done."
+        ? "Speak naturally. Pause when you're done, or tap the mic."
         : session.phase === "thinking"
           ? "Working out the details."
           : session.phase === "speaking"
-            ? "Tap the orb to interrupt."
-            : session.phase === "saving"
-              ? "Saving to your space."
-              : session.phase === "done"
-                ? "It's in your activity."
-                : "Try: samosa for 50 cash";
+            ? "Tap the orb to interrupt, or answer below."
+            : session.phase === "review"
+              ? session.ready
+                ? "Tap Save, or say a correction."
+                : showAmount
+                  ? "Tell me the amount, or type it below."
+                  : "Pick one below, or say it."
+              : session.phase === "saving"
+                ? "Saving to your space."
+                : session.phase === "done"
+                  ? "It's in your activity."
+                  : "Try: samosa for 50 cash";
 
-  const footer = showAdd ? (
+  const slotFooter = showAmount ? (
+    <div className="flex flex-col gap-2">
+      <p className="text-center text-xs font-medium text-muted-foreground">
+        How much was it?
+      </p>
+      <form onSubmit={submitAmount} className="flex items-center gap-2">
+        <Input
+          inputMode="decimal"
+          value={amountValue}
+          onChange={(event) => setAmountValue(event.target.value)}
+          placeholder="Amount in rupees"
+          aria-label="Amount in rupees"
+        />
+        <Button type="submit" size="icon-lg" aria-label="Set amount">
+          <Send className="size-4" />
+        </Button>
+      </form>
+      <Button variant="ghost" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    </div>
+  ) : showPayment ? (
+    <div className="flex flex-col gap-2">
+      <p className="text-center text-xs font-medium text-muted-foreground">
+        How did you pay?
+      </p>
+      <div className="flex flex-wrap justify-center gap-1.5">
+        {PAYMENT_METHODS.map((method) => (
+          <Button
+            key={method}
+            variant="outline"
+            size="sm"
+            onClick={() => session.sendText(PAYMENT_LABELS[method])}
+          >
+            {PAYMENT_LABELS[method]}
+          </Button>
+        ))}
+      </div>
+      <Button variant="ghost" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    </div>
+  ) : null;
+
+  const footer = showSlotAnswer ? (
+    slotFooter
+  ) : showAdd ? (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
         <Button variant="outline" size="lg" className="flex-1" onClick={onClose}>
@@ -307,11 +386,11 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
         </Button>
         <Button size="lg" className="flex-[1.4]" onClick={session.confirm}>
           <Check className="mr-2 size-4" />
-          Add transaction
+          Save transaction
         </Button>
       </div>
       <p className="text-center text-[11px] text-muted-foreground">
-        Confirm to create it. Nothing is saved until you do.
+        Nothing is saved until you tap save.
       </p>
     </div>
   ) : session.phase === "saving" ? (
@@ -475,8 +554,20 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
           )}
         </div>
 
+        {session.draft ? (
+          <DraftCard
+            draft={session.draft}
+            spaceName={draftSpaceName}
+            onEdit={session.editDraft}
+          />
+        ) : null}
+
         <div className="flex shrink-0 flex-col items-center gap-2 pt-1">
-          <VoiceOrb phase={session.phase} onTap={session.startListening} />
+          <VoiceOrb
+            phase={session.phase}
+            onTap={session.startListening}
+            compact={Boolean(session.draft)}
+          />
           <div className="text-center" role="status" aria-live="polite">
             <p className="text-sm font-semibold">{statusText}</p>
             <p className="mx-auto mt-1 max-w-[19rem] text-xs leading-relaxed text-muted-foreground">
@@ -495,14 +586,6 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
             </Button>
           </div>
         )}
-
-        {session.draft ? (
-          <DraftCard
-            draft={session.draft}
-            spaceName={draftSpaceName}
-            onEdit={session.editDraft}
-          />
-        ) : null}
       </div>
     </Sheet>
   );
