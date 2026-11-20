@@ -1,5 +1,10 @@
 # Ledg AI — Voice Commands Design & Implementation Plan
 
+> **Next step:** Browser speech recognition is being replaced by Gemini Live
+> API for realtime audio understanding and tool calling. See
+> [`VOICE_LIVE_API_PLAN.md`](./VOICE_LIVE_API_PLAN.md). The one-shot flow, draft
+> card, confirmation rule, and Edge TTS behavior in this document still apply.
+
 ## Overview
 
 Ledg gets **Ledg AI**, a voice entry flow: the user long-presses the **+** button, talks naturally, and the assistant builds a transaction draft — asking a follow-up only when something important is missing. The user confirms on the draft card, and the transaction is created through the existing transaction service.
@@ -39,25 +44,26 @@ A fully specified utterance goes straight to a ready draft card in one call.
 
 ## Current Status
 
-Updated 19 Nov 2026.
+Updated 20 Nov 2026.
 
 **Built and verified**
 
 - Long-press +, voice sheet, orb, mute toggle, and text fallback.
 - Direction A flow: mic opens on sheet open with no spoken greeting, transcript is live, a pause or tap finishes the thought, and the draft card is the confirmation UI. Speech is used only for a missing slot and the short "Added."
-- Continuous Web Speech recognition: completed segments accumulate across browser restarts, short pauses no longer submit early, and the turn ends after a 1.1s quiet window or a tap.
+- Continuous Web Speech recognition: completed segments accumulate across browser restarts, pending interim words are kept, and Android's restart handshake pauses the quiet countdown instead of submitting only the first word or two. The turn ends after a 1.1s quiet window or a tap.
 - Confirmation guard: a pure agreement ("of course", "yes", "add it") can never change the draft. Rules and Gemini both pin the previous draft, so "of course" cannot become Education. A correction such as "make it 60" keeps the note and updates only the amount.
 - Web Speech recognition with on-device pack preference, plus the recorded-clip fallback for browsers that block the remote recogniser.
 - Rules parser covering 28 utterances: amounts, categories, dates, income, chat, confirmation variants, negative variants, and corrections.
 - Gemini text and audio turns, live-tested against the configured key (a synthesized clip transcribed and parsed correctly).
 - Stateless `POST /voice/turn` and `POST /voice/audio`, per-user rate limiting, and creation through the existing transaction service with `source: "voice"`.
+- `POST /voice/speak` with Microsoft Edge neural TTS: a warm female `en-IN-NeerjaNeural` voice, an in-process 120-clip cache, startup warming for the fixed prompts, a 1.2s client timeout, and automatic `speechSynthesis` fallback. No key and no billing.
 - Fast path: a fully specified rules utterance returns without a Gemini call.
 - Discoverability: mic badge on the + button and a **Talk instead** shortcut in the add form.
 
 **Remaining**
 
-- Real-device QA: Android Chrome chime/restart behaviour, iOS Safari auto-restart, desktop, Bluetooth/noisy microphones.
-- Google Cloud TTS (needs a billing/key); until then, fixed phrases are spoken with the device voice.
+- Real-device QA: Android Chrome chime/restart behaviour, remote TTS playback and autoplay policy, iOS Safari auto-restart, desktop, Bluetooth/noisy microphones.
+- Cold-start TTS latency: the first uncached line uses the device voice by design; verify the cached second line sounds consistent.
 - Daily quota cap; optional transcript cache.
 - Settings preference for voice on/off and default mute (mute is currently per-device `localStorage`).
 - Voice analytics: create count, draft-edit rate, confirmation rate, abandonment.
@@ -268,17 +274,17 @@ Payment aliases live in the server parser:
 
 ## Client Design
 
-| File                                             | Responsibility                                      |
-| ------------------------------------------------ | --------------------------------------------------- |
-| `client/src/lib/voice/speech.ts`                 | Recognition + synthesis wrappers, feature detection |
-| `client/src/lib/voice/recorder.ts`               | MediaRecorder fallback, VAD, WAV encoding           |
-| `client/src/lib/voice/use-voice-session.ts`      | One-shot capture + draft review state machine       |
-| `client/src/components/voice/voice-provider.tsx` | Global open/close context                           |
-| `client/src/components/voice/voice-sheet.tsx`    | Call UI, transcript, draft card, controls           |
-| `client/src/components/voice/voice-orb.tsx`      | Animated mic orb + status rings                     |
-| `client/src/lib/api.ts`                          | `voice.turn()` and `voice.audioTurn()` requests     |
-| `client/src/lib/transaction-form.tsx`            | `openWithDraft()` handoff                           |
-| `client/src/components/layout/bottom-nav.tsx`    | Long-press wiring                                   |
+| File                                             | Responsibility                                       |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| `client/src/lib/voice/speech.ts`                 | Recognition + TTS wrappers, feature detection        |
+| `client/src/lib/voice/recorder.ts`               | MediaRecorder fallback, VAD, WAV encoding            |
+| `client/src/lib/voice/use-voice-session.ts`      | One-shot capture + draft review state machine        |
+| `client/src/components/voice/voice-provider.tsx` | Global open/close context                            |
+| `client/src/components/voice/voice-sheet.tsx`    | Call UI, transcript, draft card, controls            |
+| `client/src/components/voice/voice-orb.tsx`      | Animated mic orb + status rings                      |
+| `client/src/lib/api.ts`                          | `voice.turn()`, `voice.audioTurn()`, `voice.speak()` |
+| `client/src/lib/transaction-form.tsx`            | `openWithDraft()` handoff                            |
+| `client/src/components/layout/bottom-nav.tsx`    | Long-press wiring                                    |
 
 ### State machine
 
@@ -296,6 +302,7 @@ Rules:
 - A 1.1s window without new words ends the turn; tapping the orb ends it immediately. The 20s ceiling submits whatever was heard.
 - A ready draft moves to `review` and the mic closes. Save is the only way to create unless the user speaks another turn (for example "of course").
 - Speech is used only for a missing-slot question and the short "Added." A ready draft is never recited.
+- Replies try the server's cached neural clip first. If a clip is not cached within 1.2s, the device voice takes over and the clip is cached for the next time that line is spoken. `VITE_VOICE_TTS=off` forces device-only speech.
 - Stop recognition before speaking, or the assistant transcribes itself.
 - Tapping the orb while speaking interrupts and listens immediately.
 - If the sheet closes, abort recognition and cancel speech.
@@ -337,8 +344,24 @@ Rules:
 - STT: browser Web Speech API — free, no key. Chrome sends audio to Google; the app never receives it. When the browser recogniser is unavailable, a short clip is sent to Gemini for transcription and is not stored.
 - NLU: Gemini free tier. Send only the utterance/clip, current draft, category/space names and short history. Never balances or transaction history.
 - Google's **free** tier may use inputs to improve their products. The paid tier does not. If that becomes unacceptable, switch the provider interface to Ollama or a paid key.
-- TTS: browser `speechSynthesis` — free.
+- TTS: Microsoft Edge's neural Read Aloud voices — free, no key, no billing. The default is the warm female `en-IN-NeerjaNeural` at a slightly calmer pace. Only the assistant's prompt text is sent, never amounts or balances. Clips are cached in memory on both sides; an uncached line takes ~0.3–1s, so the browser falls back to `speechSynthesis` after 1.2s and fixed prompts are warmed at startup. The service is unofficial, so any failure returns silence and the device voice covers it.
 - Per-user rate limits and the deterministic fallback keep the free tier from becoming a dependency.
+
+### Why this TTS provider
+
+Checked 2026-11-20 against live catalogs:
+
+| Provider              | Result                                                                                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Edge TTS              | **Chosen.** Free, no key, natural female `en-IN-NeerjaNeural`, ~0.3–1s uncached and instant on a cache hit. Unofficial, so the device voice is the fallback. |
+| OpenRouter            | No free TTS. 477 models, 15 free, but the only free audio-output models are Lyria music. `fish-audio/*` and `heygen/*` IDs do not exist. |
+| Fish Audio            | Free plan is personal-use only; API is pay-as-you-go.                                                                                    |
+| HeyGen                | Voice is part of the avatar/video product, not a standalone TTS API.                                                                     |
+| Gemini TTS            | Good quality, but the free tier allows only 10 clips per day — one conversation can exhaust it.                                          |
+| Cloudflare Workers AI | MeloTTS deprecated 2026-11-20; Whisper remains useful for STT.                                                                           |
+| Groq Orpheus          | $22 per 1M characters; not a free tier.                                                                                                  |
+| NVIDIA NIM Chatterbox | Available, but needs a new NVIDIA account/key.                                                                                           |
+| Kokoro/Piper          | Genuinely free and private, but adds a large model/runtime to the API host. A later option if hosted TTS becomes unacceptable.           |
 
 ---
 
@@ -405,6 +428,7 @@ Rules:
 - No speech / silence.
 - Gemini 429 / timeout.
 - Offline.
+- Cached TTS clip (fast) versus cold clip (1.2s then device fallback).
 - Screen reader labels and keyboard text fallback.
 - iOS Safari auto-restart behaviour.
 
@@ -415,6 +439,12 @@ Rules:
   Gemini instead, so voice still works once `GEMINI_API_KEY` is set.
 - `speechSynthesis` needs an installed system voice. On Arch:
   `sudo pacman -S speech-dispatcher espeak-ng`, then restart the browser.
+- Spoken replies need no extra key: the server uses Edge's neural voices
+  (`en-IN-NeerjaNeural` by default). Clips live in a 120-entry in-process cache,
+  so a serverless deployment re-warms after a cold start. Set
+  `VOICE_TTS_VOICE` to another Edge voice, `VOICE_TTS_PREWARM=false` to skip
+  startup warming, `VOICE_TTS=off` to disable remote speech server-side, or
+  `VITE_VOICE_TTS=off` to skip it in the client.
 - Chromium 139+ can use an on-device language pack
   (`SpeechRecognition.available({ processLocally: true })`), but Brave/Linux
   builds may not ship one.
