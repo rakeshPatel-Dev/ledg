@@ -52,3 +52,34 @@ export const voiceTurnLimiter = rateLimit({
     errors: [],
   },
 });
+
+// Each Live session costs one token. A sheet open normally uses one, and a
+// fallback reconnect a second. Twenty per 15 minutes leaves room for normal
+// use while capping an accidental token loop or abuse.
+export const voiceLiveTokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: { userId?: string }) => req.userId ?? "anonymous",
+  message: {
+    success: false,
+    message: "Too many voice sessions, please try again in a few minutes.",
+    errors: [],
+  },
+});
+
+// One turn can speak a question and a confirmation, so speech gets a larger
+// budget than turns. Cache hits are cheap, but they still pass through here.
+export const voiceSpeechLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: { userId?: string }) => req.userId ?? "anonymous",
+  message: {
+    success: false,
+    message: "Too many voice requests, please try again in a few minutes.",
+    errors: [],
+  },
+});

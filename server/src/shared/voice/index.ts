@@ -105,6 +105,19 @@ export const voiceAudioTurnResultSchema = z.object({
 
 export type VoiceAudioTurnResult = z.infer<typeof voiceAudioTurnResultSchema>;
 
+/**
+ * A short-lived token for a direct browser-to-Gemini Live API session. The
+ * long-lived API key never leaves the server; the token is single-use and
+ * expires quickly.
+ */
+export const voiceLiveTokenSchema = z.object({
+  token: z.string().trim().min(1),
+  model: z.string().trim().min(1).max(100),
+  expiresAt: z.string().datetime(),
+});
+
+export type VoiceLiveToken = z.infer<typeof voiceLiveTokenSchema>;
+
 export const VOICE_EXAMPLES = [
   "Samosa for 50 cash",
   "Spent 1,200 on groceries yesterday",

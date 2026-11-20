@@ -8,6 +8,7 @@ import app from "./app.js";
 import { connectDatabase, disconnectDatabase } from "./database/index.js";
 import { warmRedis } from "./config/redis.js";
 import { captureException, flushErrorTracking } from "./config/error-tracking.js";
+import { prewarmSpeech } from "./domains/voice/tts.js";
 
 export default app;
 
@@ -20,6 +21,10 @@ async function startLocalServer() {
   void warmRedis().then((ok) => {
     if (ok) logger.info("Redis connection warmed");
   });
+
+  // Warm the fixed voice prompts in the background. The first spoken turn
+  // then hits the in-process cache instead of waiting for Gemini TTS.
+  prewarmSpeech();
 
   const port = Number(process.env.PORT ?? 3000);
   const server = app.listen(port, () => {
