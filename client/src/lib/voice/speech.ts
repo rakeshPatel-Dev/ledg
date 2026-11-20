@@ -8,6 +8,8 @@
  * runtime failures (the sheet offers typing instead).
  */
 
+import { getApi } from "@/lib/api";
+
 interface RecognitionAlternative {
   transcript: string;
   confidence: number;
@@ -91,6 +93,10 @@ export interface RecognitionHandlers {
   /** Full transcript heard so far, including completed and in-progress words. */
   onTranscript?: (text: string, info: { final: boolean }) => void;
   onError?: (code: string) => void;
+  /** The browser ended its session and the microphone is about to reopen. */
+  onRestart?: () => void;
+  /** The microphone is live again after a restart. */
+  onStart?: () => void;
   /** The recognizer stopped for good. `text` is everything heard this turn. */
   onEnd?: (info: { text: string; aborted: boolean }) => void;
 }
@@ -159,7 +165,6 @@ export function createRecognizer(
 
   let finalSegments: string[] = [];
   let interimText = "";
-  let processedFinalIndex = -1;
   let aborted = false;
   let ended = false;
   let mode: "local" | "remote" = "remote";
@@ -184,7 +189,6 @@ export function createRecognizer(
   const resetAttempt = () => {
     finalSegments = [];
     interimText = "";
-    processedFinalIndex = -1;
   };
 
   const begin = (next: "local" | "remote") => {
@@ -212,15 +216,26 @@ export function createRecognizer(
   const scheduleRestart = () => {
     if (aborted || ended || restartTimer != null) return;
 
+    // The mic is offline until start() succeeds. Tell the session so its
+    // silence countdown does not fire during the handshake and submit only
+    // the first word or two.
+    handlers.onRestart?.();
+
     restartTimer = window.setTimeout(() => {
       restartTimer = null;
       if (aborted || ended) return;
-      // Nothing was heard in the previous attempt, so dropping the interim
-      // buffer is safe; completed segments are kept across restarts.
+      // A browser can end its session before the last words become final.
+      // Promote the pending interim text instead of dropping what was just
+      // said; only completed phrases survive across the restart otherwise.
+      if (interimText) finalSegments.push(interimText);
       interimText = "";
-      processedFinalIndex = -1;
       begin(mode);
     }, RESTART_DELAY_MS);
+  };
+
+  recognition.onstart = () => {
+    if (aborted || ended) return;
+    handlers.onStart?.();
   };
 
   recognition.onresult = (event) => {
@@ -234,10 +249,10 @@ export function createRecognizer(
       if (!transcript) continue;
 
       if (result.isFinal) {
-        if (index > processedFinalIndex) {
-          finalSegments.push(transcript);
-          processedFinalIndex = index;
-        }
+        // Append every final result the event reports. Do not gate this on a
+        // running result index: some Android builds reset the results array
+        // between phrases, and an index guard silently drops the new words.
+        finalSegments.push(transcript);
         sawFinal = true;
       } else {
         nextInterim = `${nextInterim} ${transcript}`.trim();
@@ -338,16 +353,61 @@ export function createRecognizer(
 
 // ─── Speech synthesis ─────────────────────────────────────────────────────────
 
+// Remote speech is a neural clip served by our own API and cached in memory.
+// It sounds better than most installed system voices, but the first uncached
+// line can be slow, so after 1.2s the device voice takes over and the clip is
+// cached for the next time the same line is spoken. Set VITE_VOICE_TTS=off to
+// force device-only speech.
+const REMOTE_SPEECH_ENABLED = import.meta.env.VITE_VOICE_TTS !== "off";
+const REMOTE_SPEECH_TIMEOUT_MS = 1_200;
+const REMOTE_SPEECH_MAX_TEXT = 320;
+const MAX_REMOTE_CLIPS = 40;
+
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let voicesBound = false;
+let activeAudio: HTMLAudioElement | null = null;
+let activeAudioUrl: string | null = null;
+let activeFetch: AbortController | null = null;
+let fallbackTimer: number | null = null;
+let speechGeneration = 0;
+// Insertion order doubles as LRU order. Object URLs stay alive until evicted
+// so a repeat line plays without another request.
+const remoteClipUrls = new Map<string, string>();
 
 function voiceScore(voice: SpeechSynthesisVoice): number {
   const lang = voice.lang.toLowerCase();
-  if (lang === "en-in") return 5;
-  if (lang === "en-gb") return 4;
-  if (lang === "en-us") return 3;
-  if (lang.startsWith("en")) return 2;
-  return 0;
+  const name = voice.name.toLowerCase();
+
+  // Accent fit dominates, then a natural female voice, then quality hints.
+  // Word boundaries keep "female" from matching the male-name rule.
+  let score = 0;
+  if (lang === "en-in") score = 10;
+  else if (lang === "en-gb") score = 7;
+  else if (lang === "en-us") score = 4;
+  else score = 2;
+
+  if (/\b(female|woman)\b/.test(name)) score += 4;
+  if (
+    /\b(neerja|aria|jenny|sonia|samantha|karen|serena|zira|ava|emma|susan|hazel|salli|joanna|amy|olivia|moira|tessa|fiona)\b/.test(
+      name
+    )
+  ) {
+    score += 4;
+  }
+  if (/\b(male|man)\b/.test(name)) score -= 4;
+  if (
+    /\b(david|daniel|alex|fred|george|rishi|ravi|mark|james|arthur|oliver|thomas)\b/.test(
+      name
+    )
+  ) {
+    score -= 4;
+  }
+  if (/google|neural|natural|premium|enhanced/.test(name)) score += 2;
+  if (/espeak|pico|festival|mbrola|robot|compact/.test(name)) score -= 8;
+  // Network voices are usually the higher-quality Google/Microsoft ones.
+  if (!voice.localService) score += 1;
+
+  return score;
 }
 
 function pickVoice(): SpeechSynthesisVoice | null {
@@ -357,11 +417,15 @@ function pickVoice(): SpeechSynthesisVoice | null {
   if (voices.length === 0) return null;
 
   let best: SpeechSynthesisVoice | null = null;
-  let bestScore = 0;
+  let bestScore = Number.NEGATIVE_INFINITY;
 
   for (const voice of voices) {
+    // The app is English-only; a non-English voice would mispronounce every
+    // prompt even if it is the only one installed.
+    if (!voice.lang.toLowerCase().startsWith("en")) continue;
+
     const score = voiceScore(voice);
-    if (score > bestScore) {
+    if (best == null || score > bestScore) {
       best = voice;
       bestScore = score;
     }
@@ -388,8 +452,69 @@ export interface SpeakHandlers {
   onError?: (code: string) => void;
 }
 
-export function speak(text: string, handlers: SpeakHandlers = {}): void {
-  if (!isSpeechSupported() || !text.trim()) {
+export interface SpeakOptions {
+  /** Set false to skip the network and use the device voice only. */
+  remote?: boolean;
+}
+
+/**
+ * True when at least one speech path can produce audio. The system voice may
+ * be missing on desktops, but remote TTS still works when the server has a key.
+ */
+export function isVoiceOutputSupported(): boolean {
+  return isRemoteSpeechAvailable() || (isSpeechSupported() && hasSpeechVoice());
+}
+
+export function isRemoteSpeechAvailable(text = "x"): boolean {
+  return (
+    REMOTE_SPEECH_ENABLED &&
+    typeof fetch === "function" &&
+    typeof Audio !== "undefined" &&
+    text.length <= REMOTE_SPEECH_MAX_TEXT
+  );
+}
+
+function clearPlayback(): void {
+  if (fallbackTimer != null) {
+    window.clearTimeout(fallbackTimer);
+    fallbackTimer = null;
+  }
+
+  activeFetch?.abort();
+  activeFetch = null;
+
+  if (activeAudio) {
+    const audio = activeAudio;
+    activeAudio = null;
+    activeAudioUrl = null;
+    audio.onplaying = null;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    audio.src = "";
+  }
+}
+
+function rememberRemoteClip(text: string, url: string): void {
+  const existing = remoteClipUrls.get(text);
+  if (existing && existing !== url && existing !== activeAudioUrl) {
+    URL.revokeObjectURL(existing);
+  }
+
+  remoteClipUrls.delete(text);
+  remoteClipUrls.set(text, url);
+
+  while (remoteClipUrls.size > MAX_REMOTE_CLIPS) {
+    const oldest = remoteClipUrls.keys().next().value;
+    if (oldest == null) break;
+    const oldUrl = remoteClipUrls.get(oldest);
+    remoteClipUrls.delete(oldest);
+    if (oldUrl && oldUrl !== activeAudioUrl) URL.revokeObjectURL(oldUrl);
+  }
+}
+
+function speakLocal(text: string, handlers: SpeakHandlers): void {
+  if (!isSpeechSupported()) {
     handlers.onEnd?.();
     return;
   }
@@ -439,9 +564,135 @@ export function speak(text: string, handlers: SpeakHandlers = {}): void {
   }
 }
 
+function playRemoteClip(url: string, text: string, handlers: SpeakHandlers): void {
+  const generation = speechGeneration;
+  const audio = new Audio(url);
+  activeAudio = audio;
+  activeAudioUrl = url;
+  audio.preload = "auto";
+
+  let settled = false;
+
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    if (activeAudio === audio) {
+      activeAudio = null;
+      activeAudioUrl = null;
+    }
+    handlers.onEnd?.();
+  };
+
+  // Decode failures and autoplay blocks are recoverable: drop to the device
+  // voice rather than leaving the conversation silent.
+  const fallback = () => {
+    if (settled) return;
+    settled = true;
+    audio.onplaying = null;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    if (activeAudio === audio) {
+      activeAudio = null;
+      activeAudioUrl = null;
+    }
+    if (generation !== speechGeneration) return;
+    speakLocal(text, handlers);
+  };
+
+  audio.onplaying = () => {
+    if (generation === speechGeneration) handlers.onStart?.();
+  };
+  audio.onended = () => {
+    if (generation === speechGeneration) finish();
+  };
+  audio.onerror = fallback;
+
+  void audio.play().catch(fallback);
+}
+
+function speakRemote(text: string, handlers: SpeakHandlers): void {
+  const cached = remoteClipUrls.get(text);
+  if (cached) {
+    remoteClipUrls.delete(text);
+    remoteClipUrls.set(text, cached);
+    playRemoteClip(cached, text, handlers);
+    return;
+  }
+
+  const generation = speechGeneration;
+  const controller = new AbortController();
+  activeFetch = controller;
+  let timedOut = false;
+
+  fallbackTimer = window.setTimeout(() => {
+    fallbackTimer = null;
+    timedOut = true;
+    if (generation !== speechGeneration) return;
+    speakLocal(text, handlers);
+  }, REMOTE_SPEECH_TIMEOUT_MS);
+
+  void getApi()
+    .voice.speak(text, controller.signal)
+    .then((blob) => {
+      if (generation !== speechGeneration) return;
+      if (activeFetch === controller) activeFetch = null;
+
+      const url = URL.createObjectURL(blob);
+      rememberRemoteClip(text, url);
+
+      // The device voice is already reading this line. The clip is now cached
+      // for the next time it comes up.
+      if (timedOut) return;
+
+      if (fallbackTimer != null) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+      playRemoteClip(url, text, handlers);
+    })
+    .catch(() => {
+      if (generation !== speechGeneration) return;
+      if (activeFetch === controller) activeFetch = null;
+      if (timedOut) return;
+
+      if (fallbackTimer != null) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+      speakLocal(text, handlers);
+    });
+}
+
+export function speak(
+  text: string,
+  handlers: SpeakHandlers = {},
+  options: SpeakOptions = {}
+): void {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    handlers.onEnd?.();
+    return;
+  }
+
+  // A new line always replaces the previous one, whether it finished or not.
+  speechGeneration += 1;
+  clearPlayback();
+
+  if (options.remote !== false && isRemoteSpeechAvailable(normalized)) {
+    speakRemote(normalized, handlers);
+    return;
+  }
+
+  speakLocal(normalized, handlers);
+}
+
 export function cancelSpeech(): void {
-  if (!isSpeechSupported()) return;
-  window.speechSynthesis.cancel();
+  speechGeneration += 1;
+  clearPlayback();
+  if (isSpeechSupported()) {
+    window.speechSynthesis.cancel();
+  }
 }
 
 /** Called from a user gesture so mobile browsers warm up the voice list. */

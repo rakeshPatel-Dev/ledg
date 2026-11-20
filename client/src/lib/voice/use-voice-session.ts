@@ -10,9 +10,8 @@ import { useCreateTransaction } from "@/lib/queries";
 import {
   cancelSpeech,
   createRecognizer,
-  hasSpeechVoice,
   isRecognitionSupported,
-  isSpeechSupported,
+  isVoiceOutputSupported,
   primeSpeech,
   speak,
   type RecognitionController,
@@ -237,6 +236,10 @@ export function useVoiceSession({
     messagesRef.current = [];
     draftRef.current = null;
     interimRef.current = "";
+    // A transient speech failure may have downgraded the last turn to
+    // recording. Every new conversation gets a fresh chance at live speech.
+    activeModeRef.current =
+      listenModeRef.current === "off" ? "speech" : listenModeRef.current;
     setMessages([]);
     setDraftState(null);
     setInterimState("");
@@ -249,7 +252,7 @@ export function useVoiceSession({
     (text: string, next: () => void) => {
       if (!openRef.current) return;
 
-      if (mutedRef.current || !isSpeechSupported() || !hasSpeechVoice()) {
+      if (mutedRef.current || !isVoiceOutputSupported()) {
         next();
         return;
       }
@@ -366,7 +369,7 @@ export function useVoiceSession({
         toast.success(`Added ${formatCurrency(amount)} for ${category}`);
         // Stay in the done state while the confirmation plays; there is no next
         // action to take, so this must not move the state machine to speaking.
-        if (!mutedRef.current && isSpeechSupported()) {
+        if (!mutedRef.current && isVoiceOutputSupported()) {
           speak("Added.");
         }
       } catch (caught) {
@@ -596,6 +599,18 @@ export function useVoiceSession({
         // Every new word restarts the end-of-turn window. A short pause or a
         // thinking "um" must not cut the sentence in half.
         submitAfterPause(SILENCE_MS);
+      },
+      onRestart: () => {
+        // Android Chrome ignores continuous mode and ends after a phrase. The
+        // microphone is briefly offline while it reopens, so pause the quiet
+        // countdown instead of treating the handshake as the user finishing.
+        clearSilenceTimer();
+      },
+      onStart: () => {
+        if (!openRef.current || phaseRef.current !== "listening") return;
+        // The mic is live again. Give the rest of the sentence a fresh window;
+        // otherwise a slow restart submits the first word or two.
+        if (interimRef.current.trim()) submitAfterPause(SILENCE_MS);
       },
       onError: (code) => {
         if (!openRef.current) return;
@@ -850,9 +865,6 @@ export function useVoiceSession({
     }
 
     resetSession();
-    activeModeRef.current =
-      listenModeRef.current === "off" ? "speech" : listenModeRef.current;
-
     const timer = window.setTimeout(() => {
       if (!openRef.current) return;
       if (listenModeRef.current === "off") {

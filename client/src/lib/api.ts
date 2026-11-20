@@ -150,6 +150,37 @@ export function createApi() {
     return body.data;
   }
 
+  /**
+   * Audio responses have no `{ success, data }` envelope, so they need their
+   * own reader. Errors still use the API's JSON message when present.
+   */
+  async function requestAudio(path: string, init?: RequestInit): Promise<Blob> {
+    const headers = new Headers(init?.headers);
+    if (init?.body != null) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    const response = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers,
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") ?? "";
+      const body = contentType.includes("application/json")
+        ? ((await response.json().catch(() => null)) as ApiResponse<never> | null)
+        : null;
+      const message =
+        (body && "message" in body ? body.message : undefined) ??
+        `Request failed with ${response.status} ${response.statusText}`.trim();
+      const errors = body && "errors" in body ? body.errors : [];
+      throw new ApiError(response.status, message, errors);
+    }
+
+    return response.blob();
+  }
+
   return {
     spaces: {
       list: () => request<{ spaces: Space[] }>("/spaces").then((r) => r.spaces),
@@ -442,6 +473,12 @@ export function createApi() {
         request<VoiceAudioTurnResult>("/voice/audio", {
           method: "POST",
           body: JSON.stringify(input),
+        }),
+      speak: (text: string, signal?: AbortSignal) =>
+        requestAudio("/voice/speak", {
+          method: "POST",
+          body: JSON.stringify({ text }),
+          signal,
         }),
     },
   };

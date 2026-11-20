@@ -32,6 +32,7 @@ import { useVoiceSession, type VoiceMessage } from "@/lib/voice/use-voice-sessio
 import {
   getSpeechVoiceCount,
   isRecognitionSupported,
+  isRemoteSpeechAvailable,
   isSpeechSupported,
   primeSpeech,
 } from "@/lib/voice/speech";
@@ -507,7 +508,7 @@ export function VoiceSheet({ open, onClose, onEditDraft }: VoiceSheetProps) {
           </div>
         )}
 
-        {voiceChecked && isSpeechSupported() && voiceCount === 0 && (
+        {voiceChecked && voiceCount === 0 && !isRemoteSpeechAvailable() && (
           <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-3 text-xs leading-relaxed text-amber-800 dark:text-amber-300">
             This device has no system voice, so replies appear here as text. Install a
             voice in your device settings to hear Ledg AI.
